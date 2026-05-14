@@ -68,14 +68,24 @@ export default function CartButton() {
             align-items: center !important;
             padding-bottom: 1.5rem !important;
             z-index: 2000 !important;
+            overflow-y: auto !important;
+            overscroll-behavior: contain !important;
+            -webkit-overflow-scrolling: touch !important;
           }
           .cartOverlayDesktop {
             z-index: 1999 !important;
             align-items: center !important;
+            background: rgba(0, 0, 0, 0.45) !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
           }
           .cartItemsDesktop {
             max-height: 50vh !important;
+            overscroll-behavior: contain !important;
           }
+        }
+        body.modalOpen {
+          overflow: hidden !important;
         }
       `}</style>
 {/* Sticky WhatsApp Button - Mobile */}

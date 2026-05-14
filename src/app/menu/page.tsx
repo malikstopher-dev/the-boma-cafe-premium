@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -197,6 +197,17 @@ export default function MenuPage() {
   const [lastAddedItem, setLastAddedItem] = useState<MenuItem | null>(null);
   const [visibleCount, setVisibleCount] = useState(INITIAL_COUNT);
   const { addItem, items: cartItems, total, openCart, isCartOpen } = useCart();
+
+  useEffect(() => {
+    if (showUpsellModal) {
+      document.body.classList.add('modalOpen');
+    } else {
+      document.body.classList.remove('modalOpen');
+    }
+    return () => {
+      document.body.classList.remove('modalOpen');
+    };
+  }, [showUpsellModal]);
 
   // Use default data directly - skip CMS for now since field mapping issues exist
   // The admin can still edit via admin panel which saves to CMS
