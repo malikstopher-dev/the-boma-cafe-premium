@@ -30,8 +30,7 @@ const heroSlides = [
   {
     image: '/hero/slide2.jpg',
     subtitle: 'Escape the City',
-    title: 'Rustic',
-    titleAccent: 'Ambiance',
+    title: 'Rustic Ambiance',
     tagline: 'Savor your meal beneath a thatched roof',
     cta: 'Discover More',
     ctaLink: '/about'
@@ -39,8 +38,7 @@ const heroSlides = [
   {
     image: '/hero/slide3.jpg',
     subtitle: 'More Than Just a Cafe',
-    title: 'An',
-    titleAccent: 'Experience',
+    title: 'An Experience',
     tagline: 'Where nature meets the warmth of home',
     cta: 'View Events',
     ctaLink: '/events'
@@ -178,10 +176,7 @@ export default function Home() {
           
           <div className={styles.heroContent}>
             <p className={styles.heroSubtitle}>{heroSlides[currentSlide].subtitle}</p>
-            <h1 className={styles.heroTitle}>
-              {heroSlides[currentSlide].title}
-              {heroSlides[currentSlide].titleAccent && <span className={styles.heroAccent}>{heroSlides[currentSlide].titleAccent}</span>}
-            </h1>
+            <h1 className={styles.heroTitle}>{heroSlides[currentSlide].title}</h1>
             <p className={styles.heroTagline}>{heroSlides[currentSlide].tagline}</p>
             <div className={styles.heroCta}>
               <Link href="/menu" className="btn btn-primary">View Menu</Link>

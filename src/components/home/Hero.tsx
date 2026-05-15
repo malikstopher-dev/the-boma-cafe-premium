@@ -21,8 +21,7 @@ const slides = [
   {
     image: '/hero/slide2.jpg',
     subtitle: 'Escape the City',
-    title: 'Rustic',
-    titleAccent: 'Ambiance',
+    title: 'Rustic Ambiance',
     tagline: 'Savor your meal beneath a thatched roof',
     cta: 'Discover More',
     ctaLink: '/about'
@@ -30,8 +29,7 @@ const slides = [
   {
     image: '/hero/slide3.jpg',
     subtitle: 'More Than Just a Cafe',
-    title: 'An',
-    titleAccent: 'Experience',
+    title: 'An Experience',
     tagline: 'Where nature meets the warmth of home',
     cta: 'View Events',
     ctaLink: '/events'
@@ -71,14 +69,7 @@ export default function Hero({ title, subtitle }: HeroProps) {
         {title ? (
           <h1 className={styles.title}>{title}</h1>
         ) : (
-          <>
-            <h1 className={styles.title}>
-              {slide.title}
-              {slide.titleAccent && (
-                <span className={styles.accent}> {slide.titleAccent}</span>
-              )}
-            </h1>
-          </>
+          <h1 className={styles.title}>{slide.title}</h1>
         )}
         
         <p className={styles.tagline}>{slide.tagline}</p>
