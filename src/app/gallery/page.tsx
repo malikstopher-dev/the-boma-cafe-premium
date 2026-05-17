@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { cmsService } from '@/lib/client-cms';
 import GalleryBoards from '@/components/gallery/GalleryBoards';
 import PremiumHero from '@/components/ui/PremiumHero';
+import { getReservationLink } from '@/data/businessInfo';
 import styles from './Gallery.module.css';
 
 const topGalleryImages = [
@@ -16,6 +18,8 @@ const topGalleryImages = [
   { url: '/gallery/gallery/happy.jpg', alt: 'Happy times' },
   { url: '/gallery/gallery/mahendra.jpeg', alt: 'Mahendra' },
 ];
+
+const categories = ['All', 'Events', 'Food', 'Venue', 'People', 'Promotions'];
 
 export default function GalleryPage() {
   const [settings, setSettings] = useState<any>(null);
@@ -49,7 +53,6 @@ export default function GalleryPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const categories = ['All', 'Events', 'Food', 'Venue', 'People', 'Promotions'];
   const filteredGallery = activeCategory === 'All' 
     ? gallery 
     : gallery.filter((item: any) => item.category === activeCategory);
@@ -78,20 +81,32 @@ export default function GalleryPage() {
     setLightboxImage(lightboxImages[newIndex]);
   };
 
+  const handleCategoryClick = (cat: string) => {
+    setActiveCategory(cat);
+    setTimeout(() => {
+      const gridSection = document.getElementById('gallery-grid');
+      if (gridSection) {
+        gridSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+  };
+
+  const reservationLink = getReservationLink();
+
   return (
     <>
-<Header />
+      <Header />
       <main>
         <div style={{ paddingTop: 80 }}>
           <PremiumHero
-          imageUrl="/hero/hero-gallery.jpg"
-          badge="Our Gallery"
-          title="Gallery"
-          subtitle="Capturing moments of joy, delicious food, and unforgettable experiences at The Boma Café"
-        />
-
-        {/* Top Gallery - Main Feature - Premium Design */}
+            imageUrl="/hero/hero-gallery.jpg"
+            badge="Our Gallery"
+            title="Gallery"
+            subtitle="Food, fire, people, music and open-air moments at The Boma Café."
+          />
         </div>
+
+        {/* Featured Moments Carousel */}
         <section style={{ background: 'var(--white)', padding: 'var(--space-2xl) 5%' }}>
           <div style={{
             maxWidth: '1100px',
@@ -100,7 +115,7 @@ export default function GalleryPage() {
             borderRadius: '24px',
             overflow: 'hidden',
             position: 'relative',
-            boxShadow: 'var(--shadow-lg)'
+            boxShadow: '0 20px 60px rgba(26, 15, 10, 0.15)'
           }} onClick={() => openLightbox(topGalleryImages.map(i => i.url), topGalleryIndex)}>
             <div 
               style={{
@@ -220,8 +235,190 @@ export default function GalleryPage() {
           </div>
         </section>
 
-        {/* Gallery Boards Section */}
-        <GalleryBoards onImageClick={openLightbox} onCategoryClick={(cat) => setActiveCategory(cat)} />
+        {/* Category Boards Section */}
+        <GalleryBoards onImageClick={openLightbox} onCategoryClick={handleCategoryClick} />
+
+        {/* Filtered Gallery Grid */}
+        <section id="gallery-grid" style={{ background: 'var(--white)', padding: 'var(--space-3xl) 5%' }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: 'var(--space-xl)' }}>
+              <h2 style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', color: 'var(--dark-brown)', marginBottom: '1rem' }}>
+                {activeCategory === 'All' ? 'All Photos' : `${activeCategory} Photos`}
+              </h2>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                {categories.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    style={{
+                      padding: '0.6rem 1.25rem',
+                      borderRadius: '25px',
+                      border: 'none',
+                      background: activeCategory === cat ? 'var(--primary)' : 'var(--cream)',
+                      color: activeCategory === cat ? 'var(--white)' : 'var(--dark-brown)',
+                      fontWeight: 600,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {filteredGallery.length > 0 ? (
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(4, 1fr)', 
+                gap: '1rem' 
+              }}>
+                {filteredGallery.map((item: any, idx: number) => (
+                  <div 
+                    key={idx}
+                    style={{
+                      aspectRatio: '1',
+                      borderRadius: '12px',
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      position: 'relative'
+                    }}
+                    onClick={() => openLightbox(filteredGallery.map((i: any) => i.imageUrl || i.url), idx)}
+                  >
+                    <img 
+                      src={item.imageUrl || item.url} 
+                      alt={item.alt || `Gallery ${idx + 1}`}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }}
+                      onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ 
+                textAlign: 'center', 
+                padding: '4rem 2rem', 
+                background: 'var(--cream)', 
+                borderRadius: '16px' 
+              }}>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📷</div>
+                <h3 style={{ color: 'var(--dark-brown)', marginBottom: '0.5rem' }}>No photos in this category</h3>
+                <p style={{ color: 'var(--text-light)' }}>Check back soon for new moments from The Boma Café.</p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Atmosphere CTA */}
+        <section style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)', padding: 'var(--space-3xl) 5%', textAlign: 'center' }}>
+          <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+            <h2 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', color: 'var(--white)', marginBottom: '1rem' }}>
+              Step Inside The Boma Atmosphere
+            </h2>
+            <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '1.1rem', marginBottom: '2rem', lineHeight: 1.6 }}>
+              Explore our open-air setting, firepit evenings, food moments and celebrations.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+              <Link href="/experience" style={{
+                padding: '1rem 2rem',
+                background: 'var(--white)',
+                color: 'var(--primary)',
+                borderRadius: 'var(--radius-md)',
+                fontWeight: 600,
+                textDecoration: 'none'
+              }}>
+                View Experience
+              </Link>
+              <a href={reservationLink} target="_blank" rel="noopener noreferrer" style={{
+                padding: '1rem 2rem',
+                background: 'transparent',
+                color: 'var(--white)',
+                border: '2px solid var(--white)',
+                borderRadius: 'var(--radius-md)',
+                fontWeight: 600,
+                textDecoration: 'none'
+              }}>
+                Book via WhatsApp
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* Social CTA */}
+        <section style={{ background: 'var(--cream)', padding: 'var(--space-3xl) 5%', textAlign: 'center' }}>
+          <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+            <h2 style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', color: 'var(--dark-brown)', marginBottom: '1.5rem' }}>
+              Follow the atmosphere
+            </h2>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+              <a 
+                href="https://www.instagram.com/the_boma_cafe" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '0.875rem 1.5rem',
+                  borderRadius: '50px',
+                  textDecoration: 'none',
+                  fontWeight: 600,
+                  fontSize: '0.9rem',
+                  background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
+                  color: '#fff',
+                  boxShadow: '0 4px 15px rgba(225, 48, 108, 0.3)'
+                }}
+              >
+                <span>📷</span>
+                <span>Instagram</span>
+              </a>
+              <a 
+                href="https://www.tiktok.com/@thebomacafe" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '0.875rem 1.5rem',
+                  borderRadius: '50px',
+                  textDecoration: 'none',
+                  fontWeight: 600,
+                  fontSize: '0.9rem',
+                  background: '#000',
+                  color: '#fff',
+                  boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3)'
+                }}
+              >
+                <span>🎵</span>
+                <span>TikTok</span>
+              </a>
+              <a 
+                href="https://www.facebook.com/profile.php?id=61552775920918" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '0.875rem 1.5rem',
+                  borderRadius: '50px',
+                  textDecoration: 'none',
+                  fontWeight: 600,
+                  fontSize: '0.9rem',
+                  background: '#1877f2',
+                  color: '#fff',
+                  boxShadow: '0 4px 15px rgba(24, 119, 242, 0.3)'
+                }}
+              >
+                <span>👍</span>
+                <span>Facebook</span>
+              </a>
+            </div>
+          </div>
+        </section>
 
         {/* Lightbox */}
         {lightboxImage && (
@@ -256,130 +453,6 @@ export default function GalleryPage() {
             )}
           </div>
         )}
-
-        {/* Featured Video Section - Premium Design */}
-        <section id="video-section" style={{ background: 'var(--cream)', padding: 'var(--space-2xl) 5%' }}>
-          <div style={{ maxWidth: '950px', margin: '0 auto' }}>
-            <div style={{ textAlign: 'center', marginBottom: 'var(--space-xl)' }}>
-              <button 
-                onClick={() => {
-                  const videoSection = document.getElementById('video-section');
-                  if (videoSection) {
-                    videoSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    setTimeout(() => {
-                      const video = videoSection.querySelector('video');
-                      if (video) video.play().catch(() => {});
-                    }, 500);
-                  }
-                }}
-                style={{
-                  display: 'inline-block',
-                  background: 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)',
-                  padding: '0.4rem 1rem',
-                  borderRadius: 'var(--radius-full)',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  color: 'var(--white)',
-                  marginBottom: '0.75rem',
-                  letterSpacing: '1px',
-                  textTransform: 'uppercase',
-                  cursor: 'pointer',
-                  border: 'none'
-                }}>
-                Watch Now
-              </button>
-              <h2 style={{ fontSize: 'clamp(1.5rem, 3vw, 2.25rem)', color: 'var(--dark-brown)', marginBottom: '0.75rem', marginTop: '0.5rem' }}>
-                Experience The Boma Cafe
-              </h2>
-              <p style={{ color: 'var(--text-light)', fontSize: '1rem' }}>
-                Watch the atmosphere, energy, and experience of The Boma Cafe
-              </p>
-            </div>
-            <div style={{
-              background: 'var(--white)',
-              borderRadius: '20px',
-              overflow: 'hidden',
-              boxShadow: 'var(--shadow-lg)'
-            }}>
-              <video 
-                controls
-                preload="metadata"
-                poster="/images/about.jpg"
-                style={{ width: '100%', height: 'auto', display: 'block' }}
-              >
-                <source src="/videos/gallery.mp4" type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
-            </div>
-            
-            {/* Social Media Buttons - Premium */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: 'var(--space-xl)', flexWrap: 'wrap' }}>
-              <a 
-                href="https://www.instagram.com/the_boma_cafe" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  padding: '0.875rem 1.5rem',
-                  borderRadius: '50px',
-                  textDecoration: 'none',
-                  fontWeight: 600,
-                  fontSize: '0.9rem',
-                  background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
-                  color: '#fff',
-                  boxShadow: '0 4px 15px rgba(225, 48, 108, 0.3)'
-                }}
-              >
-                <i className="fab fa-instagram" style={{ fontSize: '1.1rem' }} />
-                <span>Follow on Instagram</span>
-              </a>
-              <a 
-                href="https://www.tiktok.com/@thebomacafe" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  padding: '0.875rem 1.5rem',
-                  borderRadius: '50px',
-                  textDecoration: 'none',
-                  fontWeight: 600,
-                  fontSize: '0.9rem',
-                  background: '#000',
-                  color: '#fff',
-                  boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3)'
-                }}
-              >
-                <i className="fab fa-tiktok" style={{ fontSize: '1.1rem' }} />
-                <span>Follow on TikTok</span>
-              </a>
-              <a 
-                href="https://www.facebook.com/profile.php?id=61552775920918" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  padding: '0.875rem 1.5rem',
-                  borderRadius: '50px',
-                  textDecoration: 'none',
-                  fontWeight: 600,
-                  fontSize: '0.9rem',
-                  background: '#1877f2',
-                  color: '#fff',
-                  boxShadow: '0 4px 15px rgba(24, 119, 242, 0.3)'
-                }}
-              >
-                <i className="fab fa-facebook-f" style={{ fontSize: '1.1rem' }} />
-                <span>Like on Facebook</span>
-              </a>
-            </div>
-          </div>
-        </section>
       </main>
       <Footer settings={settings} />
     </>
