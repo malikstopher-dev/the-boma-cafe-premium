@@ -109,6 +109,10 @@ body {
 
 /* Mobile Design System - Premium Layer */
 @media (max-width: 768px) {
+  html {
+    scrollbar-gutter: stable;
+  }
+
   :root {
     --mobile-section-title: clamp(1.35rem, 5.5vw, 1.75rem);
     --mobile-body: clamp(0.88rem, 3.2vw, 1rem);
@@ -1075,11 +1079,11 @@ input, textarea, select {
     margin-bottom: 0.25rem !important;
   }
   
-  /* Footer - mobile: let CSS module handle it, just prevent overflow */
+  /* Footer - mobile: let CSS module handle it */
   footer,
   .footer,
   [class*="Footer"] {
-    overflow: hidden !important;
+    overflow: visible !important;
   }
   
   /* Promotions page featured section - reduce padding */

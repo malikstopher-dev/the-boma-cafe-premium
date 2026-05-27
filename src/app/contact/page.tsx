@@ -145,6 +145,12 @@ export default function ContactPage() {
               display: grid !important;
               grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
               gap: 8px !important;
+              width: 100% !important;
+              max-width: 100% !important;
+            }
+            .contact-info-list > div {
+              min-width: 0 !important;
+              width: 100% !important;
             }
             .contact-info-list > div:not(:last-child) {
               flex-direction: column !important;
@@ -152,6 +158,7 @@ export default function ContactPage() {
               text-align: center !important;
               padding: 10px 4px !important;
               gap: 4px !important;
+              display: flex !important;
             }
             .contact-info-list > div:not(:last-child) > div:first-child {
               width: 40px !important;
@@ -162,6 +169,11 @@ export default function ContactPage() {
             }
             .contact-info-list > div:last-child {
               grid-column: span 3 !important;
+              display: flex !important;
+              flex-direction: row !important;
+              align-items: flex-start !important;
+              text-align: left !important;
+              padding: 10px 4px !important;
             }
           }
         `}</style>
