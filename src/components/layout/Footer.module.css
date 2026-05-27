@@ -271,7 +271,8 @@
     display: block !important;
   }
 
-  .mobileBrand {
+  .mobileBrand,
+  .logoText {
     font-family: var(--font-display);
     font-size: clamp(1rem, 3.8vw, 1.15rem);
     line-height: 1.2;
@@ -282,11 +283,21 @@
     box-shadow: none !important;
     background: transparent !important;
     padding: 0 !important;
-    position: relative;
+    position: static;
   }
 
   .mobileBrand::before,
-  .mobileBrand::after {
+  .mobileBrand::after,
+  .logoText::before,
+  .logoText::after,
+  .footer h1::before,
+  .footer h1::after,
+  .footer h2::before,
+  .footer h2::after,
+  .footer h3::before,
+  .footer h3::after,
+  .footer h4::before,
+  .footer h4::after {
     display: none !important;
     content: none !important;
     width: 0 !important;
@@ -294,12 +305,6 @@
     background: transparent !important;
     border: 0 !important;
     position: absolute;
-  }
-
-  .mobileFooterContent .mobileBrand::before,
-  .mobileFooterContent .mobileBrand::after {
-    display: none !important;
-    content: none !important;
   }
 
   .mobileTagline {

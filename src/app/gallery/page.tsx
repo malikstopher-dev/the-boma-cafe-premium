@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Header from '@/components/layout/Header';
@@ -19,57 +19,14 @@ populatedCategories.forEach(cat => {
   images.forEach(img => allImagesFlat.push({ ...img, category: cat.name }));
 });
 
-const featuredImages: { url: string; alt?: string; category: string }[] = [];
-populatedCategories.forEach(cat => {
-  const images = getGalleryImages(cat.id);
-  if (images.length > 0) featuredImages.push({ ...images[0], category: cat.name });
-});
-
 export default function GalleryPage() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [boardSlides, setBoardSlides] = useState<Record<string, number>>({});
-  const [featuredIndex, setFeaturedIndex] = useState(0);
-  const featuredIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const boardIntervalRefs = useRef<Record<string, NodeJS.Timeout>>({});
-
-  const allImages = allImagesFlat;
-
-  useEffect(() => {
-    const init: Record<string, number> = {};
-    populatedCategories.forEach(cat => { init[cat.id] = 0; });
-    setBoardSlides(init);
-  }, []);
-
-  useEffect(() => {
-    if (featuredIntervalRef.current) clearInterval(featuredIntervalRef.current);
-    featuredIntervalRef.current = setInterval(() => {
-      setFeaturedIndex(prev => (prev + 1) % featuredImages.length);
-    }, 5000);
-    return () => { if (featuredIntervalRef.current) clearInterval(featuredIntervalRef.current); };
-  }, []);
-
-  useEffect(() => {
-    populatedCategories.forEach(cat => {
-      const images = getGalleryImages(cat.id);
-      if (images.length <= 1) return;
-      if (boardIntervalRefs.current[cat.id]) clearInterval(boardIntervalRefs.current[cat.id]);
-      boardIntervalRefs.current[cat.id] = setInterval(() => {
-        setBoardSlides(prev => ({
-          ...prev,
-          [cat.id]: ((prev[cat.id] ?? 0) + 1) % images.length
-        }));
-      }, 3500);
-    });
-    return () => {
-      Object.values(boardIntervalRefs.current).forEach(clearInterval);
-    };
-  }, []);
 
   const filteredImages = activeCategory === 'All'
-    ? allImages
-    : allImages.filter(img => img.category === activeCategory);
+    ? allImagesFlat
+    : allImagesFlat.filter(img => img.category === activeCategory);
 
   const openLightbox = useCallback((images: string[], index: number) => {
     setLightboxImages(images);
@@ -89,13 +46,6 @@ export default function GalleryPage() {
     setLightboxIndex(prev => prev < lightboxImages.length - 1 ? prev + 1 : 0);
   }, [lightboxImages.length]);
 
-  const handleCategoryClick = useCallback((cat: string) => {
-    setActiveCategory(cat);
-    setTimeout(() => {
-      document.getElementById('gallery-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
-  }, []);
-
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Escape') closeLightbox();
     if (e.key === 'ArrowLeft') goToPrev();
@@ -114,111 +64,6 @@ export default function GalleryPage() {
           title="Gallery"
           subtitle="Food, fire, people, music and open-air moments at The Boma Cafe."
         />
-
-        {/* Featured Cinematic Slideshow */}
-        <section className={styles.featuredSection}>
-          <div className={styles.featuredContainer}>
-            {featuredImages.map((img, idx) => (
-              <div
-                key={`featured-${idx}`}
-                className={`${styles.featuredSlide} ${idx === featuredIndex ? styles.featuredActive : ''}`}
-                onClick={() => openLightbox(featuredImages.map(i => i.url), idx)}
-              >
-                <Image
-                  src={img.url}
-                  alt={img.alt || 'Featured gallery'}
-                  fill
-                  sizes="100vw"
-                  priority={idx === 0}
-                  className={styles.featuredImg}
-                />
-              </div>
-            ))}
-            <div className={styles.featuredOverlay} />
-            <div className={styles.featuredContent}>
-              <span className={styles.featuredBadge}>Featured</span>
-              <h2 className={styles.featuredTitle}>Moments at The Boma</h2>
-              <p className={styles.featuredDesc}>Every visit tells a story</p>
-            </div>
-            <button
-              className={`${styles.featuredNav} ${styles.featuredPrev}`}
-              onClick={(e) => { e.stopPropagation(); setFeaturedIndex(prev => prev > 0 ? prev - 1 : featuredImages.length - 1); }}
-              aria-label="Previous"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-            </button>
-            <button
-              className={`${styles.featuredNav} ${styles.featuredNext}`}
-              onClick={(e) => { e.stopPropagation(); setFeaturedIndex(prev => (prev + 1) % featuredImages.length); }}
-              aria-label="Next"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-            </button>
-            <div className={styles.featuredDots}>
-              {featuredImages.map((_, idx) => (
-                <button
-                  key={idx}
-                  className={`${styles.featuredDot} ${idx === featuredIndex ? styles.featuredDotActive : ''}`}
-                  onClick={(e) => { e.stopPropagation(); setFeaturedIndex(idx); }}
-                  aria-label={`Slide ${idx + 1}`}
-                />
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Category Boards */}
-        <section className={styles.boardsSection}>
-          <div className={styles.boardsHeader}>
-            <h2 className={styles.sectionTitle}>Explore by Category</h2>
-            <p className={styles.sectionSubtitle}>Browse through our collection of moments</p>
-          </div>
-          <div className={styles.boardsGrid}>
-            {populatedCategories.map(cat => {
-              const images = getGalleryImages(cat.id);
-              const currentSlide = boardSlides[cat.id] ?? 0;
-              return (
-                <div
-                  key={cat.id}
-                  className={styles.boardCard}
-                  onClick={() => { handleCategoryClick(cat.name); }}
-                >
-                  <div className={styles.boardPreview}>
-                    {images.length > 0 ? (
-                      <>
-                        {images.map((img, idx) => (
-                          <div
-                            key={`${cat.id}-slide-${idx}`}
-                            className={`${styles.boardSlide} ${idx === currentSlide ? styles.boardSlideActive : ''}`}
-                            style={{ backgroundImage: `url(${img.url})` }}
-                          />
-                        ))}
-                        <div className={styles.boardOverlay}>
-                          <span className={styles.boardName}>{cat.name}</span>
-                          <span className={styles.boardCount}>{images.length} photo{images.length !== 1 ? 's' : ''}</span>
-                        </div>
-                        {images.length > 1 && (
-                          <div className={styles.boardDots}>
-                            {images.map((_, idx) => (
-                              <span
-                                key={idx}
-                                className={`${styles.boardDot} ${idx === currentSlide ? styles.boardDotActive : ''}`}
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <div className={styles.boardEmpty}>
-                        <span>No images</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
 
         {/* Gallery Grid with Filter */}
         <section id="gallery-grid" className={styles.gridSection}>

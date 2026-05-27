@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -155,85 +156,125 @@ export default function ExperiencePage() {
           </div>
         </section>
 
-        {/* 4. WEEKEND BUFFET FEATURE */}
+        {/* 4. WEEKEND BREAKFAST BUFFET — Premium Compact Card */}
         <section style={{ 
-          background: 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)', 
-          padding: 'var(--space-3xl) 5%',
-          textAlign: 'center'
+          background: 'var(--beige)', 
+          padding: 'var(--space-2xl) 5%',
         }}>
-          <div className="container">
+          <div className="container" style={{ maxWidth: '960px', margin: '0 auto' }}>
             <div style={{
-              display: 'inline-block',
-              background: 'var(--warm)',
-              padding: '0.4rem 1rem',
-              borderRadius: 'var(--radius-full)',
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              color: 'var(--dark-brown)',
-              marginBottom: '1.25rem',
-              letterSpacing: '1px',
-              textTransform: 'uppercase'
+              display: 'flex',
+              flexWrap: 'wrap',
+              background: 'var(--white)',
+              borderRadius: 'var(--radius-lg)',
+              overflow: 'hidden',
+              boxShadow: 'var(--shadow-md)',
             }}>
-              Weekend Breakfast Buffet
-            </div>
-            <h2 style={{ 
-              fontSize: 'clamp(2rem, 5vw, 3rem)', 
-              color: 'var(--white)', 
-              marginBottom: '1rem',
-              fontFamily: 'var(--font-display)'
-            }}>
-              Saturday & Sunday
-            </h2>
-            <p style={{ 
-              color: 'var(--cream)', 
-              fontSize: '1.25rem',
-              marginBottom: '0.5rem'
-            }}>
-              9:30 AM — 12:30 PM
-            </p>
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
-              gap: '2rem', 
-              marginBottom: '2rem',
-              flexWrap: 'wrap'
-            }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--white)' }}>R89</div>
-                <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)' }}>Adults</div>
+              {/* Image side */}
+              <div style={{
+                flex: '1 1 280px',
+                position: 'relative',
+                minHeight: '220px',
+              }}>
+                <Image
+                  src="/gallery/weekend-buffet.jpg"
+                  alt="Weekend Breakfast Buffet at The Boma Café"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 280px"
+                  style={{ objectFit: 'cover' }}
+                />
               </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--white)' }}>R45</div>
-                <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)' }}>Kids</div>
+              {/* Content side */}
+              <div style={{
+                flex: '1 1 350px',
+                padding: 'var(--space-xl)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                gap: '0.65rem',
+              }}>
+                <span style={{
+                  display: 'inline-block',
+                  background: 'var(--primary)',
+                  color: 'var(--white)',
+                  padding: '0.3rem 0.85rem',
+                  borderRadius: 'var(--radius-full)',
+                  fontSize: '0.65rem',
+                  fontWeight: 600,
+                  letterSpacing: '1.5px',
+                  textTransform: 'uppercase',
+                  width: 'fit-content',
+                }}>
+                  Weekend Breakfast Buffet
+                </span>
+
+                <h3 style={{
+                  fontSize: 'clamp(1.25rem, 2.5vw, 1.65rem)',
+                  color: 'var(--dark-brown)',
+                  fontFamily: 'var(--font-display)',
+                  lineHeight: 1.2,
+                  margin: 0,
+                }}>
+                  Saturday & Sunday
+                </h3>
+
+                <p style={{
+                  color: 'var(--text-muted)',
+                  fontSize: '0.9rem',
+                  fontWeight: 500,
+                  margin: 0,
+                }}>
+                  9:30 AM – 12:30 PM
+                </p>
+
+                <p style={{
+                  color: 'var(--text)',
+                  fontSize: '0.85rem',
+                  lineHeight: 1.6,
+                  margin: '0.15rem 0',
+                }}>
+                  Fresh pastries, hot breakfast items, fruit spreads, juices, and more.
+                </p>
+
+                <div style={{
+                  display: 'flex',
+                  gap: '1.5rem',
+                  alignItems: 'center',
+                  marginTop: '0.15rem',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.3rem' }}>
+                    <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--primary)' }}>R89</span>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Adults</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.3rem' }}>
+                    <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--primary)' }}>R45</span>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Kids</span>
+                  </div>
+                </div>
+
+                <a
+                  href={reservationLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0.65rem 1.5rem',
+                    background: 'var(--primary)',
+                    color: 'var(--white)',
+                    borderRadius: 'var(--radius-md)',
+                    fontWeight: 600,
+                    fontSize: '0.85rem',
+                    textDecoration: 'none',
+                    width: 'fit-content',
+                    marginTop: '0.15rem',
+                  }}
+                >
+                  Book via WhatsApp
+                </a>
               </div>
             </div>
-            <p style={{ 
-              color: 'rgba(255,255,255,0.7)', 
-              fontSize: '0.9rem',
-              marginBottom: '2rem',
-              maxWidth: '500px',
-              margin: '0 auto 2rem'
-            }}>
-              Fresh pastries, hot breakfast items, fruit spreads, juices, and more
-            </p>
-            <a 
-              href={reservationLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'inline-block',
-                padding: '1rem 2.5rem',
-                background: 'var(--white)',
-                color: 'var(--primary)',
-                borderRadius: 'var(--radius-md)',
-                fontWeight: 600,
-                fontSize: '1rem',
-                textDecoration: 'none',
-                transition: 'all 0.3s ease'
-              }}
-            >
-              Book via WhatsApp
-            </a>
           </div>
         </section>
 
