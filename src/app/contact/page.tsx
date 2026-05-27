@@ -7,6 +7,7 @@ import { dataService, generateId } from '@/lib/data';
 import { siteSettingsService } from '@/lib/siteSettings';
 import { businessInfo, getReservationLink, getEventEnquiryLink } from '@/data/businessInfo';
 import PremiumHero from '@/components/ui/PremiumHero';
+import WhatsAppIcon from '@/components/icons/WhatsAppIcon';
 
 export default function ContactPage() {
   const [settings, setSettings] = useState<any>(null);
@@ -116,7 +117,7 @@ export default function ContactPage() {
                   transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                 }}
               >
-                <span style={{ fontSize: '2rem' }}>💬</span>
+                <WhatsAppIcon size={32} color="#fff" />
                 <div>
                   <strong style={{ color: 'var(--white)', display: 'block', fontSize: '1.1rem' }}>Order / Chat</strong>
                   <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.85rem' }}>Start an order via WhatsApp</span>
@@ -298,7 +299,7 @@ export default function ContactPage() {
                     boxShadow: '0 4px 12px rgba(37, 211, 102, 0.3)',
                   }}
                 >
-                  <i className="fab fa-whatsapp" /> Chat on WhatsApp
+                  <WhatsAppIcon size={20} color="#fff" ariaLabel="Chat on WhatsApp" /> Chat on WhatsApp
                 </a>
               </div>
 

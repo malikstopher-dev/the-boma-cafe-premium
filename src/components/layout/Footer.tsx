@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { cmsService } from '@/lib/client-cms';
 import { BUSINESS_INFO } from '@/lib/whatsappConfig';
 import styles from './Footer.module.css';
+import WhatsAppIcon from '@/components/icons/WhatsAppIcon';
 
 interface FooterProps {
   settings?: any;
@@ -120,7 +121,7 @@ export default function Footer({ settings, branding }: FooterProps) {
                   <span className={styles.contactText}>Mon-Sun: 8:00 AM - 10:00 PM</span>
                 </div>
                 <a href={`https://wa.me/${BUSINESS_INFO.phoneRaw}`} target="_blank" rel="noopener noreferrer" className={styles.contactItem}>
-                  <span className={styles.icon}>💬</span>
+                  <WhatsAppIcon size={18} color="#25D366" />
                   <span className={styles.contactText}>WhatsApp Order</span>
                 </a>
               </div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import styles from './Header.module.css';
+import WhatsAppIcon from '@/components/icons/WhatsAppIcon';
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -107,7 +108,7 @@ export default function Header() {
                 <span>Call</span>
               </a>
               <a href="https://wa.me/27729962212" target="_blank" rel="noopener noreferrer" className={styles.mobileCtaBtn}>
-                <i className="fab fa-whatsapp" />
+                <WhatsAppIcon size={20} ariaLabel="Chat on WhatsApp" />
                 <span>WhatsApp</span>
               </a>
             </div>

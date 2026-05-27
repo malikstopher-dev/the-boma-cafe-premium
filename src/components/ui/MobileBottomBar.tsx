@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { BUSINESS_INFO } from '@/lib/whatsappConfig';
 import styles from './MobileBottomBar.module.css';
+import WhatsAppIcon from '@/components/icons/WhatsAppIcon';
 
 export default function MobileBottomBar() {
   return (
@@ -17,7 +18,7 @@ export default function MobileBottomBar() {
         rel="noopener noreferrer"
         className={styles.action}
       >
-        <i className="fab fa-whatsapp" />
+        <WhatsAppIcon size={22} ariaLabel="Chat on WhatsApp" />
         <span>WhatsApp</span>
       </a>
       <Link href="/menu" className={styles.action}>

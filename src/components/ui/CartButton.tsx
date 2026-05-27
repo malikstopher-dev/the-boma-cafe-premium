@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useCart } from '@/lib/cart';
 import { formatWhatsAppUrl, generateOrderMessage, BUSINESS_INFO } from '@/lib/whatsappConfig';
+import WhatsAppIcon from '@/components/icons/WhatsAppIcon';
 
 export default function CartButton() {
   const { items, total, addItem, removeItem, updateQuantity, clearCart, isCartOpen, openCart, closeCart } = useCart();
@@ -96,7 +97,7 @@ export default function CartButton() {
           className="mobile-cta-button"
           title="Order via WhatsApp"
         >
-          <i className="fab fa-whatsapp" style={{ color: '#fff', fontSize: '1.75rem' }} />
+           <WhatsAppIcon size={28} color="#fff" ariaLabel="Order via WhatsApp" />
        </a>
 
       {/* Cart Button */}
@@ -313,7 +314,7 @@ export default function CartButton() {
                     gap: '0.5rem',
                   }}
                 >
-                  <i className="fab fa-whatsapp" /> Order via WhatsApp
+                  <WhatsAppIcon size={20} color="#fff" /> Order via WhatsApp
                 </button>
               </>
             )}
