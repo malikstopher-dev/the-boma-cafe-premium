@@ -915,7 +915,7 @@
     padding-top: 70px;
     width: 100%;
     max-width: 100%;
-    overflow-x: hidden;
+    overflow: hidden;
   }
   
   .hero {
@@ -941,7 +941,7 @@
     top: 0;
     width: 100%;
     max-width: 100%;
-    overflow-x: hidden;
+    overflow: hidden;
   }
   
   .searchRow {
@@ -978,7 +978,7 @@
     z-index: 80;
     width: 100%;
     max-width: 100%;
-    overflow-x: hidden;
+    overflow: hidden;
     background: rgba(245, 230, 211, 0.98);
   }
   
@@ -1012,7 +1012,7 @@
     padding: var(--space-md) 4%;
     width: 100%;
     max-width: 100%;
-    overflow-x: hidden;
+    overflow: hidden;
   }
   
   .categorySection {

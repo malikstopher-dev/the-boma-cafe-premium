@@ -134,7 +134,7 @@ body {
   .section {
     padding: var(--mobile-section-pad) !important;
     max-width: 100%;
-    overflow-x: hidden;
+    overflow: hidden;
   }
   
   .container {
@@ -152,11 +152,8 @@ body {
     line-height: 1.5;
   }
   
-  .flex-container,
-  [style*="display: flex"],
-  [style*="display:grid"] {
+  .flex-container {
     max-width: 100%;
-    overflow-x: hidden;
   }
   
   .btn {
@@ -888,7 +885,7 @@ input, textarea, select {
     padding: var(--space-2xl) 4% !important;
     width: 100%;
     max-width: 100%;
-    overflow-x: hidden;
+    overflow: hidden;
   }
   
   /* Containers */
@@ -1082,7 +1079,7 @@ input, textarea, select {
   footer,
   .footer,
   [class*="Footer"] {
-    overflow-x: hidden !important;
+    overflow: hidden !important;
   }
   
   /* Promotions page featured section - reduce padding */

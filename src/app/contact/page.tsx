@@ -141,6 +141,28 @@ export default function ContactPage() {
             .contact-info-text { font-size: clamp(0.82rem, 3vw, 0.9rem) !important; }
             .contact-section h2 { font-size: clamp(1.3rem, 5vw, 1.5rem) !important; }
             .contact-cta-btn { padding: 0.85rem 1.25rem !important; font-size: clamp(0.85rem, 3vw, 0.95rem) !important; min-height: 48px !important; }
+            .contact-info-list {
+              display: grid !important;
+              grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+              gap: 8px !important;
+            }
+            .contact-info-list > div:not(:last-child) {
+              flex-direction: column !important;
+              align-items: center !important;
+              text-align: center !important;
+              padding: 10px 4px !important;
+              gap: 4px !important;
+            }
+            .contact-info-list > div:not(:last-child) > div:first-child {
+              width: 40px !important;
+              height: 40px !important;
+            }
+            .contact-info-list > div:not(:last-child) > div:last-child span {
+              display: none !important;
+            }
+            .contact-info-list > div:last-child {
+              grid-column: span 3 !important;
+            }
           }
         `}</style>
         <section className="contact-section" style={{ background: 'var(--white)', padding: 'var(--space-3xl) 5%' }}>
@@ -149,7 +171,7 @@ export default function ContactPage() {
               {/* Info */}
               <div>
                 <h2 style={{ fontSize: '1.75rem', color: 'var(--dark-brown)', marginBottom: '2rem', fontFamily: 'var(--font-display)' }}>Contact Information</h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+                <div className="contact-info-list" style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
                   {/* Address - NAP Consistent */}
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
                     <div style={{ 
