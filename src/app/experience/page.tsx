@@ -70,6 +70,56 @@ export default function ExperiencePage() {
           />
         </div>
 
+        {/* VIDEO EXPERIENCE — Immediately after hero */}
+        <section style={{ background: 'var(--cream)', padding: 'var(--space-2xl) 5%' }}>
+          <div style={{ maxWidth: '1050px', margin: '0 auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: 'var(--space-lg)' }}>
+              <span style={{
+                display: 'inline-block',
+                background: 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)',
+                padding: '0.35rem 1rem',
+                borderRadius: 'var(--radius-full)',
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                color: 'var(--white)',
+                letterSpacing: '1.5px',
+                textTransform: 'uppercase',
+                marginBottom: '0.75rem',
+              }}>
+                Watch Now
+              </span>
+              <h2 style={{ fontSize: 'clamp(1.4rem, 3vw, 2rem)', color: 'var(--dark-brown)', marginBottom: '0.5rem', fontFamily: 'var(--font-display)' }}>
+                Experience The Boma Caf&eacute;
+              </h2>
+              <p style={{ color: 'var(--text-light)', fontSize: '0.95rem', maxWidth: '520px', margin: '0 auto' }}>
+                Watch the atmosphere, energy, and experience of The Boma Caf&eacute;
+              </p>
+            </div>
+            <div style={{
+              background: 'var(--white)',
+              borderRadius: '16px',
+              overflow: 'hidden',
+              boxShadow: '0 8px 30px rgba(26, 15, 10, 0.10)',
+              maxWidth: '1000px',
+              margin: '0 auto',
+              aspectRatio: '16 / 9',
+            }}>
+              <video
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                poster="/images/about.jpg"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              >
+                <source src="/videos/gallery.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          </div>
+        </section>
+
         {/* 2. INTRO SECTION */}
         <section style={{ background: 'var(--cream)', padding: 'var(--space-3xl) 5%', textAlign: 'center' }}>
           <div className="container">
@@ -311,63 +361,6 @@ export default function ExperiencePage() {
             <Link href="/events" className="btn btn-primary" style={{ padding: '1rem 2.5rem' }}>
               View Events & Venue Hire
             </Link>
-          </div>
-        </section>
-
-        {/* 6. VIDEO EXPERIENCE */}
-        <section id="video-section" style={{ background: 'var(--cream)', padding: 'var(--space-3xl) 5%' }}>
-          <div style={{ maxWidth: '950px', margin: '0 auto' }}>
-            <div style={{ textAlign: 'center', marginBottom: 'var(--space-xl)' }}>
-              <button 
-                onClick={() => {
-                  const videoSection = document.getElementById('video-section');
-                  if (videoSection) {
-                    videoSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    setTimeout(() => {
-                      const video = videoSection.querySelector('video');
-                      if (video) video.play().catch(() => {});
-                    }, 500);
-                  }
-                }}
-                style={{
-                  display: 'inline-block',
-                  background: 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)',
-                  padding: '0.4rem 1rem',
-                  borderRadius: 'var(--radius-full)',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  color: 'var(--white)',
-                  marginBottom: '0.75rem',
-                  letterSpacing: '1px',
-                  textTransform: 'uppercase',
-                  cursor: 'pointer',
-                  border: 'none'
-                }}>
-                Watch Now
-              </button>
-              <h2 style={{ fontSize: 'clamp(1.5rem, 3vw, 2.25rem)', color: 'var(--dark-brown)', marginBottom: '0.75rem', marginTop: '0.5rem' }}>
-                Experience The Boma Café
-              </h2>
-              <p style={{ color: 'var(--text-light)', fontSize: '1rem' }}>
-                Watch the atmosphere, energy, and experience of The Boma Café
-              </p>
-            </div>
-            <div style={{
-              background: 'var(--white)',
-              borderRadius: '20px',
-              overflow: 'hidden',
-              boxShadow: '0 10px 40px rgba(26, 15, 10, 0.12)'
-            }}>
-              <video 
-                controls
-                preload="metadata"
-                poster="/images/about.jpg"
-                style={{ width: '100%', height: 'auto', display: 'block' }}
-              >
-                <source src="/videos/gallery.mp4" type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
-            </div>
           </div>
         </section>
 

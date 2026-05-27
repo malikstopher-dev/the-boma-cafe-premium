@@ -112,7 +112,7 @@ export default function Footer({ settings, branding }: FooterProps) {
                 <div className={styles.contactItem}>
                   <span className={styles.icon}>📍</span>
                   <span className={styles.contactText}>
-                    {BUSINESS_INFO.address.street}
+                    {BUSINESS_INFO.address.street},{' '}
                     <span className={styles.addressDetail}>{BUSINESS_INFO.address.suburb}, {BUSINESS_INFO.address.city}, {BUSINESS_INFO.address.postalCode}</span>
                   </span>
                 </div>
