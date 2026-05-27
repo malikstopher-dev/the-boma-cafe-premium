@@ -109,8 +109,8 @@ body {
 
 /* Mobile Design System - Premium Layer */
 @media (max-width: 768px) {
-  html {
-    scrollbar-gutter: stable;
+  .scrollIndicator {
+    display: none !important;
   }
 
   :root {

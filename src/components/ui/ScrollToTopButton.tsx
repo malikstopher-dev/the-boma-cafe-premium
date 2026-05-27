@@ -24,6 +24,7 @@ export default function ScrollIndicator() {
 
   return (
     <div
+      className="scrollIndicator"
       style={{
         position: 'fixed',
         right: '12px',
