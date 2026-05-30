@@ -138,7 +138,7 @@ export default function PopupModal({ popup }: PopupProps) {
               </a>
             ))}
             <a 
-              href="https://wa.me/27729961190" 
+              href="https://wa.me/27715921190" 
               target="_blank" 
               rel="noopener noreferrer"
               className="btn btn-whatsapp"

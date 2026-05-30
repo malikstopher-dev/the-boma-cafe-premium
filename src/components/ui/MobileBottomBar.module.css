@@ -30,7 +30,7 @@
     align-items: center;
     justify-content: center;
     gap: 3px;
-    font-size: 11px;
+    font-size: 12px;
     line-height: 1.1;
     text-decoration: none;
     color: var(--brown-secondary);
@@ -46,7 +46,7 @@
   }
 
   .action i {
-    font-size: 18px;
+    font-size: 20px;
   }
 
   .action[href*="wa.me"] i {

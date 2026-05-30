@@ -84,6 +84,7 @@ export default function Footer({ settings, branding }: FooterProps) {
               <nav className={styles.nav}>
                 {[
                   { label: 'Home', href: '/' },
+                  { label: 'About', href: '/about' },
                   { label: 'Menu', href: '/menu' },
                   { label: 'Experience', href: '/experience' },
                   { label: 'Events & Venue Hire', href: '/events' },
@@ -118,7 +119,7 @@ export default function Footer({ settings, branding }: FooterProps) {
                 </div>
                 <div className={styles.contactItem}>
                   <span className={styles.icon}>🕐</span>
-                  <span className={styles.contactText}>Mon-Sun: 8:00 AM - 10:00 PM</span>
+                  <span className={styles.contactText}>Mon-Sun: 10:00 AM - 10:00 PM</span>
                 </div>
                 <a href={`https://wa.me/${BUSINESS_INFO.phoneRaw}`} target="_blank" rel="noopener noreferrer" className={styles.contactItem}>
                   <WhatsAppIcon size={18} color="#25D366" />

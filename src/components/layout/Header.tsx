@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import styles from './Header.module.css';
 import WhatsAppIcon from '@/components/icons/WhatsAppIcon';
+import { BUSINESS_INFO } from '@/lib/whatsappConfig';
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -66,7 +67,7 @@ export default function Header() {
               </Link>
             ))}
             <div className={styles.icons}>
-              <a href="tel:0715921190" className={styles.icon} title="Call Us">
+              <a href={`tel:${BUSINESS_INFO.phoneRaw}`} className={styles.icon} title="Call Us">
                 <i className="fas fa-phone" style={{ fontSize: '0.8rem' }} />
               </a>
               <a href="mailto:info@thebomacafe.co.za" className={styles.icon} title="Email Us">
@@ -103,11 +104,11 @@ export default function Header() {
               ))}
             </nav>
             <div className={styles.mobileCtaRow}>
-              <a href={`tel:0715921190`} className={styles.mobileCtaBtn}>
+              <a href={`tel:${BUSINESS_INFO.phoneRaw}`} className={styles.mobileCtaBtn}>
                 <i className="fas fa-phone" />
                 <span>Call</span>
               </a>
-              <a href="https://wa.me/27729962212" target="_blank" rel="noopener noreferrer" className={styles.mobileCtaBtn}>
+              <a href={`https://wa.me/${BUSINESS_INFO.phoneRaw}`} target="_blank" rel="noopener noreferrer" className={styles.mobileCtaBtn}>
                 <WhatsAppIcon size={20} ariaLabel="Chat on WhatsApp" />
                 <span>WhatsApp</span>
               </a>

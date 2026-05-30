@@ -531,7 +531,7 @@ export default function EventsPage() {
               Ready to book or enquire?
             </h2>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-              <a href="tel:0715921190" className="btn btn-primary" style={{ padding: '1rem 2rem' }}>
+              <a href="tel:+27715921190" className="btn btn-primary" style={{ padding: '1rem 2rem' }}>
                 Call Us
               </a>
               <a href={eventEnquiryLink} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '1rem 2rem' }}>

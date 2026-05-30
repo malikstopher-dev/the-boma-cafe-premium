@@ -347,7 +347,7 @@ export default function Home() {
                 <div className={styles.reservationInfoItem}>
                   <span className={styles.reservationInfoIcon}>📞</span>
                   <strong>Call Us</strong>
-                  <a href="tel:0715921190">071 592 1190</a>
+                  <a href="tel:+27715921190">071 592 1190</a>
                 </div>
                 <div className={styles.reservationInfoItem}>
                   <span className={styles.reservationInfoIcon}>✉️</span>

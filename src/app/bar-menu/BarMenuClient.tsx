@@ -415,7 +415,7 @@ export default function BarMenuClient() {
                 Contact Us
               </a>
               <a 
-                href="https://wa.me/27729961190" 
+                href="https://wa.me/27715921190" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 style={{

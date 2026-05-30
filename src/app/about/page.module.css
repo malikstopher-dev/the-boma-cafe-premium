@@ -275,8 +275,8 @@
   background: linear-gradient(135deg, #C56A2D, #D4AF37);
   border-radius: 14px;
   display: flex;
-  alignItems: center;
-  justifyContent: center;
+  align-items: center;
+  justify-content: center;
   margin: 0 auto 0.75rem;
   font-size: 1.5rem;
 }
