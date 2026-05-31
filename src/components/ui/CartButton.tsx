@@ -20,6 +20,17 @@ export default function CartButton() {
     setIsClient(true);
   }, []);
 
+  useEffect(() => {
+    if (isCartOpen) {
+      document.body.classList.add('modalOpen');
+    } else {
+      document.body.classList.remove('modalOpen');
+    }
+    return () => {
+      document.body.classList.remove('modalOpen');
+    };
+  }, [isCartOpen]);
+
   if (!isClient) return null;
 
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);

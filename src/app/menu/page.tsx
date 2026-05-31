@@ -81,6 +81,17 @@ function OptionModal({ item, isOpen, onClose, onAddToCart }: OptionModalProps) {
   const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('modalOpen');
+    } else {
+      document.body.classList.remove('modalOpen');
+    }
+    return () => {
+      document.body.classList.remove('modalOpen');
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const totalPrice = calculateItemTotal(item, selectedSize, selectedAddOns);
@@ -488,7 +499,7 @@ export default function MenuPage() {
         onOpenCart={handleContinueToCart}
       />
 
-      {cartItems.length > 0 && (
+      {cartItems.length > 0 && !selectedItem && !showUpsellModal && (
         <button
           className={styles.desktopFloatingCart}
           onClick={openCart}
