@@ -45,9 +45,9 @@
   inset: 0;
   background: linear-gradient(
     180deg,
-    rgba(26, 15, 10, 0.5) 0%,
-    rgba(26, 15, 10, 0.3) 50%,
-    rgba(26, 15, 10, 0.6) 100%
+    rgba(26, 15, 10, 0.6) 0%,
+    rgba(26, 15, 10, 0.35) 50%,
+    rgba(26, 15, 10, 0.7) 100%
   );
 }
 
@@ -74,22 +74,25 @@
   letter-spacing: 4px;
   text-transform: uppercase;
   margin-bottom: 1rem;
-  color: var(--warm);
+  color: #FFFFFF;
   font-weight: 500;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
 }
 
 .title {
   font-size: clamp(2.5rem, 6vw, 4.5rem);
   margin-bottom: 1.5rem;
   line-height: 1.2;
-  color: var(--white);
+  color: #FFFFFF;
+  text-shadow: 0 3px 20px rgba(0, 0, 0, 0.4);
 }
 
 .tagline {
   font-size: clamp(1.1rem, 2vw, 1.4rem);
   font-style: italic;
-  color: var(--cream);
+  color: #FFFFFF;
   margin-bottom: 2.5rem;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
 }
 
 .cta {
@@ -97,6 +100,17 @@
   gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
+}
+
+.cta :global(.btn-ghost) {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.cta :global(.btn-ghost:hover) {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 .nav {
@@ -138,7 +152,7 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  color: rgba(255, 255, 255, 0.6);
+  color: #FFFFFF;
   z-index: 20;
   animation: bounce 3s ease-in-out infinite;
   will-change: transform;
