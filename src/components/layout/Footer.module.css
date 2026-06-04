@@ -74,7 +74,6 @@
   width: 40px;
   height: 40px;
   background: rgba(107,94,74,0.15);
-  backdrop-filter: blur(10px);
   border-radius: 10px;
   color: var(--brown-heading);
   transition: all 0.3s ease;
@@ -145,7 +144,6 @@
   width: 32px;
   height: 32px;
   background: rgba(107,94,74,0.1);
-  backdrop-filter: blur(10px);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -254,7 +252,7 @@
     width: 100%;
     max-width: 100%;
     padding: 0;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .container {
@@ -271,15 +269,10 @@
     object-fit: contain !important;
     margin: 0 auto 4px !important;
     display: block !important;
-    filter: none !important;
   }
 
-  .footer::before {
-    display: none !important;
-    content: none !important;
-  }
-
-  .mobileBrand {
+  .mobileBrand,
+  .logoText {
     font-family: var(--font-display);
     font-size: clamp(1rem, 3.8vw, 1.15rem);
     line-height: 1.2;
@@ -290,12 +283,28 @@
     box-shadow: none !important;
     background: transparent !important;
     padding: 0 !important;
+    position: static;
   }
 
   .mobileBrand::before,
-  .mobileBrand::after {
+  .mobileBrand::after,
+  .logoText::before,
+  .logoText::after,
+  .footer h1::before,
+  .footer h1::after,
+  .footer h2::before,
+  .footer h2::after,
+  .footer h3::before,
+  .footer h3::after,
+  .footer h4::before,
+  .footer h4::after {
     display: none !important;
     content: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    position: absolute;
   }
 
   .mobileTagline {
@@ -327,6 +336,32 @@
   }
 
   .mobileFooterLink:hover {
+    color: var(--primary);
+  }
+
+  .mobileSocialRow {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    margin: 4px 0;
+  }
+
+  .mobileSocialLink {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: rgba(107,94,74,0.15);
+    border-radius: 8px;
+    color: var(--brown-heading);
+    transition: all 0.3s ease;
+    text-decoration: none;
+  }
+
+  .mobileSocialLink:hover {
+    background: rgba(107,94,74,0.25);
     color: var(--primary);
   }
 
