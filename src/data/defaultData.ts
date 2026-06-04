@@ -1761,7 +1761,7 @@ export const defaultMenuItems: MenuItem[] = [
     order: 14,
     isOutOfStock: false,
     isFeatured: false,
-    image: '/menu/black olive pizza gourmet restaurant.jpg',
+    image: '/menu/black-olive-pizza-gourmet-restaurant.jpg',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   },

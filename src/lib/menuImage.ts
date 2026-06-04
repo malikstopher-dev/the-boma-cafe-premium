@@ -95,7 +95,7 @@ const LEGACY_IMAGE_MAP: Record<string, string> = {
   'Pizza Extra: Mushrooms': '/menu/Pizza-Extra-Mushrooms.jpg',
   'Pizza Extra: Peppers': '/menu/Pizza-Extra-Peppers.jpg',
   'Pizza Extra: Cheese': '/menu/pizza-extra-cheese.jpg',
-  'Pizza Extra: Olives': '/menu/black olive pizza gourmet restaurant.jpg',
+  'Pizza Extra: Olives': '/menu/black-olive-pizza-gourmet-restaurant.jpg',
   'Pizza Extra: Bacon': '/menu/beacon.jpg',
   'Cheese Cake': '/menu/Cheese-Cake.jpg',
   'Carrot Cake': '/menu/Carrot-Cake.jpg',
