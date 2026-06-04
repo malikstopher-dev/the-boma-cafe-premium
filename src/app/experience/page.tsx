@@ -7,12 +7,12 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { cmsService } from '@/lib/client-cms';
 import PremiumHero from '@/components/ui/PremiumHero';
+import VideoPlayer from '@/components/ui/VideoPlayer';
 import { getReservationLink } from '@/data/businessInfo';
 
 export default function ExperiencePage() {
   const [settings, setSettings] = useState<any>(null);
   const [expSettings, setExpSettings] = useState<any>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const videoContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,27 +28,6 @@ export default function ExperiencePage() {
       }
     };
     loadData();
-  }, []);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            video.play().catch(() => {});
-          } else {
-            video.pause();
-          }
-        });
-      },
-      { threshold: 0.25 }
-    );
-
-    observer.observe(video);
-    return () => observer.disconnect();
   }, []);
 
   const scrollToVideo = useCallback(() => {
@@ -137,21 +116,11 @@ export default function ExperiencePage() {
               boxShadow: '0 8px 30px rgba(26, 15, 10, 0.10)',
               maxWidth: '1000px',
               margin: '0 auto',
-              aspectRatio: '16 / 9',
             }}>
-              <video
-                ref={videoRef}
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="metadata"
+              <VideoPlayer
+                src="/videos/gallery.mp4"
                 poster="/images/about.jpg"
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-              >
-                <source src="/videos/gallery.mp4" type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
+              />
             </div>
           </div>
         </section>
