@@ -333,7 +333,7 @@ input, textarea, select {
 
 .btn-primary {
   background: linear-gradient(135deg, var(--primary), var(--primary-soft));
-  color: var(--white);
+  color: #FFFFFF;
   border: none;
   box-shadow: 0 6px 18px rgba(194, 106, 45, 0.28);
 }

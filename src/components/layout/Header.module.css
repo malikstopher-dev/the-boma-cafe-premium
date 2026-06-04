@@ -6,12 +6,12 @@
   z-index: 1000;
   width: calc(100% - 48px);
   max-width: 1200px;
-  will-change: transform, top;
-  transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, border 0.3s ease;
+  will-change: transform;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, border 0.3s ease;
   background: linear-gradient(
     to bottom,
-    rgba(248, 248, 248, 0.88),
-    rgba(238, 238, 238, 0.78)
+    rgba(248, 248, 248, 0.75),
+    rgba(238, 238, 238, 0.68)
   );
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -21,11 +21,11 @@
 }
 
 .header.scrolled {
-  top: 10px;
+  transform: translateX(-50%) translateY(-10px);
   background: linear-gradient(
     to bottom,
-    rgba(244, 244, 244, 0.92),
-    rgba(232, 232, 232, 0.85)
+    rgba(244, 244, 244, 0.78),
+    rgba(232, 232, 232, 0.72)
   );
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -240,33 +240,33 @@
     border-radius: 0;
     border: none;
     border-bottom: none;
-    background: rgba(248, 248, 248, 0.92);
+    background: rgba(248, 248, 248, 0.85);
   }
 
-  @supports (backdrop-filter: blur(10px)) {
+  @supports (backdrop-filter: blur(4px)) {
     .header {
       background: linear-gradient(
         to bottom,
-        rgba(248, 248, 248, 0.85),
-        rgba(238, 238, 238, 0.75)
+        rgba(248, 248, 248, 0.78),
+        rgba(238, 238, 238, 0.68)
       );
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
     }
   }
 
   .header.scrolled {
-    background: rgba(244, 244, 244, 0.95);
+    background: rgba(244, 244, 244, 0.85);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     border-bottom: none;
   }
 
-  @supports (backdrop-filter: blur(10px)) {
+  @supports (backdrop-filter: blur(4px)) {
     .header.scrolled {
       background: linear-gradient(
         to bottom,
-        rgba(248, 248, 248, 0.92),
-        rgba(238, 238, 238, 0.85)
+        rgba(248, 248, 248, 0.82),
+        rgba(238, 238, 238, 0.75)
       );
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);

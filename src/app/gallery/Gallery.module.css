@@ -71,15 +71,49 @@
   border-radius: var(--radius-md);
   overflow: hidden;
   cursor: pointer;
+  opacity: 0;
+  transform: translateY(30px) scale(0.97);
+  transition: opacity 0.7s cubic-bezier(0.25, 0.1, 0.1, 1),
+              transform 0.7s cubic-bezier(0.25, 0.1, 0.1, 1);
+  will-change: transform, opacity;
+}
+
+.gridItem[data-revealed="true"] {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  translate: 0 var(--parallax-y, 0px);
 }
 
 .gridImg {
   object-fit: cover;
-  transition: transform 0.5s ease;
+  transition: transform 0.6s cubic-bezier(0.25, 0.1, 0.1, 1),
+              filter 0.4s ease;
+  will-change: transform;
 }
 
 .gridItem:hover .gridImg {
-  transform: scale(1.08);
+  transform: scale(1.04);
+  filter: brightness(1.08);
+}
+
+.gridItem:active .gridImg {
+  transform: scale(0.98);
+}
+
+/* Micro living animation */
+.gridItem[data-revealed="true"] .gridImg {
+  animation: microBreathe 10s ease-in-out infinite;
+}
+
+@keyframes microBreathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.01); }
+}
+
+.gridItem:hover .gridImg {
+  animation: none;
+  transform: scale(1.04);
+  filter: brightness(1.08);
 }
 
 .gridItemOverlay {
@@ -232,11 +266,19 @@
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2000;
   cursor: pointer;
+  animation: lightboxFadeIn 0.3s ease;
+}
+
+@keyframes lightboxFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .lightboxContent {

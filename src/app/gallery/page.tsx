@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Header from '@/components/layout/Header';
@@ -23,6 +23,63 @@ export default function GalleryPage() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const grid = gridRef.current;
+    if (!grid) return;
+
+    const items = grid.querySelectorAll<HTMLElement>('[data-reveal]');
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            (entry.target as HTMLElement).dataset.revealed = 'true';
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.15, rootMargin: '0px 0px -50px 0px' }
+    );
+
+    items.forEach((item) => {
+      item.dataset.revealed = 'false';
+      observer.observe(item);
+    });
+
+    return () => observer.disconnect();
+  }, [activeCategory]);
+
+  // Subtle parallax on grid items
+  useEffect(() => {
+    const grid = gridRef.current;
+    if (!grid) return;
+
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const gridRect = grid.getBoundingClientRect();
+          const centerY = window.innerHeight / 2;
+          const offsetFromCenter = gridRect.top + gridRect.height / 2 - centerY;
+          const progress = Math.max(-1, Math.min(1, offsetFromCenter / (window.innerHeight * 0.5)));
+
+          const items = grid.querySelectorAll<HTMLElement>('[data-revealed="true"]');
+          items.forEach((item, i) => {
+            const depth = 0.4 + (i % 3) * 0.15;
+            const move = -progress * 8 * depth;
+            item.style.setProperty('--parallax-y', `${move}px`);
+          });
+
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const filteredImages = activeCategory === 'All'
     ? allImagesFlat
@@ -86,11 +143,13 @@ export default function GalleryPage() {
             </div>
 
             {filteredImages.length > 0 ? (
-              <div className={styles.grid}>
+              <div className={styles.grid} ref={gridRef}>
                 {filteredImages.map((img, idx) => (
                   <div
                     key={`grid-${idx}`}
                     className={styles.gridItem}
+                    data-reveal
+                    style={{ transitionDelay: `${idx * 80}ms` }}
                     onClick={() => openLightbox(filteredImages.map(i => i.url), idx)}
                   >
                     <Image
