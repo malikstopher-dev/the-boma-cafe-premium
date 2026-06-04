@@ -6,14 +6,6 @@ import styles from "./WeekendBuffetPopup.module.css";
 
 const SLIDES = [
   {
-    src: "/breakfast-buffet.jpeg",
-    alt: "The Boma Café Weekend Breakfast Buffet",
-    href: "https://wa.me/27715921190?text=" + encodeURIComponent(
-      "Hi The Boma Café, I would like to book for the Weekend Buffet Experience for Saturday/Sunday between 09:30 and 12:00.\n\nNumber of people: [please enter number of guests]\n\nPlease assist me with availability."
-    ),
-    ariaLabel: "Book Weekend Buffet via WhatsApp",
-  },
-  {
     src: "/popup1.png",
     alt: "The Boma Café Special Offer",
     href: "https://wa.me/27715921190?text=" + encodeURIComponent(
@@ -21,9 +13,17 @@ const SLIDES = [
     ),
     ariaLabel: "View Special Offer via WhatsApp",
   },
+  {
+    src: "/breakfast-buffet.jpeg",
+    alt: "The Boma Café Weekend Breakfast Buffet",
+    href: "https://wa.me/27715921190?text=" + encodeURIComponent(
+      "Hi The Boma Café, I would like to book for the Weekend Buffet Experience for Saturday/Sunday between 09:30 and 12:00.\n\nNumber of people: [please enter number of guests]\n\nPlease assist me with availability."
+    ),
+    ariaLabel: "Book Weekend Buffet via WhatsApp",
+  },
 ];
 
-const ROTATION_INTERVAL = 4500;
+const ROTATION_INTERVAL = 5000;
 const SESSION_KEY = "boma_popup_seen";
 
 export default function WeekendBuffetPopup() {
