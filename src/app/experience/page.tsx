@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
@@ -12,6 +12,8 @@ import { getReservationLink } from '@/data/businessInfo';
 export default function ExperiencePage() {
   const [settings, setSettings] = useState<any>(null);
   const [expSettings, setExpSettings] = useState<any>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -26,6 +28,31 @@ export default function ExperiencePage() {
       }
     };
     loadData();
+  }, []);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            video.play().catch(() => {});
+          } else {
+            video.pause();
+          }
+        });
+      },
+      { threshold: 0.25 }
+    );
+
+    observer.observe(video);
+    return () => observer.disconnect();
+  }, []);
+
+  const scrollToVideo = useCallback(() => {
+    videoContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, []);
 
   const experiencePillars = [
@@ -74,20 +101,28 @@ export default function ExperiencePage() {
         <section style={{ background: 'var(--cream)', padding: 'var(--space-2xl) 5%' }}>
           <div style={{ maxWidth: '1050px', margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 'var(--space-lg)' }}>
-              <span style={{
-                display: 'inline-block',
-                background: 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)',
-                padding: '0.35rem 1rem',
-                borderRadius: 'var(--radius-full)',
-                fontSize: '0.7rem',
-                fontWeight: 600,
-                color: 'var(--white)',
-                letterSpacing: '1.5px',
-                textTransform: 'uppercase',
-                marginBottom: '0.75rem',
-              }}>
+              <button
+                onClick={scrollToVideo}
+                style={{
+                  display: 'inline-block',
+                  background: 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)',
+                  padding: '0.35rem 1rem',
+                  borderRadius: 'var(--radius-full)',
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  color: 'var(--white)',
+                  letterSpacing: '1.5px',
+                  textTransform: 'uppercase',
+                  marginBottom: '0.75rem',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(139,69,19,0.3)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
+              >
                 Watch Now
-              </span>
+              </button>
               <h2 style={{ fontSize: 'clamp(1.4rem, 3vw, 2rem)', color: 'var(--dark-brown)', marginBottom: '0.5rem', fontFamily: 'var(--font-display)' }}>
                 Experience The Boma Caf&eacute;
               </h2>
@@ -95,7 +130,7 @@ export default function ExperiencePage() {
                 Watch the atmosphere, energy, and experience of The Boma Caf&eacute;
               </p>
             </div>
-            <div style={{
+            <div ref={videoContainerRef} style={{
               background: 'var(--white)',
               borderRadius: '16px',
               overflow: 'hidden',
@@ -105,6 +140,7 @@ export default function ExperiencePage() {
               aspectRatio: '16 / 9',
             }}>
               <video
+                ref={videoRef}
                 autoPlay
                 muted
                 loop
