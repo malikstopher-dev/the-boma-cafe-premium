@@ -1,8 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { cmsService } from '@/lib/client-cms';
+import { useMemo } from 'react';
 import { BUSINESS_INFO } from '@/lib/whatsappConfig';
 import styles from './Footer.module.css';
 import WhatsAppIcon from '@/components/icons/WhatsAppIcon';
@@ -13,24 +12,8 @@ interface FooterProps {
 }
 
 export default function Footer({ settings, branding }: FooterProps) {
-  const [siteBranding, setSiteBranding] = useState<any>(null);
-  const [contactSettings, setContactSettings] = useState<any>(null);
-
-  useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const allSettings = await cmsService.getAllSettings();
-        setSiteBranding(allSettings.branding);
-        setContactSettings(allSettings.contact);
-      } catch (error) {
-        console.error('Error loading settings:', error);
-      }
-    };
-    loadSettings();
-  }, []);
-
-  const b = branding || siteBranding || {};
-  const c = settings || contactSettings || {};
+  const b = branding || {};
+  const c = settings || {};
   const siteName = b.siteName || 'The Boma Cafe';
   const currentYear = new Date().getFullYear();
   const footerCredit = `© ${currentYear} The Boma Café. Website by `;

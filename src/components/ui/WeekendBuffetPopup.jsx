@@ -15,7 +15,7 @@ export default function WeekendBuffetPopup() {
     };
 
     checkDesktop();
-    window.addEventListener('resize', checkDesktop);
+    window.addEventListener('resize', checkDesktop, { passive: true });
     return () => window.removeEventListener('resize', checkDesktop);
   }, []);
 

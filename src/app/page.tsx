@@ -1,18 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import AnnouncementBar from '@/components/ui/AnnouncementBar';
 import { cmsService } from '@/lib/client-cms';
-import PopupModal from '@/components/ui/PopupModal';
-import WeekendBuffetPopup from '@/components/ui/WeekendBuffetPopup';
 import FadeInSection from '@/components/ui/FadeInSection';
 import LazySection from '@/components/ui/LazySection';
 import { getReservationLink, getEventEnquiryLink } from '@/data/businessInfo';
 import styles from './page.module.css';
+
+const PopupModal = dynamic(() => import('@/components/ui/PopupModal'), { ssr: false });
+const WeekendBuffetPopup = dynamic(() => import('@/components/ui/WeekendBuffetPopup'), { ssr: false });
 
 const heroSlides = [
   {
@@ -50,7 +52,7 @@ const exploreCategories = [
 
 const signatureDishes = [
   { name: 'Classic Beef Burger', desc: 'Angus patty, cheddar, caramelized onions, fresh tomato & house sauce', price: 165, image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&h=400&fit=crop' },
-  { name: 'Lamb Bunny Chow', desc: 'Slow-cooked lamb in aromatic spices, served in fresh bread bowl', price: 120, image: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=600&h=400&fit=crop' },
+  { name: 'Lamb Bunny Chow', desc: 'Slow-cooked lamb in aromatic spices, served in fresh bread bowl', price: 120, image: '/menu/lamb-bunny-chow.jpg' },
   { name: 'BBQ Chicken Pizza', desc: 'Grilled chicken, red onions, cilantro on smoky BBQ base', price: 180, image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&h=400&fit=crop' },
   { name: 'Flame-Grilled Ribs', desc: 'Succulent ribs with our signature BBQ basting', price: 250, image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600&h=400&fit=crop' }
 ];

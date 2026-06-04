@@ -3,6 +3,7 @@
   opacity: 0;
   transform: translateY(40px);
   transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
 }
 
 .fadeInSection.visible {
@@ -14,6 +15,7 @@
   opacity: 0;
   transform: translateX(-50px);
   transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
 }
 
 .revealLeft.visible {
@@ -25,6 +27,7 @@
   opacity: 0;
   transform: translateX(50px);
   transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
 }
 
 .revealRight.visible {
@@ -36,6 +39,7 @@
   opacity: 0;
   transform: scale(0.95);
   transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
 }
 
 .revealScale.visible {
@@ -62,6 +66,7 @@
   height: 100%;
   opacity: 0;
   transition: opacity 1.2s ease;
+  will-change: opacity;
 }
 
 .heroSlide.active {
@@ -70,7 +75,8 @@
 
 .heroSlideBg {
   object-fit: cover;
-  transition: transform 8s ease;
+  transition: transform 6s ease;
+  will-change: transform;
 }
 
 .heroSlide.active .heroSlideBg {

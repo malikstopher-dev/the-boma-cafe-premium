@@ -20,19 +20,20 @@
   background-size: cover;
   background-position: center;
   opacity: 0;
-  transform: scale(1.1);
-  transition: all 1s ease;
+  transform: scale(1.05);
+  transition: opacity 1s ease, transform 1s ease;
+  will-change: opacity, transform;
 }
 
 .slide.active {
   opacity: 1;
   transform: scale(1);
-  animation: zoomIn 8s ease-out forwards;
+  animation: zoomIn 6s ease-out forwards;
 }
 
 @keyframes zoomIn {
   from {
-    transform: scale(1.1);
+    transform: scale(1.05);
   }
   to {
     transform: scale(1);
@@ -59,7 +60,8 @@
   padding: 0 5%;
   opacity: 0;
   transform: translateY(30px);
-  transition: all 0.8s ease;
+  transition: opacity 0.8s ease, transform 0.8s ease;
+  will-change: opacity, transform;
 }
 
 .content.visible {
@@ -138,7 +140,8 @@
   gap: 8px;
   color: rgba(255, 255, 255, 0.6);
   z-index: 20;
-  animation: bounce 2s infinite;
+  animation: bounce 3s ease-in-out infinite;
+  will-change: transform;
 }
 
 .scroll span {

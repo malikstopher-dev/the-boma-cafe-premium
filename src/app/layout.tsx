@@ -1,11 +1,13 @@
 import { Playfair_Display, Poppins } from "next/font/google";
+import dynamic from "next/dynamic";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth";
 import { CartProvider } from "@/lib/cart";
-import CartButton from "@/components/ui/CartButton";
-import ScrollToTopButton from "@/components/ui/ScrollToTopButton";
 import { BUSINESS_INFO } from "@/lib/whatsappConfig";
-import MobileBottomBar from "@/components/ui/MobileBottomBar";
+
+const CartButton = dynamic(() => import("@/components/ui/CartButton"), { ssr: false });
+const ScrollToTopButton = dynamic(() => import("@/components/ui/ScrollToTopButton"), { ssr: false });
+const MobileBottomBar = dynamic(() => import("@/components/ui/MobileBottomBar"), { ssr: false });
 
 const localBusinessSchema = {
   "@context": "https://schema.org",

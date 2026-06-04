@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import styles from '@/app/page.module.css';
 
 export default function FadeInSection({ 
@@ -18,37 +18,37 @@ export default function FadeInSection({
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
     const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setTimeout(() => {
-              setIsVisible(true);
-            }, delay);
-          }
-        });
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
       },
-      {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-      }
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
     );
 
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
+    observer.observe(el);
     return () => observer.disconnect();
-  }, [delay]);
+  }, []);
 
-  const animationClass = animationType === 'left' ? styles.revealLeft :
-                         animationType === 'right' ? styles.revealRight :
-                         animationType === 'scale' ? styles.revealScale : '';
+  const animationClass = useMemo(() => {
+    switch (animationType) {
+      case 'left': return styles.revealLeft;
+      case 'right': return styles.revealRight;
+      case 'scale': return styles.revealScale;
+      default: return '';
+    }
+  }, [animationType]);
 
   return (
     <div
       ref={ref}
       className={`${styles.fadeInSection} ${animationClass} ${isVisible ? styles.visible : ''} ${className}`}
+      style={delay > 0 ? { transitionDelay: `${delay}ms` } : undefined}
     >
       {children}
     </div>
