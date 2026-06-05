@@ -6,12 +6,6 @@
   overflow: hidden;
 }
 
-/* FORENSIC TEST - RED OUTLINES */
-.footer * {
-  outline: 2px solid red !important;
-  outline-offset: -1px !important;
-}
-
 .footer::before {
   content: '';
   position: absolute;
@@ -22,6 +16,7 @@
   height: 80%;
   background: radial-gradient(ellipse at center top, rgba(201,169,98,0.15) 0%, transparent 60%);
   pointer-events: none;
+  display: none;
 }
 
 .container {
