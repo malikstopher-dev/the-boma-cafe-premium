@@ -18,6 +18,13 @@
   pointer-events: none;
 }
 
+@media (max-width: 768px) {
+  .footer::before {
+    display: none !important;
+    content: none !important;
+  }
+}
+
 .container {
   max-width: 1400px;
   margin: 0 auto;
