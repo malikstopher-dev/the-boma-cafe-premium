@@ -204,10 +204,10 @@ function initializeDefaults(database: Database.Database) {
       openingHours: 'Mon-Sun: 8:00 AM - 10:00 PM',
       mapEmbedUrl: '',
       whatsapp: 'https://wa.me/27715921190',
-      facebook: 'https://facebook.com/thebomacafe',
-      instagram: 'https://instagram.com/thebomacafe',
+      facebook: 'https://www.facebook.com/people/The-Boma-Cafe/61552775920918/',
+      instagram: 'https://www.instagram.com/the_boma_cafe',
       twitter: '',
-      tiktok: 'https://tiktok.com/@thebomacafe',
+      tiktok: 'https://www.tiktok.com/@thebomacafe',
       youtube: ''
     };
     

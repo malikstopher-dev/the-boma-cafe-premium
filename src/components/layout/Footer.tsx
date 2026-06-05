@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { cmsService } from '@/lib/client-cms';
+import { useMemo } from 'react';
 import { BUSINESS_INFO } from '@/lib/whatsappConfig';
 import styles from './Footer.module.css';
+import WhatsAppIcon from '@/components/icons/WhatsAppIcon';
 
 interface FooterProps {
   settings?: any;
@@ -12,24 +12,15 @@ interface FooterProps {
 }
 
 export default function Footer({ settings, branding }: FooterProps) {
-  const [siteBranding, setSiteBranding] = useState<any>(null);
-  const [contactSettings, setContactSettings] = useState<any>(null);
-
-  useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const allSettings = await cmsService.getAllSettings();
-        setSiteBranding(allSettings.branding);
-        setContactSettings(allSettings.contact);
-      } catch (error) {
-        console.error('Error loading settings:', error);
-      }
-    };
-    loadSettings();
-  }, []);
-
-  const b = branding || siteBranding || {};
-  const c = settings || contactSettings || {};
+  const b = {
+    ...branding,
+    facebook: branding?.facebook || BUSINESS_INFO.social.facebook,
+    instagram: branding?.instagram || BUSINESS_INFO.social.instagram,
+  };
+  if (!b.tiktok) {
+    b.tiktok = 'https://www.tiktok.com/@thebomacafe';
+  }
+  const c = settings || {};
   const siteName = b.siteName || 'The Boma Cafe';
   const currentYear = new Date().getFullYear();
   const footerCredit = `© ${currentYear} The Boma Café. Website by `;
@@ -83,6 +74,7 @@ export default function Footer({ settings, branding }: FooterProps) {
               <nav className={styles.nav}>
                 {[
                   { label: 'Home', href: '/' },
+                  { label: 'About', href: '/about' },
                   { label: 'Menu', href: '/menu' },
                   { label: 'Experience', href: '/experience' },
                   { label: 'Events & Venue Hire', href: '/events' },
@@ -111,16 +103,16 @@ export default function Footer({ settings, branding }: FooterProps) {
                 <div className={styles.contactItem}>
                   <span className={styles.icon}>📍</span>
                   <span className={styles.contactText}>
-                    {BUSINESS_INFO.address.street}
+                    {BUSINESS_INFO.address.street},{' '}
                     <span className={styles.addressDetail}>{BUSINESS_INFO.address.suburb}, {BUSINESS_INFO.address.city}, {BUSINESS_INFO.address.postalCode}</span>
                   </span>
                 </div>
                 <div className={styles.contactItem}>
                   <span className={styles.icon}>🕐</span>
-                  <span className={styles.contactText}>Mon-Sun: 8:00 AM - 10:00 PM</span>
+                  <span className={styles.contactText}>Mon-Sun: 10:00 AM - 10:00 PM</span>
                 </div>
                 <a href={`https://wa.me/${BUSINESS_INFO.phoneRaw}`} target="_blank" rel="noopener noreferrer" className={styles.contactItem}>
-                  <span className={styles.icon}>💬</span>
+                  <WhatsAppIcon size={18} color="#25D366" />
                   <span className={styles.contactText}>WhatsApp Order</span>
                 </a>
               </div>
