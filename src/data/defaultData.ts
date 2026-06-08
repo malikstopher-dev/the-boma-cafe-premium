@@ -1030,6 +1030,7 @@ export const defaultMenuItems: MenuItem[] = [
   {
     id: 'ms1',
     name: 'Chocolate Shake',
+    description: 'Thick and creamy chocolate milkshake blended to perfection.',
     price: 46,
     category: 'Milkshakes',
     order: 1,
@@ -1042,6 +1043,7 @@ export const defaultMenuItems: MenuItem[] = [
   {
     id: 'ms2',
     name: 'Strawberry Shake',
+    description: 'Fresh strawberry milkshake — sweet, creamy, and refreshing.',
     price: 51,
     category: 'Milkshakes',
     order: 2,
@@ -1054,6 +1056,7 @@ export const defaultMenuItems: MenuItem[] = [
   {
     id: 'ms3',
     name: 'Bubblegum Shake',
+    description: 'A fun, vibrant bubblegum milkshake the whole family will love.',
     price: 46,
     category: 'Milkshakes',
     order: 3,
@@ -1066,6 +1069,7 @@ export const defaultMenuItems: MenuItem[] = [
   {
     id: 'ms4',
     name: 'Oreo Shake',
+    description: 'Crushed Oreo blended into a thick, creamy milkshake. Indulgent and delicious.',
     price: 46,
     category: 'Milkshakes',
     order: 4,
@@ -1782,6 +1786,7 @@ export const defaultMenuItems: MenuItem[] = [
   {
     id: 'ds1',
     name: 'Cheese Cake',
+    description: 'Creamy New York-style cheesecake on a buttery biscuit base. A classic done right.',
     price: 65,
     category: 'Desserts',
     order: 1,
@@ -1794,6 +1799,7 @@ export const defaultMenuItems: MenuItem[] = [
   {
     id: 'ds2',
     name: 'Carrot Cake',
+    description: 'Moist, spiced carrot cake with smooth cream cheese frosting. A homestyle favourite.',
     price: 65,
     category: 'Desserts',
     order: 2,
@@ -1806,6 +1812,7 @@ export const defaultMenuItems: MenuItem[] = [
   {
     id: 'ds3',
     name: 'Chocolate Cake',
+    description: 'Rich, decadent chocolate layer cake. Deep cocoa flavour in every slice.',
     price: 65,
     category: 'Desserts',
     order: 3,
@@ -1818,6 +1825,7 @@ export const defaultMenuItems: MenuItem[] = [
   {
     id: 'ds4',
     name: 'Ice Cream & Chocolate Sauce',
+    description: 'Two scoops of smooth vanilla ice cream drizzled with warm chocolate sauce.',
     price: 45,
     category: 'Desserts',
     order: 4,

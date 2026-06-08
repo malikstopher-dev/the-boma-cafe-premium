@@ -12,7 +12,7 @@ import { getEventEnquiryLink, getReservationLink } from '@/data/businessInfo';
 const featuredEvents = [
   {
     title: 'Weekend Breakfast Buffet',
-    description: 'Saturday & Sunday — 9:30 AM to 12:30 PM. Fresh spreads, hot dishes, and relaxed weekend vibes.',
+    description: 'Saturday & Sunday — 9:00 AM to 12:30 PM. Fresh spreads, hot dishes, and relaxed weekend vibes.',
     price: 'R89 Adults · R45 Kids',
     image: '/gallery/events/images (12).jpg',
     cta: 'Book via WhatsApp',
@@ -448,9 +448,88 @@ export default function EventsPage() {
               ))}
             </div>
             {visibleEvents.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-light)' }}>
-                <p style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>No scheduled public events right now.</p>
-                <p>Contact us for private venue hire.</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
+                <div style={{
+                  background: 'var(--white)',
+                  borderRadius: '20px',
+                  padding: '2rem',
+                  boxShadow: '0 4px 20px rgba(26, 15, 10, 0.06)',
+                  border: '1px solid rgba(232, 213, 196, 0.5)',
+                  textAlign: 'left'
+                }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🎵</div>
+                  <h4 style={{ fontSize: '1.2rem', color: 'var(--dark-brown)', marginBottom: '0.5rem', fontWeight: 600 }}>Live Music</h4>
+                  <p style={{ color: 'var(--text-light)', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '0.75rem' }}>
+                    Every Friday & Saturday evening.<br />
+                    Resident DJs and live acts.<br />
+                    Free entry.
+                  </p>
+                </div>
+                <div style={{
+                  background: 'var(--white)',
+                  borderRadius: '20px',
+                  padding: '2rem',
+                  boxShadow: '0 4px 20px rgba(26, 15, 10, 0.06)',
+                  border: '1px solid rgba(232, 213, 196, 0.5)',
+                  textAlign: 'left'
+                }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🍳</div>
+                  <h4 style={{ fontSize: '1.2rem', color: 'var(--dark-brown)', marginBottom: '0.5rem', fontWeight: 600 }}>Weekend Breakfast Buffet</h4>
+                  <p style={{ color: 'var(--text-light)', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '0.75rem' }}>
+                    Every Saturday & Sunday<br />
+                    9:00 AM – 12:30 PM<br />
+                    R89 adults · R45 kids.
+                  </p>
+                  <a
+                    href={reservationLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-block',
+                      padding: '0.6rem 1.25rem',
+                      background: 'var(--primary)',
+                      color: 'var(--white)',
+                      borderRadius: 'var(--radius-md)',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      textDecoration: 'none'
+                    }}
+                  >
+                    Book via WhatsApp
+                  </a>
+                </div>
+                <div style={{
+                  background: 'var(--white)',
+                  borderRadius: '20px',
+                  padding: '2rem',
+                  boxShadow: '0 4px 20px rgba(26, 15, 10, 0.06)',
+                  border: '1px solid rgba(232, 213, 196, 0.5)',
+                  textAlign: 'left'
+                }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🎉</div>
+                  <h4 style={{ fontSize: '1.2rem', color: 'var(--dark-brown)', marginBottom: '0.5rem', fontWeight: 600 }}>Private Venue Hire</h4>
+                  <p style={{ color: 'var(--text-light)', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '0.75rem' }}>
+                    Available 7 days a week.<br />
+                    Birthdays, corporates, celebrations of all sizes.
+                  </p>
+                  <a
+                    href={eventEnquiryLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-block',
+                      padding: '0.6rem 1.25rem',
+                      background: 'var(--primary)',
+                      color: 'var(--white)',
+                      borderRadius: 'var(--radius-md)',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      textDecoration: 'none'
+                    }}
+                  >
+                    Enquire Now
+                  </a>
+                </div>
               </div>
             )}
           </div>

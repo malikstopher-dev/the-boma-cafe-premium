@@ -8,7 +8,7 @@ import WhatsAppIcon from '@/components/icons/WhatsAppIcon';
 export default function MobileBottomBar() {
   return (
     <div className={styles.bottomBar}>
-      <a href={`tel:${BUSINESS_INFO.phone}`} className={styles.action}>
+      <a href={`tel:+${BUSINESS_INFO.phoneRaw}`} className={styles.action}>
         <i className="fas fa-phone" />
         <span>Call</span>
       </a>

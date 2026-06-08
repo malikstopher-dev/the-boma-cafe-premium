@@ -85,7 +85,7 @@ export default function Footer({ settings, branding }: FooterProps) {
             <div className={styles.contact}>
               <h4>Contact Info</h4>
               <div className={styles.contactInfo}>
-                <a href={`tel:${BUSINESS_INFO.phone}`} className={styles.contactItem}>
+                <a href={`tel:+${BUSINESS_INFO.phoneRaw}`} className={styles.contactItem}>
                   <span className={styles.icon}>📞</span>
                   <span className={styles.contactText}>{BUSINESS_INFO.phone}</span>
                 </a>
@@ -102,7 +102,7 @@ export default function Footer({ settings, branding }: FooterProps) {
                 </div>
                 <div className={styles.contactItem}>
                   <span className={styles.icon}>🕐</span>
-                  <span className={styles.contactText}>Mon-Sun: 10:00 AM - 10:00 PM</span>
+                  <span className={styles.contactText}>Open daily: 9:00 AM – Late</span>
                 </div>
                 <a href={`https://wa.me/${BUSINESS_INFO.phoneRaw}`} target="_blank" rel="noopener noreferrer" className={styles.contactItem}>
                   <WhatsAppIcon size={18} color="#25D366" />
@@ -125,7 +125,7 @@ export default function Footer({ settings, branding }: FooterProps) {
           <p className={styles.mobileTagline}>Where rustic charm meets soulful dining in Sandton.</p>
 
           <div className={styles.mobileContactRow}>
-            <a href={`tel:${BUSINESS_INFO.phone}`} className={styles.mobileFooterLink}>Call</a>
+            <a href={`tel:+${BUSINESS_INFO.phoneRaw}`} className={styles.mobileFooterLink}>Call</a>
             <a href={`mailto:${BUSINESS_INFO.email}`} className={styles.mobileFooterLink}>Email</a>
             <a href={`https://wa.me/${BUSINESS_INFO.phoneRaw}`} target="_blank" rel="noopener noreferrer" className={styles.mobileFooterLink}>WhatsApp</a>
           </div>

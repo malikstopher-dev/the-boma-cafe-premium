@@ -369,6 +369,47 @@ export default function Home() {
       </main>
 
       <Footer settings={settings} branding={branding} />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Restaurant",
+            "name": "The Boma Café",
+            "url": "https://www.thebomacafe.co.za/",
+            "image": "https://www.thebomacafe.co.za/assets/images/og-hero.jpg",
+            "description": "Rustic open-air dining in the heart of Sandton. Wood-fired pizza, braai platters, live music, and venue hire at The Boma Café, Paulshof.",
+            "telephone": "+27715921190",
+            "email": "info@thebomacafe.co.za",
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": "127B Wroxham Road",
+              "addressLocality": "Paulshof",
+              "addressRegion": "Gauteng",
+              "postalCode": "2191",
+              "addressCountry": "ZA"
+            },
+            "geo": {
+              "@type": "GeoCoordinates",
+              "latitude": -26.045962,
+              "longitude": 28.057620
+            },
+            "openingHours": "Mo-Su 09:00-23:59",
+            "servesCuisine": [
+              "South African",
+              "Wood-Fired Pizza",
+              "Braai",
+              "Burgers",
+              "Curries"
+            ],
+            "priceRange": "R45–R980",
+            "hasMenu": "https://www.thebomacafe.co.za/menu",
+            "acceptsReservations": true,
+            "menu": "https://www.thebomacafe.co.za/menu"
+          })
+        }}
+      />
     </>
   );
 }

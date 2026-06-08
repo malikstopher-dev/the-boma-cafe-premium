@@ -222,7 +222,7 @@ export default function ContactPage() {
                     }}>📞</div>
                     <div>
                       <strong style={{ color: 'var(--dark-brown)', display: 'block', fontSize: '1.05rem', marginBottom: '0.25rem' }}>Phone</strong>
-                      <a href={`tel:${businessInfo.phone}`} style={{ color: 'var(--text-light)', fontSize: '0.95rem' }}>{businessInfo.phone}</a>
+                      <a href={`tel:+${businessInfo.phoneRaw}`} style={{ color: 'var(--text-light)', fontSize: '0.95rem' }}>{businessInfo.phone}</a>
                     </div>
                   </div>
                   
@@ -263,12 +263,10 @@ export default function ContactPage() {
                     <div>
                       <strong style={{ color: 'var(--dark-brown)', display: 'block', fontSize: '1.05rem', marginBottom: '0.25rem' }}>Opening Hours</strong>
                       <div style={{ color: 'var(--text-light)', fontSize: '0.9rem' }}>
-                        {businessInfo.openingHoursArray.map(h => (
-                          <div key={h.day} style={{ display: 'flex', justifyContent: 'space-between', maxWidth: '200px' }}>
-                            <span>{h.day}</span>
-                            <span>{h.hours}</span>
-                          </div>
-                        ))}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', maxWidth: '200px' }}>
+                          <span>Daily</span>
+                          <span>9:00 AM – Late</span>
+                        </div>
                       </div>
                     </div>
                   </div>
