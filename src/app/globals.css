@@ -1113,11 +1113,11 @@ input, textarea, select {
     margin-bottom: 0.25rem !important;
   }
   
-  /* Footer - mobile: let CSS module handle it, just prevent overflow */
+  /* Footer - mobile: let CSS module handle it */
   footer,
   .footer,
   [class*="Footer"] {
-    overflow-x: hidden !important;
+    overflow: visible !important;
   }
   
   /* Promotions page featured section - reduce padding */
