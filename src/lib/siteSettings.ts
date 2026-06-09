@@ -80,10 +80,10 @@ const defaultSiteSettings: SiteSettings = {
     logo: '/logo.png',
     favicon: '/favicon.ico',
     footerText: '© {year} The Boma Cafe. All rights reserved.',
-    facebook: 'https://facebook.com/thebomacafe',
-    instagram: 'https://instagram.com/thebomacafe',
+    facebook: 'https://www.facebook.com/people/The-Boma-Cafe/61552775920918/',
+    instagram: 'https://www.instagram.com/the_boma_cafe',
     twitter: '',
-    tiktok: 'https://tiktok.com/@thebomacafe',
+    tiktok: 'https://www.tiktok.com/@thebomacafe',
     youtube: ''
   },
   seo: {
