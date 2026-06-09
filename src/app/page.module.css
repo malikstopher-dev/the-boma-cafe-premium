@@ -169,41 +169,41 @@
   flex-wrap: wrap;
 }
 
-.heroCta .btn-primary {
+.heroCta :global(.btn-primary) {
   background: #fff;
   color: #2C1E1A;
   border: none;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
-.heroCta .btn-primary:hover {
+.heroCta :global(.btn-primary:hover) {
   background: rgba(255, 255, 255, 0.9);
   transform: translateY(-2px);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
 }
 
-.heroCta .btn-ghost {
+.heroCta :global(.btn-ghost) {
   background: rgba(255, 255, 255, 0.1);
-  color: var(--white);
-  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   transition: all 0.3s ease;
 }
 
-.heroCta .btn-ghost:hover {
+.heroCta :global(.btn-ghost:hover) {
   background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.5);
-  color: var(--white);
+  border-color: rgba(255, 255, 255, 0.6);
+  color: #fff;
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
-.heroCta .btn-ghost:active {
+.heroCta :global(.btn-ghost:active) {
   transform: translateY(0);
 }
 
-.heroCta .btn-ghost:focus-visible {
+.heroCta :global(.btn-ghost:focus-visible) {
   outline: 2px solid var(--warm);
   outline-offset: 2px;
 }
