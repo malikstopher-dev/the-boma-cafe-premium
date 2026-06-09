@@ -1,0 +1,48 @@
+.container {
+  position: fixed;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 980;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.arrow {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(120, 120, 120, 0.18);
+  color: rgba(120, 120, 120, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.25s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.arrow.visible {
+  opacity: 1;
+}
+
+.arrow:hover {
+  background: rgba(120, 120, 120, 0.3);
+  color: rgba(120, 120, 120, 0.95);
+}
+
+.arrow:active {
+  transform: scale(0.92);
+}
+
+@media (max-width: 768px) {
+  .container {
+    display: none;
+  }
+}

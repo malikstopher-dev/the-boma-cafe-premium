@@ -598,20 +598,20 @@ input, textarea, select {
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 7px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--cream);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--primary);
-  border-radius: var(--radius-full);
+  background: rgba(120,120,120,.45);
+  border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--secondary);
+  background: rgba(120,120,120,.65);
 }
 
 @media (max-width: 768px) {
@@ -620,12 +620,12 @@ input, textarea, select {
   }
 
   ::-webkit-scrollbar-thumb {
-    background: var(--primary-soft);
+    background: rgba(120,120,120,.35);
   }
 
   * {
     scrollbar-width: thin;
-    scrollbar-color: var(--primary-soft) transparent;
+    scrollbar-color: rgba(120,120,120,.35) transparent;
   }
 }
 
