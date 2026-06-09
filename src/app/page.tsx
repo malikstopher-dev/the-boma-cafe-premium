@@ -32,21 +32,16 @@ const signatureDishes = [
 
 export default function Home() {
   const [settings, setSettings] = useState<any>(null);
-  const [announcement, setAnnouncement] = useState<any>(null);
   const [popup, setPopup] = useState<any>(null);
-  const [siteSettings, setSiteSettings] = useState<any>(null);
   
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [allSettings, ann, pop] = await Promise.all([
+        const [allSettings, pop] = await Promise.all([
           cmsService.getAllSettings(),
-          cmsService.getAnnouncement(),
           cmsService.getPopup()
         ]);
-        setSiteSettings(allSettings);
         setSettings(allSettings);
-        setAnnouncement(ann);
         setPopup(pop);
       } catch (error) {
         console.error('Error loading CMS data:', error);
@@ -55,8 +50,8 @@ export default function Home() {
     loadData();
   }, []);
 
-  const promoBar = siteSettings?.promoBar || {};
-  const branding = siteSettings?.branding || {};
+  const promoBar = settings?.promoBar || {};
+  const branding = settings?.branding || {};
 
   return (
     <>
@@ -81,7 +76,9 @@ export default function Home() {
             muted
             loop
             playsInline
-            preload="metadata"
+            preload="auto"
+            poster="/hero/slide1.jpg"
+            aria-label="The Boma Cafe ambiance video"
           />
           <div className={styles.heroOverlay} />
           
@@ -320,47 +317,6 @@ export default function Home() {
       </main>
 
       <Footer settings={settings} branding={branding} />
-
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Restaurant",
-            "name": "The Boma Café",
-            "url": "https://www.thebomacafe.co.za/",
-            "image": "https://www.thebomacafe.co.za/assets/images/og-hero.jpg",
-            "description": "Rustic open-air dining in the heart of Sandton. Wood-fired pizza, braai platters, live music, and venue hire at The Boma Café, Paulshof.",
-            "telephone": "+27715921190",
-            "email": "info@thebomacafe.co.za",
-            "address": {
-              "@type": "PostalAddress",
-              "streetAddress": "127B Wroxham Road",
-              "addressLocality": "Paulshof",
-              "addressRegion": "Gauteng",
-              "postalCode": "2191",
-              "addressCountry": "ZA"
-            },
-            "geo": {
-              "@type": "GeoCoordinates",
-              "latitude": -26.045962,
-              "longitude": 28.057620
-            },
-            "openingHours": "Mo-Su 09:00-23:59",
-            "servesCuisine": [
-              "South African",
-              "Wood-Fired Pizza",
-              "Braai",
-              "Burgers",
-              "Curries"
-            ],
-            "priceRange": "R45–R980",
-            "hasMenu": "https://www.thebomacafe.co.za/menu",
-            "acceptsReservations": true,
-            "menu": "https://www.thebomacafe.co.za/menu"
-          })
-        }}
-      />
     </>
   );
 }
