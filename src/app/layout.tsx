@@ -6,6 +6,7 @@ import { BUSINESS_INFO } from "@/lib/whatsappConfig";
 
 const CartButton = dynamic(() => import("@/components/ui/CartButton"), { ssr: false });
 const ScrollToTopButton = dynamic(() => import("@/components/ui/ScrollToTopButton"), { ssr: false });
+const ScrollArrows = dynamic(() => import("@/components/ui/ScrollArrows"), { ssr: false });
 const MobileBottomBar = dynamic(() => import("@/components/ui/MobileBottomBar"), { ssr: false });
 
 const localBusinessSchema = {
@@ -125,6 +126,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <CartProvider>
             {children}
             <ScrollToTopButton />
+            <ScrollArrows />
             <CartButton />
             <MobileBottomBar />
           </CartProvider>
