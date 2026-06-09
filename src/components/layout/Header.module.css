@@ -8,13 +8,7 @@
   max-width: 1200px;
   will-change: transform;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, border 0.3s ease;
-  background: linear-gradient(
-    to bottom,
-    rgba(248, 248, 248, 0.75),
-    rgba(238, 238, 238, 0.68)
-  );
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: #f5f0eb;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.28);
@@ -22,13 +16,7 @@
 
 .header.scrolled {
   transform: translateX(-50%) translateY(-10px);
-  background: linear-gradient(
-    to bottom,
-    rgba(244, 244, 244, 0.78),
-    rgba(232, 232, 232, 0.72)
-  );
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: #f0ebe5;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 18px;
@@ -240,37 +228,12 @@
     border-radius: 0;
     border: none;
     border-bottom: none;
-    background: rgba(248, 248, 248, 0.85);
-  }
-
-  @supports (backdrop-filter: blur(4px)) {
-    .header {
-      background: linear-gradient(
-        to bottom,
-        rgba(248, 248, 248, 0.78),
-        rgba(238, 238, 238, 0.68)
-      );
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-    }
+    background: #f5f0eb;
   }
 
   .header.scrolled {
-    background: rgba(244, 244, 244, 0.85);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     border-bottom: none;
-  }
-
-  @supports (backdrop-filter: blur(4px)) {
-    .header.scrolled {
-      background: linear-gradient(
-        to bottom,
-        rgba(248, 248, 248, 0.82),
-        rgba(238, 238, 238, 0.75)
-      );
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-    }
   }
 
   .container {
@@ -307,11 +270,6 @@
     height: 44px;
     padding: 0;
     border-radius: 12px;
-  }
-
-  .header.scrolled .mobileToggle {
-    background: rgba(248, 248, 248, 0.92);
-    border: 1px solid rgba(255, 255, 255, 0.4);
   }
 
   .mobileOverlay {

@@ -1,4 +1,3 @@
-import { Playfair_Display, Poppins } from "next/font/google";
 import dynamic from "next/dynamic";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth";
@@ -60,19 +59,6 @@ const websiteSchema = {
   }
 };
 
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  variable: "--font-display",
-  display: "swap",
-});
-
-const poppins = Poppins({
-  subsets: ["latin"],
-  variable: "--font-body",
-  weight: ["300", "400", "500", "600", "700"],
-  display: "swap",
-});
-
 export const metadata = {
   title: "The Boma Café | Rustic Open-Air Restaurant in Paulshof, Sandton",
   description: "Escape the city at The Boma Café — Sandton's hidden rustic gem. Breakfast, lunch & dinner under a thatched roof with firepits, kids play area, and live entertainment. 127 Wroxham Rd, Paulshof.",
@@ -109,10 +95,14 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${playfair.variable} ${poppins.variable}`}>
+    <html lang="en">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap"
+        />
         <link 
           rel="stylesheet" 
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" 

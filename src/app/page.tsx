@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
@@ -15,33 +15,6 @@ import styles from './page.module.css';
 
 const PopupModal = dynamic(() => import('@/components/ui/PopupModal'), { ssr: false });
 const WeekendBuffetPopup = dynamic(() => import('@/components/ui/WeekendBuffetPopup'), { ssr: false });
-
-const heroSlides = [
-  {
-    image: '/hero/slide1.jpg',
-    subtitle: 'Welcome to',
-    title: 'The Boma Cafe',
-    tagline: 'Where the Rustic Meets the Soulful!',
-    cta: 'Book a Table',
-    ctaLink: '/contact'
-  },
-  {
-    image: '/hero/slide2.jpg',
-    subtitle: 'Escape the City',
-    title: 'Rustic Ambiance',
-    tagline: 'Savor your meal beneath a thatched roof',
-    cta: 'Discover More',
-    ctaLink: '/about'
-  },
-  {
-    image: '/hero/slide3.jpg',
-    subtitle: 'More Than Just a Cafe',
-    title: 'An Experience',
-    tagline: 'Where nature meets the warmth of home',
-    cta: 'View Events',
-    ctaLink: '/events'
-  }
-];
 
 const exploreCategories = [
   { title: 'Signature Meals', desc: 'Chef-crafted masterpieces', image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&h=450&fit=crop', link: '/menu?category=Signature' },
@@ -62,7 +35,6 @@ export default function Home() {
   const [announcement, setAnnouncement] = useState<any>(null);
   const [popup, setPopup] = useState<any>(null);
   const [siteSettings, setSiteSettings] = useState<any>(null);
-  const [currentSlide, setCurrentSlide] = useState(0);
   
   useEffect(() => {
     const loadData = async () => {
@@ -81,11 +53,6 @@ export default function Home() {
       }
     };
     loadData();
-    
-    const slideTimer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
-    }, 6000);
-    return () => clearInterval(slideTimer);
   }, []);
 
   const promoBar = siteSettings?.promoBar || {};
@@ -107,41 +74,25 @@ export default function Home() {
       <main>
         {/* Section 1: Hero */}
         <section className={styles.heroSection}>
-          {heroSlides.map((slide, index) => (
-            <div
-              key={index}
-              className={`${styles.heroSlide} ${index === currentSlide ? styles.active : ''}`}
-            >
-              <Image
-                src={slide.image}
-                alt={slide.title}
-                fill
-                className={styles.heroSlideBg}
-                priority={index === 0}
-                sizes="100vw"
-              />
-            </div>
-          ))}
+          <video
+            className={styles.heroVideo}
+            src="/boma-bg.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+          />
           <div className={styles.heroOverlay} />
           
           <div className={styles.heroContent}>
-            <p className={styles.heroSubtitle}>{heroSlides[currentSlide].subtitle}</p>
-            <h1 className={styles.heroTitle}>{heroSlides[currentSlide].title}</h1>
-            <p className={styles.heroTagline}>{heroSlides[currentSlide].tagline}</p>
+            <p className={styles.heroSubtitle}>Welcome to</p>
+            <h1 className={styles.heroTitle}>The Boma Cafe</h1>
+            <p className={styles.heroTagline}>Where the Rustic Meets the Soulful!</p>
             <div className={styles.heroCta}>
               <Link href="/menu" className="btn btn-primary">View Menu</Link>
               <a href={getReservationLink()} target="_blank" rel="noopener noreferrer" className="btn btn-ghost">Book a Table</a>
             </div>
-          </div>
-
-          <div className={styles.heroDots}>
-            {heroSlides.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentSlide(index)}
-                className={`${styles.heroDot} ${index === currentSlide ? styles.active : ''}`}
-              />
-            ))}
           </div>
         </section>
 
