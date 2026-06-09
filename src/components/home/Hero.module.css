@@ -45,9 +45,9 @@
   inset: 0;
   background: linear-gradient(
     180deg,
-    rgba(26, 15, 10, 0.6) 0%,
-    rgba(26, 15, 10, 0.35) 50%,
-    rgba(26, 15, 10, 0.7) 100%
+    rgba(26, 15, 10, 0.5) 0%,
+    rgba(26, 15, 10, 0.3) 50%,
+    rgba(26, 15, 10, 0.6) 100%
   );
 }
 
@@ -74,9 +74,8 @@
   letter-spacing: 4px;
   text-transform: uppercase;
   margin-bottom: 1rem;
-  color: #FFFFFF;
+  color: var(--warm);
   font-weight: 500;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
 }
 
 .title {
@@ -90,9 +89,8 @@
 .tagline {
   font-size: clamp(1.1rem, 2vw, 1.4rem);
   font-style: italic;
-  color: #FFFFFF;
+  color: var(--cream);
   margin-bottom: 2.5rem;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
 }
 
 .cta {
@@ -103,15 +101,16 @@
 }
 
 .cta :global(.btn-primary) {
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 28px rgba(194, 106, 45, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.3);
+  background: #fff;
+  color: #2C1E1A;
+  border: none;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .cta :global(.btn-primary:hover) {
-  transform: translateY(-3px);
-  border-color: rgba(255, 255, 255, 0.35);
-  box-shadow: 0 12px 36px rgba(194, 106, 45, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
 }
 
 .cta :global(.btn-ghost) {
