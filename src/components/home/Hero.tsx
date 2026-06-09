@@ -67,8 +67,7 @@ export default function Hero({ title, subtitle }: HeroProps) {
           poster="/videos/hero-poster.jpg"
           onCanPlay={handleVideoCanPlay}
         >
-          <source src="/videos/hero.webm" type="video/webm" />
-          <source src="/videos/hero.mp4" type="video/mp4" />
+          <source src="/hero-bg.mp4" type="video/mp4" />
         </video>
         <div className={styles.videoOverlay} />
       </div>
