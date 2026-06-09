@@ -356,7 +356,7 @@ export default function BarMenuClient() {
 
   return (
     <>
-      <style>{`@keyframes heroZoom{0%{transform:scale(1)}100%{transform:scale(1.08)}}`}</style>
+      <style>{`@keyframes heroZoom{0%{transform:scale(1)}100%{transform:scale(1.12)}}`}</style>
       <Header />
       <main style={{ paddingTop: 0 }}>
         {/* Hero Section */}
@@ -375,7 +375,7 @@ export default function BarMenuClient() {
             position: 'absolute',
             inset: 0,
             background: 'url(/cocktails-and-drinks/2026-02-11-1.webp) center/cover no-repeat',
-            animation: 'heroZoom 25s ease-in-out infinite alternate',
+            animation: 'heroZoom 12s ease-in-out infinite alternate',
           }} />
           <div style={{
             position: 'absolute',
