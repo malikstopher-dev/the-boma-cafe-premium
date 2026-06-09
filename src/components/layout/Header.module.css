@@ -1,32 +1,74 @@
 .header {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 1000;
-  background: rgba(26, 15, 10, 0.04);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  transition: background 0.4s ease, backdrop-filter 0.4s ease, box-shadow 0.4s ease, border-color 0.4s ease;
-  will-change: background, backdrop-filter;
+  width: calc(100% - 48px);
+  max-width: 1200px;
+  will-change: transform;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, border 0.3s ease;
+  background: linear-gradient(
+    to bottom,
+    rgba(248, 248, 248, 0.75),
+    rgba(238, 238, 238, 0.68)
+  );
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
 }
 
 .header.scrolled {
-  background: rgba(26, 15, 10, 0.35);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  transform: translateX(-50%) translateY(-10px);
+  background: linear-gradient(
+    to bottom,
+    rgba(244, 244, 244, 0.78),
+    rgba(232, 232, 232, 0.72)
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 18px;
+}
+
+.header.scrolled .navLink {
+  color: var(--heading);
+}
+
+.header.scrolled .navLink:hover {
+  color: var(--primary);
+}
+
+.header.scrolled .icon {
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--heading);
+}
+
+.header.scrolled .icon:hover {
+  background: linear-gradient(135deg, var(--primary-soft), var(--primary));
+  color: var(--white);
+}
+
+.header.scrolled .logoImg {
+}
+
+.header.scrolled .toggleIcon {
+  color: #2A2A2A;
+}
+
+.header.scrolled .mobileToggle {
+  background: rgba(248, 248, 248, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 .container {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0.5rem 2rem;
+  padding: 0.75rem 2rem;
 }
 
 .navLeft {
@@ -48,11 +90,9 @@
 }
 
 .logoImg {
-  height: 64px;
+  height: 72px;
   width: auto;
   object-fit: contain;
-  filter: brightness(0) invert(1);
-  transition: filter 0.4s ease;
 }
 
 .icons {
@@ -69,20 +109,21 @@
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--heading);
   transition: all 0.25s ease;
   text-decoration: none;
 }
 
 .icon:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
+  background: linear-gradient(135deg, var(--primary-soft), var(--primary));
+  color: var(--white);
   transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(194, 106, 45, 0.25);
 }
 
 .navLink {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--heading);
   font-weight: 500;
   font-size: 0.875rem;
   text-decoration: none;
@@ -92,33 +133,27 @@
 }
 
 .navLink:hover {
-  color: #fff;
+  color: var(--primary);
 }
 
 .mobileToggle {
   display: none;
   position: fixed;
-  top: 12px;
-  right: 12px;
+  top: 20px;
+  right: 20px;
   z-index: 1001;
-  background: rgba(26, 15, 10, 0.25);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(248, 248, 248, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 10px;
   padding: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   cursor: pointer;
   transition: all 0.25s ease;
 }
 
 .toggleIcon {
   font-size: 1.2rem;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.header.scrolled .mobileToggle {
-  background: rgba(26, 15, 10, 0.4);
-  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--heading);
 }
 
 .mobileOverlay {
@@ -128,6 +163,7 @@
   left: 0;
   right: 0;
   bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
   z-index: 999;
 }
 
@@ -195,18 +231,46 @@
 /* Mobile Styles */
 @media (max-width: 1024px) {
   .header {
-    background: rgba(26, 15, 10, 0.06);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    width: 100%;
+    max-width: 100%;
+    top: 0;
+    left: 0;
+    right: 0;
+    transform: none;
+    border-radius: 0;
+    border: none;
+    border-bottom: none;
+    background: rgba(248, 248, 248, 0.85);
+  }
+
+  @supports (backdrop-filter: blur(4px)) {
+    .header {
+      background: linear-gradient(
+        to bottom,
+        rgba(248, 248, 248, 0.78),
+        rgba(238, 238, 238, 0.68)
+      );
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
   }
 
   .header.scrolled {
-    background: rgba(26, 15, 10, 0.35);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(244, 244, 244, 0.85);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border-bottom: none;
+  }
+
+  @supports (backdrop-filter: blur(4px)) {
+    .header.scrolled {
+      background: linear-gradient(
+        to bottom,
+        rgba(248, 248, 248, 0.82),
+        rgba(238, 238, 238, 0.75)
+      );
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
   }
 
   .container {
@@ -229,7 +293,9 @@
     height: 40px;
     max-width: 130px;
     width: auto;
-    filter: brightness(0) invert(1);
+  }
+
+  .header.scrolled .logoImg {
   }
 
   .mobileToggle {
@@ -243,6 +309,11 @@
     border-radius: 12px;
   }
 
+  .header.scrolled .mobileToggle {
+    background: rgba(248, 248, 248, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+  }
+
   .mobileOverlay {
     display: block;
     width: 100%;
@@ -254,6 +325,7 @@
     bottom: 0;
     background: rgba(26, 15, 10, 0.5);
     backdrop-filter: blur(2px);
+    z-index: 1001;
     animation: overlayFadeIn 0.25s ease;
   }
 
@@ -384,7 +456,7 @@
     padding: 0;
     border-radius: 10px;
   }
-
+  
   .toggleIcon {
     font-size: 1.1rem;
   }
