@@ -33,6 +33,7 @@ const signatureDishes = [
 export default function Home() {
   const [settings, setSettings] = useState<any>(null);
   const [popup, setPopup] = useState<any>(null);
+  const [videoFailed, setVideoFailed] = useState(false);
   
   useEffect(() => {
     const loadData = async () => {
@@ -68,18 +69,27 @@ export default function Home() {
       
       <main>
         {/* Section 1: Hero */}
-        <section className={styles.heroSection}>
-          <video
-            className={styles.heroVideo}
-            src="/boma-bg.mp4"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            poster="/hero/slide1.jpg"
-            aria-label="The Boma Cafe ambiance video"
-          />
+        <section
+          className={`${styles.heroSection} ${videoFailed ? styles.videoPoster : ''}`}
+          aria-label="The Boma Cafe video hero"
+        >
+          <div className={styles.heroBg}>
+            <video
+              className={styles.heroVideo}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              poster="/hero/slide1.jpg"
+              aria-label="The Boma Cafe ambiance video"
+              onError={() => setVideoFailed(true)}
+            >
+              <source src="/boma-bg.webm" type="video/webm" />
+              <source src="/boma-bg.mp4" type="video/mp4" />
+            </video>
+            <div className={styles.heroPoster} />
+          </div>
           <div className={styles.heroOverlay} />
           
           <div className={styles.heroContent}>
