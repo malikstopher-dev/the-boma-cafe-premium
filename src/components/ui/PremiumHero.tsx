@@ -58,7 +58,7 @@ export default function PremiumHero({
             transform: scale(1);
           }
           100% {
-            transform: scale(1.12);
+            transform: scale(1.15);
           }
         }
       `}</style>
