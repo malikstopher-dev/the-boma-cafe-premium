@@ -8,6 +8,8 @@ import styles from './CartButton.module.css';
 export default function CartButton() {
   const { items, total, addItem, removeItem, updateQuantity, clearCart, isCartOpen, openCart, closeCart } = useCart();
   const [isClient, setIsClient] = useState(false);
+  const [isOrderSubmitting, setIsOrderSubmitting] = useState(false);
+  const [orderError, setOrderError] = useState('');
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
     phone: '',
@@ -15,6 +17,7 @@ export default function CartButton() {
     requestedTime: '',
     notes: '',
   });
+  const [orderRef, setOrderRef] = useState('');
 
   useEffect(() => {
     setIsClient(true);
@@ -49,13 +52,82 @@ export default function CartButton() {
     removeItem(id);
   };
 
-  const handleOrder = () => {
+  const submitOrderToSupabase = async () => {
+    const itemsPayload = items.map(item => ({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      category: item.category,
+      selectedSize: item.selectedSize,
+      selectedAddOns: item.selectedAddOns,
+      notes: item.notes,
+    }));
+
+    const res = await fetch('/api/supabase/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customer_name: customerInfo.name || 'Guest',
+        phone: customerInfo.phone || 'No phone',
+        order_type: customerInfo.orderType.toLowerCase(),
+        requested_time: customerInfo.requestedTime || 'ASAP',
+        items_json: JSON.stringify(itemsPayload),
+        total,
+      }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || 'Failed to submit order');
+    }
+
+    const data = await res.json();
+    return data.order?.order_ref || '';
+  };
+
+  const handleWhatsAppOrder = async () => {
+    if (isOrderSubmitting) return;
+    setOrderError('');
+    setIsOrderSubmitting(true);
+
+    let ref = '';
+    try {
+      ref = await submitOrderToSupabase();
+    } catch (err) {
+      setOrderError(err instanceof Error ? err.message : 'Failed to save order');
+    }
+
     const message = generateOrderMessage(items, total, customerInfo);
+    if (ref) {
+      setOrderRef(ref);
+    }
     const url = formatWhatsAppUrl(message);
     window.open(url, '_blank');
     clearCart();
     closeCart();
     setCustomerInfo({ name: '', phone: '', orderType: 'Pickup', requestedTime: '', notes: '' });
+    setIsOrderSubmitting(false);
+  };
+
+  const handleOnlineOrder = async () => {
+    if (isOrderSubmitting) return;
+    setOrderError('');
+    setIsOrderSubmitting(true);
+
+    try {
+      const ref = await submitOrderToSupabase();
+      setOrderRef(ref);
+    } catch (err) {
+      setOrderError(err instanceof Error ? err.message : 'Failed to save order');
+    }
+
+    setIsOrderSubmitting(false);
+  };
+
+  const handleBackToCart = () => {
+    setOrderRef('');
+    setOrderError('');
   };
 
   return (
@@ -90,10 +162,51 @@ export default function CartButton() {
            <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.header}>
               <h2 style={{ fontSize: '1.35rem', color: 'var(--dark-brown)' }}>🛒 Your Order</h2>
-              <button className={styles.closeBtn} onClick={closeCart}>✕</button>
+              {!orderRef && <button className={styles.closeBtn} onClick={closeCart}>✕</button>}
             </div>
 
-            {items.length === 0 ? (
+            {orderRef ? (
+              <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
+                <div style={{
+                  width: '72px', height: '72px', background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
+                  borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  margin: '0 auto 1.25rem', fontSize: '2rem', color: '#fff',
+                }}>
+                  ✓
+                </div>
+                <h3 style={{ color: 'var(--dark-brown)', marginBottom: '0.5rem', fontSize: '1.35rem' }}>
+                  Order Placed!
+                </h3>
+                <p style={{ fontFamily: 'monospace', fontSize: '1.4rem', fontWeight: 700, color: 'var(--warm)', marginBottom: '1rem' }}>
+                  {orderRef}
+                </p>
+                <p style={{ color: 'var(--text-light)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                  Save your order reference to track the status.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <a
+                    href={`/track-order?ref=${orderRef}`}
+                    style={{
+                      display: 'block', padding: '0.85rem', borderRadius: '12px',
+                      background: 'var(--warm)', color: '#fff', textDecoration: 'none',
+                      fontWeight: 600, fontSize: '0.95rem',
+                    }}
+                  >
+                    Track Order
+                  </a>
+                  <button
+                    onClick={() => { clearCart(); closeCart(); setOrderRef(''); setCustomerInfo({ name: '', phone: '', orderType: 'Pickup', requestedTime: '', notes: '' }); }}
+                    style={{
+                      padding: '0.85rem', borderRadius: '12px',
+                      border: '2px solid var(--beige-dark)', background: 'transparent',
+                      color: 'var(--text)', fontWeight: 500, cursor: 'pointer', fontSize: '0.95rem',
+                    }}
+                  >
+                    Continue Shopping
+                  </button>
+                </div>
+              </div>
+            ) : items.length === 0 ? (
               <div className={styles.emptyState}>
                 <div className={styles.emptyIcon}>🛒</div>
                 <p className={styles.emptyTitle}>Your cart is empty</p>
@@ -207,12 +320,40 @@ export default function CartButton() {
                   </div>
                 </div>
 
-                <button
-                  onClick={handleOrder}
-                  className={styles.orderBtn}
-                >
-                  <i className="fab fa-whatsapp" /> Order via WhatsApp
-                </button>
+                {/* Checkout method selection */}
+                <div style={{ marginTop: '1rem' }}>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginBottom: '0.75rem', fontWeight: 600, textAlign: 'center' }}>
+                    Order Method
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <button
+                      onClick={handleWhatsAppOrder}
+                      disabled={isOrderSubmitting}
+                      className={styles.orderBtn}
+                      style={{ opacity: isOrderSubmitting ? 0.7 : 1, cursor: isOrderSubmitting ? 'not-allowed' : 'pointer' }}
+                    >
+                      {isOrderSubmitting ? 'Submitting...' : <><i className="fab fa-whatsapp" /> Order via WhatsApp</>}
+                    </button>
+                    <button
+                      onClick={handleOnlineOrder}
+                      disabled={isOrderSubmitting}
+                      style={{
+                        width: '100%', minHeight: '48px',
+                        padding: '0.85rem', borderRadius: '14px',
+                        border: '2px solid var(--beige-dark)', background: 'var(--white)',
+                        color: 'var(--dark-brown)', fontSize: '0.95rem', fontWeight: 600, cursor: isOrderSubmitting ? 'not-allowed' : 'pointer',
+                        opacity: isOrderSubmitting ? 0.7 : 1,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                      }}
+                    >
+                      <span>🌐</span> Place Online Order
+                    </button>
+                  </div>
+                </div>
+
+                {orderError && (
+                  <p style={{ color: '#ef4444', fontSize: '0.85rem', textAlign: 'center', margin: '0.75rem 0 0' }}>{orderError}</p>
+                )}
               </>
             )}
           </div>

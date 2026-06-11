@@ -89,6 +89,9 @@ const defaultDrinks: DrinkItem[] = [
   { id: 'beer9', name: 'Guinness Draught', price: 'Ask server', category: 'Beers' },
   { id: 'beer10', name: 'Miller Genuine Draft', price: 'Ask server', category: 'Beers' },
   { id: 'beer11', name: 'Strongbow', price: 'Ask server', category: 'Beers' },
+  { id: 'beer13', name: 'Castle Lite', price: 'Ask server', category: 'Beers' },
+  { id: 'beer14', name: 'Windhoek Draught', price: 'Ask server', category: 'Beers' },
+  { id: 'beer15', name: 'Stella Artois', price: 'Ask server', category: 'Beers' },
   
   // Ciders & Coolers
   { id: 'cider1', name: 'Bernini Classic', price: 'Ask server', category: 'Ciders & Coolers' },
@@ -100,6 +103,12 @@ const defaultDrinks: DrinkItem[] = [
   { id: 'cider6b', name: 'Savanna Light', price: 'Ask server', category: 'Ciders & Coolers' },
   { id: 'cider6c', name: 'Savanna', price: 'Ask server', category: 'Ciders & Coolers' },
   { id: 'cider7', name: 'Hunters Gold', price: 'Ask server', category: 'Ciders & Coolers' },
+  { id: 'cider8', name: 'Brutal Fruit Ruby Apple', price: 'Ask server', category: 'Ciders & Coolers' },
+  { id: 'cider9', name: 'Flying Fish Lemon', price: 'Ask server', category: 'Ciders & Coolers' },
+  { id: 'cider10', name: 'Flying Fish Pressed Lemon', price: 'Ask server', category: 'Ciders & Coolers' },
+  { id: 'cider11', name: 'Smirnoff Spin', price: 'Ask server', category: 'Ciders & Coolers' },
+  { id: 'cider12', name: 'Smirnoff Storm', price: 'Ask server', category: 'Ciders & Coolers' },
+  { id: 'cider13', name: "Hunter's Dry", price: 'Ask server', category: 'Ciders & Coolers' },
   
   // Gin & Ready-To-Drink
   { id: 'gin1', name: 'Belgravia Gin & Pink Tonic', price: 'Ask server', category: 'Gin & Ready-To-Drink' },
@@ -109,6 +118,9 @@ const defaultDrinks: DrinkItem[] = [
   { id: 'gin5', name: "Gordon's Gin", price: 'Ask server', category: 'Gin & Ready-To-Drink' },
   { id: 'gin6', name: 'Beefeater London Pink Strawberry Gin', price: 'Ask server', category: 'Gin & Ready-To-Drink' },
   { id: 'gin7', name: 'Beefeater London Dry Gin', price: 'Ask server', category: 'Gin & Ready-To-Drink' },
+  { id: 'gin8', name: 'Belgravia Gin & Dry Lemon', price: 'Ask server', category: 'Gin & Ready-To-Drink' },
+  { id: 'gin9', name: 'Tanqueray', price: 'Ask server', category: 'Gin & Ready-To-Drink' },
+  { id: 'gin10', name: 'Belgravia Gin', price: 'Ask server', category: 'Gin & Ready-To-Drink' },
   
   // Spirits
   { id: 'spirit1', name: "Jack Daniel's Tennessee Whiskey", price: 'Ask server', category: 'Spirits' },
@@ -128,6 +140,14 @@ const defaultDrinks: DrinkItem[] = [
   { id: 'spirit15', name: 'Malibu', price: 'Ask server', category: 'Spirits' },
   { id: 'spirit16', name: 'Monate', price: 'Ask server', category: 'Spirits' },
   { id: 'spirit17', name: 'Tipo Tinto Spiced', price: 'Ask server', category: 'Spirits' },
+  { id: 'spirit18', name: 'Absolut Vodka', price: 'Ask server', category: 'Spirits' },
+  { id: 'spirit19', name: 'Smirnoff 1818', price: 'Ask server', category: 'Spirits' },
+  { id: 'spirit20', name: 'Johnnie Walker Red Label', price: 'Ask server', category: 'Spirits' },
+  { id: 'spirit21', name: 'Johnnie Walker Black Label', price: 'Ask server', category: 'Spirits' },
+  { id: 'spirit22', name: 'Jameson', price: 'Ask server', category: 'Spirits' },
+  { id: 'spirit23', name: 'Chivas Regal', price: 'Ask server', category: 'Spirits' },
+  { id: 'spirit24', name: 'Jose Cuervo Gold', price: 'Ask server', category: 'Spirits' },
+  { id: 'spirit25', name: 'Jose Cuervo Silver', price: 'Ask server', category: 'Spirits' },
   
   // Wines
   { id: 'wine1', name: 'Spier', price: 'Ask server', category: 'Wines' },
@@ -144,6 +164,14 @@ const defaultDrinks: DrinkItem[] = [
   { id: 'wine12', name: 'The Beach House', price: 'Ask server', category: 'Wines' },
   { id: 'wine13', name: 'Optima', price: 'Ask server', category: 'Wines' },
   { id: 'wine14', name: 'PepperWind Syrah', price: 'Ask server', category: 'Wines' },
+  { id: 'wine15', name: 'Four Cousins White', price: 'Ask server', category: 'Wines' },
+  { id: 'wine16', name: 'Four Cousins Red', price: 'Ask server', category: 'Wines' },
+  { id: 'wine17', name: 'Tall Horse White', price: 'Ask server', category: 'Wines' },
+  { id: 'wine18', name: 'Tall Horse Red', price: 'Ask server', category: 'Wines' },
+  { id: 'wine19', name: 'Drostdy-Hof White', price: 'Ask server', category: 'Wines' },
+  { id: 'wine20', name: 'Drostdy-Hof Red', price: 'Ask server', category: 'Wines' },
+  { id: 'wine21', name: 'Cabernet Sauvignon', price: 'Ask server', category: 'Wines' },
+  { id: 'wine22', name: 'Shiraz', price: 'Ask server', category: 'Wines' },
   
   // Sparkling & MCC
   { id: 'spark1', name: 'Krone', price: 'Ask server', category: 'Sparkling & MCC' },
@@ -151,6 +179,9 @@ const defaultDrinks: DrinkItem[] = [
   { id: 'spark3', name: 'Graham Beck', price: 'Ask server', category: 'Sparkling & MCC' },
   { id: 'spark4', name: 'Sparkling Rosé', price: 'Ask server', category: 'Sparkling & MCC' },
   { id: 'spark5', name: 'Assorted MCC / Sparkling Wine', price: 'Ask server', category: 'Sparkling & MCC' },
+  { id: 'spark6', name: 'JC Le Roux', price: 'Ask server', category: 'Sparkling & MCC' },
+  { id: 'spark7', name: 'Pongrácz', price: 'Ask server', category: 'Sparkling & MCC' },
+  { id: 'spark8', name: 'Pongrácz Rosé', price: 'Ask server', category: 'Sparkling & MCC' },
   
   // Soft Drinks & Mixers
   { id: 'soft1', name: 'Sprite', price: 'Ask server', category: 'Soft Drinks & Mixers' },
@@ -163,6 +194,18 @@ const defaultDrinks: DrinkItem[] = [
   { id: 'soft8', name: 'Appletiser', price: 'Ask server', category: 'Soft Drinks & Mixers' },
   { id: 'soft9', name: 'Red Bull', price: 'Ask server', category: 'Soft Drinks & Mixers' },
   { id: 'soft10', name: 'Juice Dispensers / House Juice', price: 'Ask server', category: 'Soft Drinks & Mixers' },
+  { id: 'soft11', name: 'Coca-Cola', price: 'Ask server', category: 'Soft Drinks & Mixers' },
+  { id: 'soft12', name: 'Coca-Cola No Sugar', price: 'Ask server', category: 'Soft Drinks & Mixers' },
+  { id: 'soft13', name: 'Fanta Orange', price: 'Ask server', category: 'Soft Drinks & Mixers' },
+  { id: 'soft14', name: 'Sprite Zero', price: 'Ask server', category: 'Soft Drinks & Mixers' },
+  { id: 'soft15', name: 'Red Bull Sugar Free', price: 'Ask server', category: 'Soft Drinks & Mixers' },
+  { id: 'soft16', name: 'Monster Energy', price: 'Ask server', category: 'Soft Drinks & Mixers' },
+  { id: 'soft17', name: 'Schweppes Tonic Water', price: 'Ask server', category: 'Soft Drinks & Mixers' },
+  { id: 'soft18', name: 'Schweppes Dry Lemon', price: 'Ask server', category: 'Soft Drinks & Mixers' },
+  { id: 'soft19', name: 'Schweppes Soda Water', price: 'Ask server', category: 'Soft Drinks & Mixers' },
+  { id: 'soft20', name: 'Schweppes Ginger Ale', price: 'Ask server', category: 'Soft Drinks & Mixers' },
+  { id: 'soft21', name: 'Schweppes Lemonade', price: 'Ask server', category: 'Soft Drinks & Mixers' },
+  { id: 'soft22', name: 'Valpré Sparkling Water', price: 'Ask server', category: 'Soft Drinks & Mixers' },
 ];
 
 const categoryOrder = [

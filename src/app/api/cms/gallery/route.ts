@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getGallery, saveGalleryItem, deleteGalleryItem, getGalleryBoards } from '@/lib/db';
+import { requireAuth } from '@/lib/server-auth';
 
 export async function GET() {
+  const authError = await requireAuth()
+  if (authError) return authError
+
   try {
     const gallery = getGallery();
     const boards = getGalleryBoards();
@@ -13,6 +17,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const authError = await requireAuth()
+  if (authError) return authError
+
   try {
     const item = await request.json();
     const saved = saveGalleryItem(item);
@@ -24,6 +31,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const authError = await requireAuth()
+  if (authError) return authError
+
   try {
     const item = await request.json();
     const saved = saveGalleryItem(item);
@@ -35,6 +45,9 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  const authError = await requireAuth()
+  if (authError) return authError
+
   try {
     const body = await request.json();
     if (body.items && Array.isArray(body.items)) {
@@ -49,6 +62,9 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const authError = await requireAuth()
+  if (authError) return authError
+
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

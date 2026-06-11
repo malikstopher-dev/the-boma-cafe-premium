@@ -18,6 +18,8 @@ const menuItems = [
   { label: 'Popup', icon: '🔔', href: '/admin/popup' },
   { label: 'Announcement', icon: '📢', href: '/admin/announcement' },
   { label: 'Inquiries', icon: '✉️', href: '/admin/inquiries' },
+  { label: 'Orders', icon: '📋', href: '/admin/orders' },
+  { label: 'Kitchen', icon: '👨‍🍳', href: '/admin/kitchen' },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

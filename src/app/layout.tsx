@@ -2,6 +2,7 @@ import { Playfair_Display, Poppins } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth";
 import { CartProvider } from "@/lib/cart";
+import { BookingProvider } from "@/lib/booking";
 import CartButton from "@/components/ui/CartButton";
 import ScrollToTopButton from "@/components/ui/ScrollToTopButton";
 import { BUSINESS_INFO } from "@/lib/whatsappConfig";
@@ -136,11 +137,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen">
         <AuthProvider>
           <CartProvider>
-            {children}
-            <ScrollToTopButton />
-            <ScrollArrows />
-            <CartButton />
-            <MobileBottomBar />
+            <BookingProvider>
+              {children}
+              <ScrollToTopButton />
+              <ScrollArrows />
+              <CartButton />
+              <MobileBottomBar />
+            </BookingProvider>
           </CartProvider>
         </AuthProvider>
       </body>

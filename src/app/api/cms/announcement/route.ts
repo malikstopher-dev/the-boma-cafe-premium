@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAnnouncement, saveAnnouncement } from '@/lib/db';
+import { requireAuth } from '@/lib/server-auth';
 
 export async function GET() {
+  const authError = await requireAuth()
+  if (authError) return authError
+
   try {
     const announcement = getAnnouncement();
     return NextResponse.json(announcement);
@@ -12,6 +16,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const authError = await requireAuth()
+  if (authError) return authError
+
   try {
     const announcement = await request.json();
     const success = saveAnnouncement(announcement);

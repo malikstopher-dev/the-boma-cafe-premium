@@ -17,6 +17,7 @@ import UpcomingEventsSection from '@/components/sections/UpcomingEventsSection';
 import AboutSection from '@/components/sections/AboutSection';
 import FounderSection from '@/components/sections/FounderSection';
 import { getReservationLink, getEventEnquiryLink } from '@/data/businessInfo';
+import { useBookingModal } from '@/lib/booking';
 import styles from './page.module.css';
 
 // eventSlideshowImages moved to UpcomingEventsSection component
@@ -64,6 +65,7 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 export default function Home() {
+  const { openBookingModal } = useBookingModal();
   const [settings, setSettings] = useState<any>(null);
   const [announcement, setAnnouncement] = useState<any>(null);
   const [popup, setPopup] = useState<any>(null);

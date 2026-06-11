@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getInquiries, saveInquiry, markInquiryRead } from '@/lib/db';
+import { requireAuth } from '@/lib/server-auth';
 
 export async function GET() {
+  const authError = await requireAuth()
+  if (authError) return authError
+
   try {
     const inquiries = getInquiries();
     return NextResponse.json(inquiries);
@@ -12,6 +16,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const authError = await requireAuth()
+  if (authError) return authError
+
   try {
     const body = await request.json();
     
@@ -36,6 +43,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  const authError = await requireAuth()
+  if (authError) return authError
+
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

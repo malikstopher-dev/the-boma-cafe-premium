@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPromotions, savePromotion, deletePromotion } from '@/lib/db';
+import { requireAuth } from '@/lib/server-auth';
 
 export async function GET() {
+  const authError = await requireAuth()
+  if (authError) return authError
+
   try {
     const promotions = getPromotions();
     return NextResponse.json(promotions);
@@ -12,6 +16,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const authError = await requireAuth()
+  if (authError) return authError
+
   try {
     const promotion = await request.json();
     const saved = savePromotion(promotion);
@@ -23,6 +30,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const authError = await requireAuth()
+  if (authError) return authError
+
   try {
     const promotion = await request.json();
     const saved = savePromotion(promotion);
@@ -34,6 +44,9 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  const authError = await requireAuth()
+  if (authError) return authError
+
   try {
     const body = await request.json();
     if (body.promotions && Array.isArray(body.promotions)) {
@@ -48,6 +61,9 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const authError = await requireAuth()
+  if (authError) return authError
+
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

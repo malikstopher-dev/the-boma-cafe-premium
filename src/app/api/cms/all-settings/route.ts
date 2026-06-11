@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllSettings, setMultipleSettings, getSetting, setSetting } from '@/lib/db';
+import { requireAuth } from '@/lib/server-auth';
 
 export async function GET() {
+  const authError = await requireAuth()
+  if (authError) return authError
+
   try {
     const settings = getAllSettings();
     return NextResponse.json(settings);
@@ -12,6 +16,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const authError = await requireAuth()
+  if (authError) return authError
+
   try {
     const body = await request.json();
     
@@ -29,6 +36,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const authError = await requireAuth()
+  if (authError) return authError
+
   try {
     const body = await request.json();
     const { key, value } = body;

@@ -14,19 +14,68 @@ export default function ContactPage() {
   const [contactSettings, setContactSettings] = useState<any>(null);
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setSettings(dataService.getSettings());
     setContactSettings(siteSettingsService.getContactSettings());
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validate = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!formData.name.trim()) errors.name = 'Name is required';
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'Invalid email address';
+    }
+    if (!formData.message.trim()) errors.message = 'Message is required';
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const subject = formData.subject ? `[The Boma Cafe] ${formData.subject}` : '[The Boma Cafe] New Inquiry';
-    const body = `Name: ${formData.name}%0D%0AEmail: ${formData.email}%0D%0APhone: ${formData.phone}%0D%0A%0D%0AMessage:%0D%0A${formData.message}`;
-    window.location.href = `mailto:info@thebomacafe.co.za?subject=${subject}&body=${body}`;
-    setIsSubmitted(true);
-    setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
+    if (!validate()) return;
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+    setSubmitError('');
+
+    try {
+      const res = await fetch('/api/supabase/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          phone: formData.phone.trim() || null,
+          message: formData.message.trim(),
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to send message');
+      }
+
+      setIsSubmitted(true);
+      setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
+      setValidationErrors({});
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (validationErrors[field]) {
+      setValidationErrors(prev => ({ ...prev, [field]: '' }));
+    }
   };
 
   const contact = contactSettings || {};
@@ -332,34 +381,38 @@ export default function ContactPage() {
                 ) : (
                   <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <div className="contact-form-inputs" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                      <input 
-                        type="text" 
-                        placeholder="Your Name *" 
-                        required
-                        value={formData.name}
-                        onChange={(e) => setFormData({...formData, name: e.target.value})}
-                        style={{ width: '100%', boxSizing: 'border-box', padding: '1rem 1.25rem', borderRadius: '14px', border: '2px solid transparent', background: 'var(--white)', fontSize: '1rem', transition: 'border-color 0.2s ease' }}
-                      />
-                      <input 
-                        type="email" 
-                        placeholder="Your Email *" 
-                        required
-                        value={formData.email}
-                        onChange={(e) => setFormData({...formData, email: e.target.value})}
-                        style={{ width: '100%', boxSizing: 'border-box', padding: '1rem 1.25rem', borderRadius: '14px', border: '2px solid transparent', background: 'var(--white)', fontSize: '1rem', transition: 'border-color 0.2s ease' }}
-                      />
+                      <div>
+                        <input 
+                          type="text" 
+                          placeholder="Your Name *" 
+                          value={formData.name}
+                          onChange={(e) => handleChange('name', e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box', padding: '1rem 1.25rem', borderRadius: '14px', border: `2px solid ${validationErrors.name ? '#ef4444' : 'transparent'}`, background: 'var(--white)', fontSize: '1rem', transition: 'border-color 0.2s ease' }}
+                        />
+                        {validationErrors.name && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{validationErrors.name}</span>}
+                      </div>
+                      <div>
+                        <input 
+                          type="email" 
+                          placeholder="Your Email *" 
+                          value={formData.email}
+                          onChange={(e) => handleChange('email', e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box', padding: '1rem 1.25rem', borderRadius: '14px', border: `2px solid ${validationErrors.email ? '#ef4444' : 'transparent'}`, background: 'var(--white)', fontSize: '1rem', transition: 'border-color 0.2s ease' }}
+                        />
+                        {validationErrors.email && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{validationErrors.email}</span>}
+                      </div>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                       <input 
                         type="tel" 
                         placeholder="Phone Number"
                         value={formData.phone}
-                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                        onChange={(e) => handleChange('phone', e.target.value)}
                         style={{ width: '100%', boxSizing: 'border-box', padding: '1rem 1.25rem', borderRadius: '14px', border: '2px solid transparent', background: 'var(--white)', fontSize: '1rem', transition: 'border-color 0.2s ease' }}
                       />
                       <select 
                         value={formData.subject}
-                        onChange={(e) => setFormData({...formData, subject: e.target.value})}
+                        onChange={(e) => handleChange('subject', e.target.value)}
                         style={{ width: '100%', boxSizing: 'border-box', padding: '1rem 1.25rem', borderRadius: '14px', border: '2px solid transparent', background: 'var(--white)', fontSize: '1rem', transition: 'border-color 0.2s ease' }}
                       >
                         <option value="">Select Subject</option>
@@ -369,16 +422,21 @@ export default function ContactPage() {
                         <option value="general">General Inquiry</option>
                       </select>
                     </div>
-                    <textarea 
-                      placeholder="Your Message *" 
-                      required
-                      rows={5}
-                      value={formData.message}
-                      onChange={(e) => setFormData({...formData, message: e.target.value})}
-                      style={{ padding: '1rem 1.25rem', borderRadius: '14px', border: '2px solid transparent', background: 'var(--white)', fontSize: '1rem', resize: 'vertical', transition: 'border-color 0.2s ease' }}
-                    />
-                    <button type="submit" className="btn btn-primary" style={{ marginTop: '0.5rem', padding: '1rem 2rem' }}>
-                      Send Message
+                    <div>
+                      <textarea 
+                        placeholder="Your Message *" 
+                        rows={5}
+                        value={formData.message}
+                        onChange={(e) => handleChange('message', e.target.value)}
+                        style={{ width: '100%', boxSizing: 'border-box', padding: '1rem 1.25rem', borderRadius: '14px', border: `2px solid ${validationErrors.message ? '#ef4444' : 'transparent'}`, background: 'var(--white)', fontSize: '1rem', resize: 'vertical', transition: 'border-color 0.2s ease' }}
+                      />
+                      {validationErrors.message && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{validationErrors.message}</span>}
+                    </div>
+                    {submitError && (
+                      <p style={{ color: '#ef4444', fontSize: '0.9rem', margin: '0.5rem 0 0' }}>{submitError}</p>
+                    )}
+                    <button type="submit" disabled={isSubmitting} className="btn btn-primary" style={{ marginTop: '0.5rem', padding: '1rem 2rem', opacity: isSubmitting ? 0.7 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}>
+                      {isSubmitting ? 'Sending...' : 'Send Message'}
                     </button>
                   </form>
                 )}

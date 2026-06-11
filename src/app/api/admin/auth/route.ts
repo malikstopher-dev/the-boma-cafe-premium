@@ -1,15 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const ADMIN_PASSWORD = 'Lovers0884';
 const AUTH_COOKIE_NAME = 'boma_admin_auth';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { password } = body;
+
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    if (!adminPassword) {
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
     
-    if (password === ADMIN_PASSWORD) {
+    if (password === adminPassword) {
       const cookieStore = await cookies();
       cookieStore.set(AUTH_COOKIE_NAME, 'true', {
         httpOnly: true,
