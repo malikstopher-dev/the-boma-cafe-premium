@@ -1,269 +1,531 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { SupabaseOrder, TableInfo, parseOrderItems, getOrderTableNumber, PaymentMethod } from '@/types/pos'
+import { STATUS_LABELS, STATUS_COLORS } from '@/lib/order-state-machine'
 
-interface Order {
-  id: string
-  order_ref: string | null
-  customer_name: string
-  phone: string
-  order_type: string
-  requested_time: string
-  items_json: string
-  total: number
-  status: string
-  created_at: string
+const POLL_INTERVAL = 4000
+const TOTAL_TABLES = 20
+
+function formatTime(iso: string) {
+  return new Date(iso).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  pending: 'New',
-  confirmed: 'Accepted',
-  preparing: 'Preparing',
-  ready: 'Ready',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
+function timeSince(iso: string) {
+  const ms = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(ms / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m`
+  const hrs = Math.floor(mins / 60)
+  return `${hrs}h ${mins % 60}m`
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  pending: '#f59e0b',
-  confirmed: '#3b82f6',
-  preparing: '#8b5cf6',
-  ready: '#10b981',
-  completed: '#6b7280',
-  cancelled: '#ef4444',
+function TableGrid({
+  tables,
+  selectedTable,
+  onSelectTable,
+}: {
+  tables: TableInfo[]
+  selectedTable: number | null
+  onSelectTable: (n: number | null) => void
+}) {
+  return (
+    <div style={{ padding: '0.75rem' }}>
+      <h3 style={{ margin: '0 0 0.75rem', fontSize: '0.8rem', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        Tables
+      </h3>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
+        {tables.map((t) => {
+          const isOccupied = t.status !== 'empty'
+          return (
+            <button
+              key={t.tableNumber}
+              onClick={() => onSelectTable(selectedTable === t.tableNumber ? null : t.tableNumber)}
+              style={{
+                padding: '0.6rem 0.4rem',
+                borderRadius: '10px',
+                border: selectedTable === t.tableNumber ? '2px solid #f59e0b' : isOccupied ? '2px solid rgba(59,130,246,0.4)' : '2px solid rgba(255,255,255,0.06)',
+                background: selectedTable === t.tableNumber ? 'rgba(245,158,11,0.15)' : isOccupied ? 'rgba(59,130,246,0.1)' : 'rgba(255,255,255,0.03)',
+                cursor: 'pointer',
+                color: '#fff',
+                textAlign: 'center',
+                transition: 'all 0.15s',
+              }}
+            >
+              <div style={{ fontSize: '1rem', fontWeight: 700 }}>{t.tableNumber}</div>
+              {isOccupied && (
+                <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.15rem' }}>
+                  R{t.total.toFixed(0)}
+                </div>
+              )}
+              {!isOccupied && (
+                <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.15)', marginTop: '0.15rem' }}>empty</div>
+              )}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
-const WORKFLOW: Record<string, { label: string; next: string } | null> = {
-  pending: { label: 'Accept Order', next: 'confirmed' },
-  confirmed: { label: 'Start Preparing', next: 'preparing' },
-  preparing: { label: 'Mark Ready', next: 'ready' },
-  ready: { label: 'Complete', next: 'completed' },
-  completed: null,
-  cancelled: null,
+function OrderCard({
+  order,
+  selected,
+  onClick,
+  onAssignTable,
+  tables,
+}: {
+  order: SupabaseOrder
+  selected: boolean
+  onClick: () => void
+  onAssignTable: (orderId: string, table: number) => void
+  tables: TableInfo[]
+}) {
+  const items = parseOrderItems(order.items_json)
+  const status = order.status as any
+  const color = STATUS_COLORS[status] || '#6b7280'
+  const label = STATUS_LABELS[status] || status
+  const displayRef = order.order_ref || `#${order.id.slice(0, 8).toUpperCase()}`
+  const tn = getOrderTableNumber(order)
+  const itemCount = items.reduce((s, i) => s + i.quantity, 0)
+  const availableTables = tables.filter((t) => t.status === 'empty')
+
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        background: selected ? '#1e1e38' : '#16162a',
+        borderRadius: '12px',
+        padding: '1rem',
+        border: selected ? `2px solid ${color}` : '2px solid rgba(255,255,255,0.04)',
+        cursor: 'pointer',
+        transition: 'all 0.15s',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+        <span style={{ fontSize: '1.2rem', fontWeight: 700, fontFamily: 'monospace', color: '#fff' }}>
+          {displayRef}
+        </span>
+        <span style={{
+          padding: '0.25rem 0.6rem',
+          borderRadius: '6px',
+          fontSize: '0.75rem',
+          fontWeight: 700,
+          background: `${color}25`,
+          color,
+        }}>
+          {label}
+        </span>
+      </div>
+      <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+        <span>{order.order_type === 'pickup' ? '📦 Pickup' : order.order_type === 'delivery' ? '🚚 Delivery' : '🍽️ Dine-in'}</span>
+        <span>⏱ {timeSince(order.created_at)}</span>
+        {tn && <span>🪑 Table {tn}</span>}
+        <span style={{ color: 'rgba(255,255,255,0.3)' }}>📋 {itemCount} item{itemCount !== 1 ? 's' : ''}</span>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#10b981' }}>R{order.total.toFixed(2)}</span>
+        {!tn && order.status === 'pending' && availableTables.length > 0 && (
+          <select
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => {
+              const v = parseInt(e.target.value)
+              if (v) onAssignTable(order.id, v)
+              e.target.value = ''
+            }}
+            style={{
+              padding: '0.3rem 0.5rem',
+              borderRadius: '6px',
+              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(255,255,255,0.05)',
+              color: '#fff',
+              fontSize: '0.75rem',
+              cursor: 'pointer',
+            }}
+          >
+            <option value="">Assign table</option>
+            {availableTables.map((t) => (
+              <option key={t.tableNumber} value={t.tableNumber}>Table {t.tableNumber}</option>
+            ))}
+          </select>
+        )}
+      </div>
+    </div>
+  )
 }
 
-export default function AdminOrders() {
-  const [orders, setOrders] = useState<Order[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
-  const [updating, setUpdating] = useState<string | null>(null)
+function CheckoutPanel({
+  order,
+  onPay,
+  onClose,
+  onAssignTable,
+  tables,
+}: {
+  order: SupabaseOrder | null
+  onPay: (id: string, method: PaymentMethod) => void
+  onClose: () => void
+  onAssignTable: (orderId: string, table: number) => void
+  tables: TableInfo[]
+}) {
+  const [method, setMethod] = useState<PaymentMethod>('card')
+  const [paying, setPaying] = useState(false)
+  const items = order ? parseOrderItems(order.items_json) : []
+  const tn = order ? getOrderTableNumber(order) : undefined
+  const availableTables = tables.filter((t) => t.status === 'empty')
+
+  const handlePay = async () => {
+    if (!order || paying) return
+    setPaying(true)
+    try {
+      const res = await fetch(`/api/supabase/orders?id=${order.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'completed' }),
+      })
+      if (res.ok) {
+        onPay(order.id, method)
+      }
+    } catch { /* */ } finally {
+      setPaying(false)
+    }
+  }
+
+  const handlePrint = () => {
+    if (!order) return
+    const printWin = window.open('', '_blank')
+    if (!printWin) return
+    printWin.document.write(`
+      <html><head><title>Receipt - ${order.order_ref || order.id.slice(0, 8)}</title>
+      <style>body{font-family:monospace;padding:20px;max-width:300px;margin:auto}
+      h1{font-size:18px;text-align:center}table{width:100%;border-collapse:collapse}
+      th,td{padding:4px 0;text-align:left}hr{border:none;border-top:1px dashed #000}
+      .total{font-size:20px;font-weight:700;text-align:right}</style></head><body>
+      <h1>THE BOMA CAFE</h1>
+      <p style="text-align:center">${new Date().toLocaleDateString('en-ZA')} ${formatTime(new Date().toISOString())}</p>
+      <p style="text-align:center">${order.order_ref || ''}</p>
+      <hr>
+      <p>${order.order_type}${tn ? ' - Table ' + tn : ''}</p>
+      <hr>
+      <table>${items.map(i => `<tr><td>${i.quantity}x ${i.name}</td><td style="text-align:right">R${(i.price * i.quantity).toFixed(2)}</td></tr>${i.notes ? `<tr><td style="color:#999;font-size:12px;padding-left:16px">${i.notes}</td></tr>` : ''}`).join('')}</table>
+      <hr>
+      <div class="total">R${order.total.toFixed(2)}</div>
+      <hr>
+      <p style="text-align:center">Paid via ${method.toUpperCase()}</p>
+      <p style="text-align:center">Thank you!</p>
+      <script>window.print();window.close();</script>
+      </body></html>`)
+    printWin.document.close()
+  }
+
+  if (!order) return null
+
+  const canPay = order.status === 'ready' || order.status === 'pending' || order.status === 'confirmed' || order.status === 'preparing'
+
+  return (
+    <div style={{
+      width: '380px',
+      background: '#12121e',
+      borderLeft: '1px solid rgba(255,255,255,0.06)',
+      display: 'flex',
+      flexDirection: 'column',
+      flexShrink: 0,
+    }}>
+      <div style={{ padding: '1rem', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontWeight: 700, color: '#fff' }}>
+          {order.order_ref || `#${order.id.slice(0, 8).toUpperCase()}`}
+        </span>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', marginBottom: '1rem' }}>
+          <span>🕐 {formatTime(order.created_at)}</span>
+          <span>📋 {order.order_type}</span>
+          {tn && <span>🪑 Table {tn}</span>}
+        </div>
+
+        {!tn && (
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '0.3rem' }}>Assign to table</label>
+            <select
+              onChange={(e) => {
+                const v = parseInt(e.target.value)
+                if (v) onAssignTable(order.id, v)
+              }}
+              style={{
+                width: '100%', padding: '0.5rem', borderRadius: '8px',
+                border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)',
+                color: '#fff', fontSize: '0.9rem',
+              }}
+            >
+              <option value="">No table</option>
+              {tables.filter(t => t.status === 'empty').map(t => (
+                <option key={t.tableNumber} value={t.tableNumber}>Table {t.tableNumber}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <div style={{ marginBottom: '1rem' }}>
+          <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Items</p>
+          {items.map((item, i) => (
+            <div key={i} style={{ padding: '0.4rem 0', borderBottom: i < items.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none', fontSize: '0.95rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span><strong>{item.quantity}x</strong> {item.name}</span>
+                <span style={{ color: 'rgba(255,255,255,0.6)' }}>R{(item.price * item.quantity).toFixed(2)}</span>
+              </div>
+              {item.notes && <div style={{ fontSize: '0.8rem', color: '#fbbf24', marginTop: '0.15rem' }}>⚠️ {item.notes}</div>}
+            </div>
+          ))}
+        </div>
+
+        <div style={{ borderTop: '2px solid rgba(255,255,255,0.1)', paddingTop: '0.75rem', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: 700 }}>
+            <span>Total</span>
+            <span style={{ color: '#10b981' }}>R{order.total.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '1rem' }}>
+          <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Payment Method</p>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            {(['cash', 'card', 'mobile'] as PaymentMethod[]).map((m) => (
+              <button
+                key={m}
+                onClick={() => setMethod(m)}
+                style={{
+                  flex: 1, padding: '0.6rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600,
+                  border: method === m ? '2px solid #f59e0b' : '2px solid rgba(255,255,255,0.1)',
+                  background: method === m ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.05)',
+                  color: method === m ? '#f59e0b' : 'rgba(255,255,255,0.6)',
+                  cursor: 'pointer', textTransform: 'capitalize',
+                }}
+              >
+                {m === 'cash' ? '💵 Cash' : m === 'card' ? '💳 Card' : '📱 Mobile'}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <button
+          onClick={handlePay}
+          disabled={paying || !canPay}
+          style={{
+            width: '100%', padding: '1rem', border: 'none', borderRadius: '10px',
+            background: canPay ? '#10b981' : 'rgba(255,255,255,0.05)',
+            color: canPay ? '#000' : 'rgba(255,255,255,0.3)',
+            fontSize: '1.1rem', fontWeight: 800,
+            cursor: canPay && !paying ? 'pointer' : 'not-allowed',
+            opacity: paying ? 0.6 : 1,
+          }}
+        >
+          {paying ? 'Processing...' : canPay ? `Mark Paid (${method.toUpperCase()})` : 'Awaiting Ready'}
+        </button>
+        {order.status === 'completed' && (
+          <button
+            onClick={handlePrint}
+            style={{
+              width: '100%', padding: '0.75rem', border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '10px', background: 'transparent', color: 'rgba(255,255,255,0.7)',
+              fontSize: '0.9rem', cursor: 'pointer',
+            }}
+          >
+            🖨️ Print Receipt
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default function OrdersPOS() {
+  const [orders, setOrders] = useState<SupabaseOrder[]>([])
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
+  const [selectedTable, setSelectedTable] = useState<number | null>(null)
+  const prevCountRef = useRef(0)
 
   const loadOrders = useCallback(async () => {
     try {
       const res = await fetch('/api/supabase/orders')
-      if (res.ok) {
-        const data = await res.json()
-        setOrders(data)
+      if (!res.ok) return
+      const data: SupabaseOrder[] = await res.json()
+      setOrders(data)
+      if (data.length > prevCountRef.current && prevCountRef.current > 0) {
+        try {
+          const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+          const osc = ctx.createOscillator()
+          const gain = ctx.createGain()
+          osc.connect(gain)
+          gain.connect(ctx.destination)
+          osc.frequency.value = 660
+          osc.type = 'sine'
+          gain.gain.setValueAtTime(0.15, ctx.currentTime)
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3)
+          osc.start(ctx.currentTime)
+          osc.stop(ctx.currentTime + 0.3)
+        } catch { /* */ }
       }
-    } catch (err) {
-      console.error('Error loading orders:', err)
-    } finally {
-      setIsLoading(false)
-    }
+      prevCountRef.current = data.length
+    } catch { /* */ }
   }, [])
 
   useEffect(() => { loadOrders() }, [loadOrders])
-
   useEffect(() => {
-    const interval = setInterval(loadOrders, 10000)
+    const interval = setInterval(loadOrders, POLL_INTERVAL)
     return () => clearInterval(interval)
   }, [loadOrders])
 
-  const filtered = useMemo(() => {
-    let result = orders
-    if (search.trim()) {
-      const q = search.toLowerCase()
-      result = result.filter(o =>
-        o.customer_name.toLowerCase().includes(q) ||
-        (o.order_ref && o.order_ref.toLowerCase().includes(q))
-      )
-    }
-    if (statusFilter) {
-      result = result.filter(o => o.status === statusFilter)
-    }
-    return result
-  }, [orders, search, statusFilter])
+  const activeOrders = orders.filter((o) => !['completed', 'cancelled'].includes(o.status))
+  const selectedOrder = orders.find((o) => o.id === selectedOrderId) || null
 
-  const updateStatus = async (id: string, status: string) => {
-    setUpdating(id)
+  // Filter by selected table
+  const filteredOrders = selectedTable
+    ? activeOrders.filter((o) => getOrderTableNumber(o) === selectedTable)
+    : activeOrders
+
+  // Compute tables
+  const tables: TableInfo[] = []
+  for (let i = 1; i <= TOTAL_TABLES; i++) {
+    const orderOnTable = activeOrders.find((o) => getOrderTableNumber(o) === i)
+    tables.push({
+      tableNumber: i,
+      status: orderOnTable ? 'occupied' : 'empty',
+      currentOrderId: orderOnTable?.id,
+      total: orderOnTable?.total || 0,
+      customerName: orderOnTable?.customer_name,
+    })
+  }
+
+  const handleAssignTable = async (orderId: string, tableNumber: number) => {
+    const order = orders.find((o) => o.id === orderId)
+    if (!order) return
+    const items = parseOrderItems(order.items_json)
+    const meta: any = { tableNumber }
+    const paymentStatus = (() => { try { const p = JSON.parse(order.items_json); return p.metadata?.paymentStatus } catch { return undefined } })()
+    const paymentMethod = (() => { try { const p = JSON.parse(order.items_json); return p.metadata?.paymentMethod } catch { return undefined } })()
+    if (paymentStatus) meta.paymentStatus = paymentStatus
+    if (paymentMethod) meta.paymentMethod = paymentMethod
+    const newItemsJson = JSON.stringify({ items, metadata: meta })
     try {
-      const res = await fetch(`/api/supabase/orders?id=${id}`, {
+      await fetch(`/api/supabase/orders?id=${orderId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ items_json: newItemsJson }),
       })
-      if (res.ok) {
-        setOrders(orders.map(o => o.id === id ? { ...o, status } : o))
-      }
-    } catch (err) {
-      console.error('Error updating order:', err)
-    } finally {
-      setUpdating(null)
-    }
+      loadOrders()
+    } catch { /* */ }
   }
 
-  const deleteOrder = async (id: string) => {
-    if (!confirm('Delete this order?')) return
-    try {
-      const res = await fetch(`/api/supabase/orders?id=${id}`, { method: 'DELETE' })
-      if (res.ok) {
-        setOrders(orders.filter(o => o.id !== id))
-      }
-    } catch (err) {
-      console.error('Error deleting order:', err)
-    }
+  const handlePay = async (orderId: string, method: PaymentMethod) => {
+    loadOrders()
   }
 
-  const displayStatuses = Object.keys(STATUS_LABELS)
-
-  if (isLoading) {
-    return <div style={{ padding: '2rem' }}>Loading...</div>
-  }
+  const selectedForCheckout = selectedOrder && (selectedOrder.status === 'ready' || selectedOrder.status === 'completed')
 
   return (
-    <div>
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', color: 'var(--dark-brown)' }}>Orders</h1>
-        <p style={{ color: 'var(--text-light)' }}>{filtered.length} order{filtered.length !== 1 ? 's' : ''}</p>
+    <div style={{
+      height: '100vh',
+      display: 'flex',
+      background: '#0f0f1a',
+      color: '#fff',
+      fontFamily: "'Inter', -apple-system, sans-serif",
+      overflow: 'hidden',
+    }}>
+      {/* LEFT: Table Grid */}
+      <div style={{
+        width: '240px',
+        borderRight: '1px solid rgba(255,255,255,0.06)',
+        display: 'flex',
+        flexDirection: 'column',
+        flexShrink: 0,
+        background: '#0a0a14',
+      }}>
+        <div style={{
+          padding: '0.75rem 1rem',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}>
+          <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>🪑 FOH POS</span>
+          <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)' }}>
+            {new Date().toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+        <TableGrid tables={tables} selectedTable={selectedTable} onSelectTable={(n) => { setSelectedTable(n); setSelectedOrderId(null) }} />
+        <div style={{ marginTop: 'auto', padding: '0.75rem' }}>
+          {selectedTable && (
+            <button
+              onClick={() => setSelectedTable(null)}
+              style={{
+                width: '100%', padding: '0.5rem', borderRadius: '8px',
+                border: '1px solid rgba(255,255,255,0.1)', background: 'transparent',
+                color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', cursor: 'pointer',
+              }}
+            >
+              Show all orders
+            </button>
+          )}
+        </div>
       </div>
 
-      <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-        <input
-          type="text"
-          placeholder="Search by name or order ref..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{
-            width: '100%', maxWidth: '300px', boxSizing: 'border-box',
-            padding: '0.75rem 1rem', borderRadius: '10px',
-            border: '2px solid var(--beige-dark)', background: 'var(--white)',
-            fontSize: '0.95rem',
-          }}
-        />
-        <select
-          value={statusFilter}
-          onChange={e => setStatusFilter(e.target.value)}
-          style={{
-            padding: '0.75rem 1rem', borderRadius: '10px',
-            border: '2px solid var(--beige-dark)', background: 'var(--white)',
-            fontSize: '0.95rem',
-          }}
-        >
-          <option value="">All statuses</option>
-          {displayStatuses.map(s => (
-            <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+      {/* CENTER: Active Orders */}
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}>
+        <div style={{
+          padding: '0.75rem 1rem',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>
+              {selectedTable ? `Table ${selectedTable}` : 'Active Orders'}
+            </h2>
+            <span style={{
+              padding: '0.15rem 0.5rem', borderRadius: '6px',
+              fontSize: '0.75rem', fontWeight: 600,
+              background: 'rgba(245,158,11,0.15)', color: '#f59e0b',
+            }}>
+              {filteredOrders.length}
+            </span>
+          </div>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {filteredOrders.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '3rem', color: 'rgba(255,255,255,0.15)', fontSize: '0.9rem' }}>
+              {selectedTable ? 'No orders for this table' : 'No active orders'}
+            </div>
+          )}
+          {filteredOrders.map((order) => (
+            <OrderCard
+              key={order.id}
+              order={order}
+              selected={selectedOrderId === order.id}
+              onClick={() => setSelectedOrderId(selectedOrderId === order.id ? null : order.id)}
+              onAssignTable={handleAssignTable}
+              tables={tables}
+            />
           ))}
-        </select>
+        </div>
       </div>
 
-      {filtered.length === 0 ? (
-        <div style={{ background: 'var(--white)', padding: '3rem', borderRadius: '16px', textAlign: 'center' }}>
-          <p style={{ color: 'var(--text-light)' }}>
-            {orders.length === 0
-              ? 'No orders yet. Orders from the website will appear here.'
-              : 'No orders match your search or filter.'}
-          </p>
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gap: '1rem' }}>
-          {filtered.map(order => {
-            let items: any[] = []
-            try { items = JSON.parse(order.items_json) } catch {}
-
-            const workflowStep = WORKFLOW[order.status]
-            const color = STATUS_COLORS[order.status] || '#6b7280'
-
-            return (
-              <div key={order.id} style={{ background: 'var(--white)', padding: '1.5rem', borderRadius: '12px', boxShadow: 'var(--shadow-sm)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
-                      <h3 style={{ fontSize: '1.1rem', color: 'var(--dark-brown)', margin: 0 }}>{order.customer_name}</h3>
-                      {order.order_ref && (
-                        <span style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--warm)', fontWeight: 600 }}>
-                          {order.order_ref}
-                        </span>
-                      )}
-                    </div>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>{order.phone}</p>
-                  </div>
-                  <span style={{ padding: '0.35rem 0.85rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600, background: `${color}20`, color }}>
-                    {STATUS_LABELS[order.status] || order.status}
-                  </span>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                  <div><strong>Type:</strong> {order.order_type}</div>
-                  <div><strong>Time:</strong> {order.requested_time}</div>
-                  <div><strong>Total:</strong> R{order.total}</div>
-                  <div><strong>Ordered:</strong> {new Date(order.created_at).toLocaleDateString()}</div>
-                </div>
-                {items.length > 0 && (
-                  <div style={{ marginBottom: '1rem' }}>
-                    <strong style={{ fontSize: '0.9rem' }}>Items:</strong>
-                    <ul style={{ margin: '0.5rem 0 0', paddingLeft: '1.25rem', fontSize: '0.85rem', color: 'var(--text)' }}>
-                      {items.map((item: any, idx: number) => (
-                        <li key={idx}>{item.name} x{item.quantity} - R{item.price * item.quantity}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                  {workflowStep ? (
-                    <button
-                      onClick={() => updateStatus(order.id, workflowStep.next)}
-                      disabled={updating === order.id}
-                      style={{
-                        minHeight: '44px', minWidth: '44px',
-                        padding: '0.65rem 1.25rem', border: 'none', borderRadius: '10px',
-                        cursor: updating === order.id ? 'not-allowed' : 'pointer',
-                        fontSize: '0.9rem', fontWeight: 600,
-                        background: color, color: '#fff',
-                        opacity: updating === order.id ? 0.6 : 1,
-                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                        touchAction: 'manipulation',
-                      }}
-                    >
-                      {updating === order.id ? 'Updating...' : workflowStep.label}
-                    </button>
-                  ) : null}
-                  {order.status !== 'cancelled' && order.status !== 'completed' && (
-                    <button
-                      onClick={() => updateStatus(order.id, 'cancelled')}
-                      disabled={updating === order.id}
-                      style={{
-                        minHeight: '44px', minWidth: '44px',
-                        padding: '0.65rem 1.25rem', border: '2px solid #fecaca',
-                        borderRadius: '10px', cursor: updating === order.id ? 'not-allowed' : 'pointer',
-                        fontSize: '0.85rem', color: '#dc2626',
-                        background: 'transparent', fontWeight: 500,
-                        opacity: updating === order.id ? 0.6 : 1,
-                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                        touchAction: 'manipulation',
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  )}
-                  <button
-                    onClick={() => deleteOrder(order.id)}
-                    style={{
-                      minHeight: '44px', minWidth: '44px',
-                      padding: '0.65rem 1.25rem', border: '2px solid #fecaca',
-                      borderRadius: '10px', cursor: 'pointer',
-                      fontSize: '0.85rem', color: '#dc2626',
-                      background: 'transparent', fontWeight: 500,
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      touchAction: 'manipulation',
-                    }}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            )
-          })}
-        </div>
+      {/* RIGHT: Checkout Panel */}
+      {selectedOrder && (
+        <CheckoutPanel
+          order={selectedOrder}
+          onPay={handlePay}
+          onClose={() => setSelectedOrderId(null)}
+          onAssignTable={handleAssignTable}
+          tables={tables}
+        />
       )}
     </div>
   )

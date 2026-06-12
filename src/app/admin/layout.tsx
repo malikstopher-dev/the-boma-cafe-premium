@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
+import dynamic from 'next/dynamic';
+
+const ConnectionStatus = dynamic(() => import('@/components/ui/ConnectionStatus'), { ssr: false });
 
 const menuItems = [
   { label: 'Dashboard', icon: '📊', href: '/admin/dashboard' },
@@ -27,9 +30,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+
+  // Kitchen: full-width, no sidebar, no auth redirect (has own password gate)
+  if (currentPath === '/admin/kitchen') {
+    return (
+      <div style={{ minHeight: '100vh', background: '#0f0f1a' }}>
+        {children}
+        <ConnectionStatus />
+      </div>
+    );
+  }
+
   useEffect(() => {
     const pathname = window?.location?.pathname || '';
-    // Skip auth check for login page
     if (pathname === '/admin/login') {
       return;
     }
@@ -37,8 +51,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       router.push('/admin/login');
     }
   }, [isAuthenticated, isLoading, router]);
-
-  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
   
   // Show loading on any page while checking auth (but not for login page)
   if (isLoading && currentPath !== '/admin/login') {
@@ -59,6 +71,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   
   if (!isAuthenticated) {
     return null;
+  }
+
+  // Orders POS: full-width, no sidebar, but still uses admin auth
+  if (currentPath === '/admin/orders') {
+    return (
+      <div style={{ minHeight: '100vh', background: '#0f0f1a' }}>
+        {children}
+        <ConnectionStatus />
+      </div>
+    );
   }
 
   const closeSidebar = () => setSidebarOpen(false);
@@ -162,6 +184,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <main className="admin-main" style={{ flex: 1, marginLeft: '280px', padding: '2rem' }}>
         {children}
       </main>
+
+      <ConnectionStatus />
 
       <style>{`
         @media (max-width: 768px) {

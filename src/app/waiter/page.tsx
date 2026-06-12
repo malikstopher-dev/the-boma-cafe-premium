@@ -1,0 +1,325 @@
+'use client'
+
+import { useState, useEffect, useRef } from 'react'
+
+interface MenuItem {
+  id: string
+  categoryId: string
+  name: string
+  description: string
+  price: string
+  image?: string
+  sizes?: { name: string; price: string }[]
+  addOns?: { name: string; price: string }[]
+  isAvailable: boolean
+}
+
+interface MenuCategory {
+  id: string
+  name: string
+  description: string
+  order: number
+  isActive: boolean
+}
+
+interface CartItem {
+  id: string
+  name: string
+  price: number
+  quantity: number
+  notes: string
+}
+
+function PasswordGate({ onSuccess }: { onSuccess: () => void }) {
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const ref = useRef<HTMLInputElement>(null)
+
+  useEffect(() => { ref.current?.focus() }, [])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    try {
+      const res = await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password, role: 'kitchen' }),
+      })
+      if (res.ok) {
+        sessionStorage.setItem('waiter_auth', 'true')
+        onSuccess()
+      } else {
+        setError('Invalid password')
+      }
+    } catch {
+      setError('Connection error')
+    }
+  }
+
+  return (
+    <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a14', padding: '1rem' }}>
+      <form onSubmit={handleSubmit} style={{ background: '#16162a', borderRadius: '20px', padding: '2rem', width: '100%', maxWidth: '360px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+          <div style={{ fontSize: '2.5rem' }}>📋</div>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', margin: '0.5rem 0 0' }}>Waiter Login</h1>
+        </div>
+        <input ref={ref} type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+          placeholder="Kitchen password"
+          style={{ width: '100%', padding: '0.875rem', borderRadius: '10px', border: '2px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '1rem', textAlign: 'center', boxSizing: 'border-box' }}
+          required
+        />
+        {error && <div style={{ marginTop: '0.5rem', color: '#ef4444', fontSize: '0.85rem', textAlign: 'center' }}>{error}</div>}
+        <button type="submit" style={{ width: '100%', marginTop: '1rem', padding: '0.875rem', border: 'none', borderRadius: '10px', background: '#f59e0b', color: '#000', fontSize: '1rem', fontWeight: 700, cursor: 'pointer' }}>
+          Enter
+        </button>
+      </form>
+    </div>
+  )
+}
+
+export default function WaiterPage() {
+  const [authed, setAuthed] = useState(false)
+  const [step, setStep] = useState<'tables' | 'menu' | 'review'>('tables')
+  const [tableNumber, setTableNumber] = useState<number | null>(null)
+  const [categories, setCategories] = useState<MenuCategory[]>([])
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([])
+  const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  const [cart, setCart] = useState<CartItem[]>([])
+  const [itemNotes, setItemNotes] = useState<Record<string, string>>({})
+  const [orderNotes, setOrderNotes] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [done, setDone] = useState(false)
+  const [orderRef, setOrderRef] = useState('')
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && sessionStorage.getItem('waiter_auth') === 'true') {
+      setAuthed(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!authed) return
+    fetch('/api/cms/menu')
+      .then((r) => r.json())
+      .then((data) => {
+        setCategories(data.categories?.filter((c: MenuCategory) => c.isActive) || [])
+        setMenuItems(data.menuItems?.filter((m: MenuItem) => m.isAvailable) || [])
+        if (data.categories?.length > 0) setActiveCategory(data.categories[0].id)
+      })
+      .catch(() => {})
+  }, [authed])
+
+  const filteredItems = menuItems.filter((m) => m.categoryId === activeCategory)
+
+  const addItem = (item: MenuItem, price?: number) => {
+    setCart((prev) => {
+      const existing = prev.find((c) => c.id === item.id)
+      if (existing) {
+        return prev.map((c) => c.id === item.id ? { ...c, quantity: c.quantity + 1 } : c)
+      }
+      return [...prev, { id: item.id, name: item.name, price: price ?? (parseFloat(item.price) || 0), quantity: 1, notes: '' }]
+    })
+  }
+
+  const updateQty = (id: string, delta: number) => {
+    setCart((prev) => prev.map((c) => c.id === id ? { ...c, quantity: Math.max(0, c.quantity + delta) } : c).filter((c) => c.quantity > 0))
+  }
+
+  const total = cart.reduce((s, i) => s + i.price * i.quantity, 0)
+  const activeCat = categories.find((c) => c.id === activeCategory)
+
+  const submitOrder = async () => {
+    if (cart.length === 0 || !tableNumber) return
+    setSubmitting(true)
+    try {
+      const items = cart.map((c) => ({
+        id: c.id,
+        name: c.name,
+        price: c.price,
+        quantity: c.quantity,
+        notes: itemNotes[c.id] || '',
+      }))
+      const res = await fetch('/api/supabase/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customer_name: `Table ${tableNumber}`,
+          phone: 'waiter-order',
+          order_type: 'dine-in',
+          requested_time: 'ASAP',
+          items_json: JSON.stringify({ items, metadata: { tableNumber, paymentStatus: 'unpaid' } }),
+          total,
+        }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setOrderRef(data.order?.order_ref || `Table ${tableNumber}`)
+        setDone(true)
+        setCart([])
+        setItemNotes({})
+        setOrderNotes('')
+      }
+    } catch { /* */ } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (!authed) return <PasswordGate onSuccess={() => setAuthed(true)} />
+
+  if (done) {
+    return (
+      <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0f0f1a', color: '#fff', padding: '2rem', textAlign: 'center' }}>
+        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>✅</div>
+        <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Order Sent!</h1>
+        <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '0.5rem' }}>Order for Table {tableNumber}</p>
+        <p style={{ color: '#f59e0b', fontFamily: 'monospace', fontSize: '1.2rem', marginBottom: '2rem' }}>{orderRef}</p>
+        <button onClick={() => { setDone(false); setTableNumber(null); setStep('tables') }}
+          style={{ padding: '1rem 2rem', border: 'none', borderRadius: '12px', background: '#f59e0b', color: '#000', fontSize: '1rem', fontWeight: 700, cursor: 'pointer' }}
+        >
+          New Order
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ minHeight: '100dvh', background: '#0f0f1a', color: '#fff', display: 'flex', flexDirection: 'column', fontFamily: "'Inter', sans-serif", maxWidth: '500px', margin: 'auto' }}>
+      {/* Header */}
+      <div style={{ padding: '0.75rem 1rem', background: '#16162a', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontWeight: 700 }}>📋 Waiter</span>
+        {cart.length > 0 && (
+          <button onClick={() => setStep('review')} style={{ padding: '0.4rem 0.75rem', borderRadius: '8px', border: 'none', background: '#f59e0b', color: '#000', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>
+            Cart ({cart.reduce((s, i) => s + i.quantity, 0)})
+          </button>
+        )}
+      </div>
+
+      {/* Step: Table Selection */}
+      {step === 'tables' && (
+        <div style={{ flex: 1, padding: '1rem' }}>
+          <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>Select Table</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem' }}>
+            {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
+              <button key={n} onClick={() => { setTableNumber(n); setStep('menu') }}
+                style={{
+                  padding: '0.75rem 0.5rem', borderRadius: '10px', border: tableNumber === n ? '2px solid #f59e0b' : '2px solid rgba(255,255,255,0.08)',
+                  background: tableNumber === n ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.03)', color: '#fff', fontSize: '1rem', fontWeight: 700, cursor: 'pointer',
+                }}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+          {tableNumber && (
+            <button onClick={() => setStep('menu')} style={{ width: '100%', marginTop: '1rem', padding: '1rem', border: 'none', borderRadius: '12px', background: '#10b981', color: '#000', fontSize: '1.1rem', fontWeight: 700, cursor: 'pointer' }}>
+              Table {tableNumber} — Add Items
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Step: Menu */}
+      {step === 'menu' && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Category tabs */}
+          <div style={{ display: 'flex', gap: '0.25rem', padding: '0.5rem', overflowX: 'auto', flexShrink: 0 }}>
+            {categories.map((cat) => (
+              <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
+                style={{
+                  padding: '0.5rem 1rem', borderRadius: '20px', border: 'none', whiteSpace: 'nowrap', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
+                  background: activeCategory === cat.id ? '#f59e0b' : 'rgba(255,255,255,0.06)',
+                  color: activeCategory === cat.id ? '#000' : 'rgba(255,255,255,0.7)',
+                }}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Items grid */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {filteredItems.map((item) => (
+              <button key={item.id} onClick={() => addItem(item)}
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '0.75rem 1rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)',
+                  background: 'rgba(255,255,255,0.03)', color: '#fff', cursor: 'pointer', textAlign: 'left', width: '100%',
+                }}
+              >
+                <div>
+                  <div style={{ fontWeight: 600 }}>{item.name}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}>{item.description?.slice(0, 60)}</div>
+                </div>
+                <div style={{ fontSize: '1rem', fontWeight: 700, color: '#10b981', flexShrink: 0, marginLeft: '0.5rem' }}>
+                  R{parseFloat(item.price).toFixed(2)}
+                </div>
+              </button>
+            ))}
+            {filteredItems.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '2rem', color: 'rgba(255,255,255,0.2)', fontSize: '0.9rem' }}>No items</div>
+            )}
+          </div>
+
+          {/* Bottom cart bar */}
+          {cart.length > 0 && (
+            <div style={{ padding: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.06)', background: '#16162a' }}>
+              <button onClick={() => setStep('review')} style={{ width: '100%', padding: '0.875rem', border: 'none', borderRadius: '10px', background: '#f59e0b', color: '#000', fontSize: '1rem', fontWeight: 700, cursor: 'pointer' }}>
+                Review Order — R{total.toFixed(2)}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Step: Review */}
+      {step === 'review' && (
+        <div style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
+          <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>Table {tableNumber} — Order</h2>
+          {cart.map((item) => (
+            <div key={item.id} style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                <span style={{ fontWeight: 600 }}>{item.name}</span>
+                <span style={{ color: '#10b981', fontWeight: 600 }}>R{(item.price * item.quantity).toFixed(2)}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <button onClick={() => updateQty(item.id, -1)} style={{ width: 36, height: 36, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: '#fff', fontSize: '1.2rem', cursor: 'pointer' }}>−</button>
+                <span style={{ fontWeight: 700, fontSize: '1.1rem', minWidth: '1.5rem', textAlign: 'center' }}>{item.quantity}</span>
+                <button onClick={() => updateQty(item.id, 1)} style={{ width: 36, height: 36, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: '#fff', fontSize: '1.2rem', cursor: 'pointer' }}>+</button>
+                <input
+                  placeholder="Notes"
+                  value={itemNotes[item.id] || ''}
+                  onChange={(e) => setItemNotes((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                  style={{ flex: 1, padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '0.8rem' }}
+                />
+              </div>
+            </div>
+          ))}
+          {cart.length === 0 && <p style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center', padding: '2rem' }}>Cart empty</p>}
+          {cart.length > 0 && (
+            <>
+              <div style={{ marginTop: '1rem' }}>
+                <label style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', display: 'block', marginBottom: '0.3rem' }}>Order notes</label>
+                <input value={orderNotes} onChange={(e) => setOrderNotes(e.target.value)} placeholder="e.g. Extra napkins"
+                  style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: 700, marginTop: '1rem', paddingTop: '1rem', borderTop: '2px solid rgba(255,255,255,0.1)' }}>
+                <span>Total</span>
+                <span style={{ color: '#10b981' }}>R{total.toFixed(2)}</span>
+              </div>
+              <button onClick={submitOrder} disabled={submitting}
+                style={{ width: '100%', marginTop: '1rem', padding: '1rem', border: 'none', borderRadius: '12px', background: submitting ? 'rgba(255,255,255,0.1)' : '#10b981', color: submitting ? 'rgba(255,255,255,0.5)' : '#000', fontSize: '1.1rem', fontWeight: 800, cursor: submitting ? 'not-allowed' : 'pointer' }}
+              >
+                {submitting ? 'Sending...' : `Send to Kitchen — R${total.toFixed(2)}`}
+              </button>
+              <button onClick={() => setStep('menu')} style={{ width: '100%', marginTop: '0.5rem', padding: '0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', background: 'transparent', color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', cursor: 'pointer' }}>
+                ← Add more items
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
