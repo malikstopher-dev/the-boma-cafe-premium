@@ -3,9 +3,6 @@ import { getEvents, saveEvent, deleteEvent } from '@/lib/db';
 import { requireAuth } from '@/lib/server-auth';
 
 export async function GET() {
-  const authError = await requireAuth()
-  if (authError) return authError
-
   try {
     const events = getEvents();
     return NextResponse.json(events);

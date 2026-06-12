@@ -6,6 +6,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import PremiumHero from '@/components/ui/PremiumHero';
 import Slideshow from '@/components/ui/Slideshow';
+import { cmsService } from '@/lib/client-cms';
 import { getEventEnquiryLink, getReservationLink } from '@/data/businessInfo';
 
 const featuredEvents = [
@@ -271,18 +272,47 @@ function EventCard({ event }: { event: any }) {
 export default function EventsPage() {
   const [settings, setSettings] = useState<any>(null);
   const [visibleEvents, setVisibleEvents] = useState<any[]>([]);
+  const [cmsEvents, setCmsEvents] = useState<any[]>([]);
 
   useEffect(() => {
+    cmsService.getAllSettings().then(setSettings).catch(console.error);
+    cmsService.getEvents().then(events => setCmsEvents(events)).catch(() => {});
+  }, []);
+
+  const hasCmsEvents = cmsEvents.length > 0;
+
+  const displayFeatured = hasCmsEvents
+    ? cmsEvents.filter(e => e.isFeatured && e.visible !== false).map(e => ({
+        title: e.title,
+        description: e.description,
+        price: e.ctaLabel || '',
+        image: e.coverImage || e.image || '',
+        cta: e.ctaLabel || 'Book Now',
+        ctaLink: e.ctaLink || '',
+      }))
+    : featuredEvents;
+
+  useEffect(() => {
+    const sourceEvents = hasCmsEvents
+      ? cmsEvents.filter(e => e.visible !== false).map(e => ({
+          title: e.title,
+          date: e.date,
+          time: e.time,
+          image: e.coverImage || e.image || '',
+          description: e.description,
+        }))
+      : upcomingEvents;
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    const filtered = upcomingEvents.filter(event => {
+    const filtered = sourceEvents.filter(event => {
       if (!event.date) return true;
       return new Date(event.date) >= today;
     });
     
     setVisibleEvents(filtered);
-  }, []);
+  }, [cmsEvents]);
 
   const reservationLink = getReservationLink();
   const eventEnquiryLink = getEventEnquiryLink();
@@ -308,7 +338,7 @@ export default function EventsPage() {
               maxWidth: '1200px',
               margin: '0 auto'
             }}>
-              {featuredEvents.map((event, idx) => (
+              {displayFeatured.map((event, idx) => (
                 <div key={idx} style={{
                   background: 'var(--white)',
                   borderRadius: '20px',

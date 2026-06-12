@@ -118,18 +118,25 @@ export default function Home() {
   const promoBar = siteSettings?.promoBar || {};
   const branding = siteSettings?.branding || {};
 
+  const annText = announcement?.isEnabled ? announcement.text : null;
+  const annLink = announcement?.isEnabled ? announcement.link : null;
+  const annLinkText = announcement?.isEnabled ? announcement.linkText : null;
+  const displayAnnText = annText || (promoBar.isEnabled ? promoBar.message : null);
+  const displayAnnLink = annLink || (promoBar.isEnabled ? promoBar.buttonLink : null);
+  const displayAnnLinkText = annLinkText || (promoBar.isEnabled ? promoBar.buttonText : null);
+
   return (
     <>
-      {promoBar.isEnabled && promoBar.message && (
+      {displayAnnText && (
         <AnnouncementBar 
-          text={promoBar.message} 
-          link={promoBar.buttonLink} 
-          linkText={promoBar.buttonText}
+          text={displayAnnText} 
+          link={displayAnnLink} 
+          linkText={displayAnnLinkText}
         />
       )}
       <Header />
       <PopupModal popup={popup} />
-      <WeekendBuffetPopup />
+      <WeekendBuffetPopup popup={popup} />
       
       <main>
         <Hero />

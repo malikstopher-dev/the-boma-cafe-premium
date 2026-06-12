@@ -5,25 +5,24 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import FadeInSection from '@/components/ui/FadeInSection';
 import PremiumHero from '@/components/ui/PremiumHero';
+import { cmsService } from '@/lib/client-cms';
 import styles from './page.module.css';
 
 export default function AboutPage() {
-  const [settings, setSettings] = useState<any>(null);
-  const [aboutSettings, setAboutSettings] = useState<any>(null);
+  const [allSettings, setAllSettings] = useState<any>(null);
 
   useEffect(() => {
-    const { dataService } = require('@/lib/data');
-    const { siteSettingsService } = require('@/lib/siteSettings');
-    setSettings(dataService.getSettings());
-    setAboutSettings(siteSettingsService.getAboutSettings());
+    cmsService.getAllSettings().then(setAllSettings).catch(console.error);
   }, []);
+
+  const aboutSettings = allSettings?.about;
 
   return (
     <>
       <Header />
       <main className={styles.aboutPage}>
         <PremiumHero
-          imageUrl="/hero/hero-about.jpg"
+          imageUrl={aboutSettings?.heroImage || "/hero/hero-about.jpg"}
           badge="Our Story"
           title={aboutSettings?.heroTitle || 'About The Boma Café'}
           subtitle={aboutSettings?.heroSubtitle || 'Discover the passion and tradition behind The Boma Café'}
@@ -35,12 +34,12 @@ export default function AboutPage() {
             <FadeInSection className={styles.welcomeGrid}>
               <div className={styles.textContent}>
                 <span className={styles.label}>Welcome to The Boma Café</span>
-                <h2 className={styles.heading}>Rustic Elegance in the Heart of Sandton</h2>
+                <h2 className={styles.heading}>{aboutSettings?.introTitle || 'Rustic Elegance in the Heart of Sandton'}</h2>
                 <p className={styles.bodyText}>
-                  Welcome to The Boma Café, where dining is designed to be more than a meal - it is an experience.
+                  {aboutSettings?.introDescription || 'Welcome to The Boma Café, where dining is designed to be more than a meal - it is an experience.'}
                 </p>
                 <p className={styles.bodyText}>
-                  Set in the vibrant heart of Sandton, our open-air restaurant offers a warm escape from the pace of the city. Signature thatched architecture, glowing firepit corners, natural textures, and lush greenery come together to create a setting that feels grounded, soulful, and refined.
+                  {aboutSettings?.fullDescription || 'Set in the vibrant heart of Sandton, our open-air restaurant offers a warm escape from the pace of the city. Signature thatched architecture, glowing firepit corners, natural textures, and lush greenery come together to create a setting that feels grounded, soulful, and refined.'}
                 </p>
                 <p className={styles.bodyText}>
                   It is a space where rustic charm meets modern sophistication, where conversations linger, and where every visit becomes something memorable.
@@ -74,7 +73,7 @@ export default function AboutPage() {
               <FadeInSection delay={200} className={styles.imageWrapper}>
                 <div className={styles.imageCard}>
                   <img 
-                    src="/gallery/venue/slide1-1980x1080.jpeg" 
+                    src={aboutSettings?.additionalImage1 || "/gallery/venue/slide1-1980x1080.jpeg"} 
                     alt="The Boma Café Interior"
                     loading="lazy"
                   />
@@ -89,8 +88,8 @@ export default function AboutPage() {
           <div className="container">
             <FadeInSection className={styles.sectionHeader}>
               <span className={styles.label}>Our Founder</span>
-              <h2 className={styles.heading}>Meet the Visionary</h2>
-              <p className={styles.subtitle}>The passion and vision behind The Boma Café</p>
+              <h2 className={styles.heading}>{aboutSettings?.missionTitle || 'Meet the Visionary'}</h2>
+              <p className={styles.subtitle}>{aboutSettings?.missionDescription || 'The passion and vision behind The Boma Café'}</p>
             </FadeInSection>
 
             <FadeInSection delay={200} className={styles.founderGrid}>
@@ -161,8 +160,8 @@ export default function AboutPage() {
           <div className="container">
             <FadeInSection className={styles.sectionHeader}>
               <span className={styles.label}>What Drives Us</span>
-              <h2 className={styles.heading}>Our Values</h2>
-              <p className={styles.subtitle}>Quality, warmth, nature, and soul guide everything we do.</p>
+              <h2 className={styles.heading}>{aboutSettings?.valuesTitle || 'Our Values'}</h2>
+              <p className={styles.subtitle}>{aboutSettings?.valuesDescription || 'Quality, warmth, nature, and soul guide everything we do.'}</p>
             </FadeInSection>
 
             <FadeInSection delay={200} className={styles.valuesGrid}>
@@ -204,7 +203,7 @@ export default function AboutPage() {
           </div>
         </section>
       </main>
-      <Footer settings={settings} />
+      <Footer settings={allSettings} />
     </>
   );
 }

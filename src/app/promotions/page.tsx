@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import PremiumHero from '@/components/ui/PremiumHero';
+import { cmsService } from '@/lib/client-cms';
 
 const promotionImages = [
   '/gallery/promotions/2026-04-05.webp',
@@ -81,13 +82,37 @@ const promotionsData = [
 
 export default function PromotionsPage() {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [cmsPromotions, setCmsPromotions] = useState<any[]>([]);
+
+  useEffect(() => {
+    cmsService.getPromotions().then(promos => setCmsPromotions(promos)).catch(() => {});
+  }, []);
+
+  const hasCmsPromos = cmsPromotions.length > 0;
+
+  const displayPromotions = hasCmsPromos
+    ? cmsPromotions.filter(p => p.isActive).map((promo, idx) => ({
+        id: idx + 1,
+        title: promo.title,
+        description: promo.description,
+        validFrom: promo.startDate || '',
+        validUntil: promo.endDate || '',
+        ctaText: promo.ctaText || 'Learn More',
+        ctaLink: promo.ctaLink || '/promotions',
+        imageIndex: idx,
+      }))
+    : promotionsData;
+
+  const displayImages = hasCmsPromos
+    ? cmsPromotions.filter(p => p.isActive).map(p => p.image || '/gallery/promotions/default.jpg')
+    : promotionImages;
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % promotionImages.length);
+      setCurrentSlide((prev) => (prev + 1) % displayImages.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [displayImages.length]);
 
   return (
     <>
@@ -119,7 +144,7 @@ export default function PromotionsPage() {
                 Featured Offer
               </div>
               <h2 style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', color: 'var(--dark-brown)', marginTop: '0.5rem' }}>
-                {promotionsData[currentSlide].title}
+                {displayPromotions[currentSlide].title}
               </h2>
             </div>
 
@@ -132,7 +157,7 @@ export default function PromotionsPage() {
               aspectRatio: '16/9',
               maxHeight: '500px'
             }}>
-              {promotionImages.map((img, index) => (
+              {displayImages.map((img, index) => (
                 <div
                   key={index}
                   style={{
@@ -161,18 +186,18 @@ export default function PromotionsPage() {
                 textAlign: 'center'
               }}>
                 <h3 style={{ fontSize: 'clamp(1.25rem, 3vw, 1.75rem)', color: 'var(--white)', marginBottom: '0.75rem', fontWeight: 600 }}>
-                  {promotionsData[currentSlide].title}
+                  {displayPromotions[currentSlide].title}
                 </h3>
                 <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 'clamp(0.9rem, 2vw, 1rem)', marginBottom: '1.5rem', maxWidth: '600px', margin: '0 auto', lineHeight: 1.5 }}>
-                  {promotionsData[currentSlide].description}
+                  {displayPromotions[currentSlide].description}
                 </p>
-                <Link href={promotionsData[currentSlide].ctaLink} className="btn btn-primary" style={{ padding: '0.875rem 2rem' }}>
-                  {promotionsData[currentSlide].ctaText}
+                <Link href={displayPromotions[currentSlide].ctaLink} className="btn btn-primary" style={{ padding: '0.875rem 2rem' }}>
+                  {displayPromotions[currentSlide].ctaText}
                 </Link>
               </div>
               {/* Navigation arrows */}
               <button
-                onClick={() => setCurrentSlide(prev => prev > 0 ? prev - 1 : promotionImages.length - 1)}
+                onClick={() => setCurrentSlide(prev => prev > 0 ? prev - 1 : displayImages.length - 1)}
                 style={{
                   position: 'absolute',
                   top: '50%',
@@ -195,7 +220,7 @@ export default function PromotionsPage() {
                 ‹
               </button>
               <button
-                onClick={() => setCurrentSlide(prev => (prev + 1) % promotionImages.length)}
+                onClick={() => setCurrentSlide(prev => (prev + 1) % displayImages.length)}
                 style={{
                   position: 'absolute',
                   top: '50%',
@@ -227,7 +252,7 @@ export default function PromotionsPage() {
                 gap: '0.5rem',
                 zIndex: 2
               }}>
-                {promotionImages.map((_, index) => (
+                {displayImages.map((_, index) => (
                   <button
                     key={index}
                     onClick={() => setCurrentSlide(index)}
@@ -275,7 +300,7 @@ export default function PromotionsPage() {
               maxWidth: '1200px',
               margin: '0 auto'
             }}>
-              {promotionsData.map((promo) => (
+              {displayPromotions.map((promo) => (
                 <div key={promo.id} style={{
                   background: 'var(--cream)',
                   borderRadius: '16px',
@@ -285,7 +310,7 @@ export default function PromotionsPage() {
                 }}>
                   <div style={{
                     height: '160px',
-                    backgroundImage: `url(${promotionImages[promo.imageIndex]})`,
+                    backgroundImage: `url(${displayImages[promo.imageIndex]})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     position: 'relative'

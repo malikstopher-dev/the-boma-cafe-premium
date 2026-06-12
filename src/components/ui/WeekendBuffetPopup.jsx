@@ -26,7 +26,7 @@ const SLIDES = [
 const ROTATION_INTERVAL = 5000;
 const SESSION_KEY = "boma_popup_seen";
 
-export default function WeekendBuffetPopup() {
+export default function WeekendBuffetPopup({ popup }) {
   const [isVisible, setIsVisible] = useState(false);
   const [isClosed, setIsClosed] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -34,19 +34,34 @@ export default function WeekendBuffetPopup() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const intervalRef = useRef(null);
 
+  const slides = (popup?.isEnabled && popup?.image)
+    ? [{
+        src: popup.image,
+        alt: popup.title || 'Special Offer',
+        href: popup.ctaLink || `https://wa.me/27715921190?text=${encodeURIComponent("Hi The Boma Café, I saw your promotion and would like to know more!")}`,
+        ariaLabel: popup.ctaText || 'View Offer',
+      }]
+    : SLIDES;
+
+  const showOncePerSession = popup?.showOncePerSession !== false;
+
   useEffect(() => {
     if (isClosed) return;
 
-    const alreadySeen = sessionStorage.getItem(SESSION_KEY);
-    if (alreadySeen) return;
+    if (showOncePerSession) {
+      const alreadySeen = sessionStorage.getItem(SESSION_KEY);
+      if (alreadySeen) return;
+    }
 
     const timer = setTimeout(() => {
       setIsVisible(true);
-      sessionStorage.setItem(SESSION_KEY, "1");
+      if (showOncePerSession) {
+        sessionStorage.setItem(SESSION_KEY, "1");
+      }
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [isClosed]);
+  }, [isClosed, showOncePerSession]);
 
   const stopRotation = useCallback(() => {
     if (intervalRef.current) {
@@ -62,27 +77,27 @@ export default function WeekendBuffetPopup() {
     }
 
     intervalRef.current = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % SLIDES.length);
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, ROTATION_INTERVAL);
 
     return stopRotation;
-  }, [isVisible, stopRotation]);
+  }, [isVisible, stopRotation, slides.length]);
 
   const handleDotClick = useCallback(
     (index) => {
       setCurrentSlide(index);
       stopRotation();
       intervalRef.current = setInterval(() => {
-        setCurrentSlide((prev) => (prev + 1) % SLIDES.length);
+        setCurrentSlide((prev) => (prev + 1) % slides.length);
       }, ROTATION_INTERVAL);
     },
     [stopRotation]
   );
 
   const handleImageError = useCallback((index) => {
-    console.error(`Failed to load popup image: ${SLIDES[index].src}`);
+    console.error(`Failed to load popup image: ${slides[index]?.src}`);
     setFailedImages((prev) => ({ ...prev, [index]: true }));
-  }, []);
+  }, [slides, slides.length]);
 
   const handleClose = () => {
     setIsVisible(false);
@@ -100,7 +115,7 @@ export default function WeekendBuffetPopup() {
 
   if (!isVisible) return null;
 
-  const visibleSlides = SLIDES.filter((_, i) => !failedImages[i]);
+  const visibleSlides = slides.filter((_, i) => !failedImages[i]);
   if (visibleSlides.length === 0) return null;
 
   const activeSlide =
@@ -126,7 +141,7 @@ export default function WeekendBuffetPopup() {
             quality={95}
             priority
             sizes="(max-width: 768px) 100vw, 600px"
-            onError={() => handleImageError(SLIDES.indexOf(activeSlide))}
+            onError={() => handleImageError(slides.indexOf(activeSlide))}
           />
         </div>
       </div>
@@ -153,7 +168,7 @@ export default function WeekendBuffetPopup() {
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openLightbox(); }}
         >
           <div className={styles.slideContainer}>
-            {SLIDES.map((slide, i) => (
+            {slides.map((slide, i) => (
               <div
                 key={i}
                 className={`${styles.slide} ${
@@ -193,7 +208,7 @@ export default function WeekendBuffetPopup() {
 
         {visibleSlides.length > 1 && (
           <div className={styles.dots}>
-            {SLIDES.map((_, i) =>
+            {slides.map((_, i) =>
               failedImages[i] ? null : (
                 <button
                   key={i}

@@ -3,9 +3,6 @@ import { getPopup, savePopup } from '@/lib/db';
 import { requireAuth } from '@/lib/server-auth';
 
 export async function GET() {
-  const authError = await requireAuth()
-  if (authError) return authError
-
   try {
     const popup = getPopup();
     return NextResponse.json(popup);

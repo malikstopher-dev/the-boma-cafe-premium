@@ -3,9 +3,6 @@ import { getCategories, saveCategory, deleteCategory, getMenuItems, saveMenuItem
 import { requireAuth } from '@/lib/server-auth';
 
 export async function GET() {
-  const authError = await requireAuth()
-  if (authError) return authError
-
   try {
     const categories = getCategories();
     const menuItems = getMenuItems();

@@ -3,9 +3,6 @@ import { getAllSettings, setMultipleSettings, getSetting, setSetting } from '@/l
 import { requireAuth } from '@/lib/server-auth';
 
 export async function GET() {
-  const authError = await requireAuth()
-  if (authError) return authError
-
   try {
     const settings = getAllSettings();
     return NextResponse.json(settings);
