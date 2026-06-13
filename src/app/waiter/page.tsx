@@ -78,23 +78,54 @@ function PasswordGate({ onSuccess }: { onSuccess: () => void }) {
   )
 }
 
+const CART_STORAGE_KEY = 'boma_waiter_cart'
+
+function loadSavedCart() {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = localStorage.getItem(CART_STORAGE_KEY)
+    if (!raw) return null
+    return JSON.parse(raw) as { tableNumber: number; cart: CartItem[]; itemNotes: Record<string, string>; orderNotes: string } | null
+  } catch {
+    return null
+  }
+}
+
 export default function WaiterPage() {
+  const saved = loadSavedCart()
   const [authed, setAuthed] = useState(false)
-  const [step, setStep] = useState<'tables' | 'menu' | 'review'>('tables')
-  const [tableNumber, setTableNumber] = useState<number | null>(null)
+  const [step, setStep] = useState<'tables' | 'menu' | 'review'>(saved?.cart.length ? 'review' : 'tables')
+  const [tableNumber, setTableNumber] = useState<number | null>(saved?.tableNumber ?? null)
   const [categories, setCategories] = useState<MenuCategory[]>([])
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
-  const [cart, setCart] = useState<CartItem[]>([])
-  const [itemNotes, setItemNotes] = useState<Record<string, string>>({})
-  const [orderNotes, setOrderNotes] = useState('')
+  const [cart, setCart] = useState<CartItem[]>(saved?.cart ?? [])
+  const [itemNotes, setItemNotes] = useState<Record<string, string>>(saved?.itemNotes ?? {})
+  const [orderNotes, setOrderNotes] = useState(saved?.orderNotes ?? '')
   const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
   const [orderRef, setOrderRef] = useState('')
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && sessionStorage.getItem('waiter_auth') === 'true') {
-      setAuthed(true)
+    if (typeof window !== 'undefined') {
+      const stored = sessionStorage.getItem('waiter_auth')
+      if (stored === 'true') {
+        fetch('/api/admin/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: '__verify__', role: 'kitchen' }),
+        }).then((r) => {
+          if (r.ok) setAuthed(true)
+          else {
+            sessionStorage.removeItem('waiter_auth')
+            setAuthed(false)
+          }
+        }).catch(() => {
+          sessionStorage.removeItem('waiter_auth')
+          setAuthed(false)
+        })
+      }
     }
   }, [])
 
@@ -109,6 +140,14 @@ export default function WaiterPage() {
       })
       .catch(() => {})
   }, [authed])
+
+  // Persist cart to localStorage for crash recovery
+  useEffect(() => {
+    if (!authed) return
+    try {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify({ tableNumber, cart, itemNotes, orderNotes }))
+    } catch { /* quota exceeded */ }
+  }, [authed, tableNumber, cart, itemNotes, orderNotes])
 
   const filteredItems = menuItems.filter((m) => m.categoryId === activeCategory)
 
@@ -131,6 +170,7 @@ export default function WaiterPage() {
 
   const submitOrder = async () => {
     if (cart.length === 0 || !tableNumber) return
+    setSubmitError(null)
     setSubmitting(true)
     try {
       const items = cart.map((c) => ({
@@ -152,15 +192,21 @@ export default function WaiterPage() {
           total,
         }),
       })
-      const data = await res.json()
-      if (res.ok) {
-        setOrderRef(data.order?.order_ref || `Table ${tableNumber}`)
-        setDone(true)
-        setCart([])
-        setItemNotes({})
-        setOrderNotes('')
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        setSubmitError(errorData?.error || `Order failed (${res.status})`)
+        return
       }
-    } catch { /* */ } finally {
+      const data = await res.json()
+      setOrderRef(data.order?.order_ref || `Table ${tableNumber}`)
+      setDone(true)
+      setCart([])
+      setItemNotes({})
+      setOrderNotes('')
+      localStorage.removeItem(CART_STORAGE_KEY)
+    } catch {
+      setSubmitError('Network error — order not sent. Check your connection and try again.')
+    } finally {
       setSubmitting(false)
     }
   }
@@ -308,10 +354,15 @@ export default function WaiterPage() {
                 <span>Total</span>
                 <span style={{ color: '#10b981' }}>R{total.toFixed(2)}</span>
               </div>
+              {submitError && (
+                <div style={{ marginTop: '0.75rem', padding: '0.75rem', borderRadius: '10px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5', fontSize: '0.9rem', textAlign: 'center' }}>
+                  {submitError}
+                </div>
+              )}
               <button onClick={submitOrder} disabled={submitting}
-                style={{ width: '100%', marginTop: '1rem', padding: '1rem', border: 'none', borderRadius: '12px', background: submitting ? 'rgba(255,255,255,0.1)' : '#10b981', color: submitting ? 'rgba(255,255,255,0.5)' : '#000', fontSize: '1.1rem', fontWeight: 800, cursor: submitting ? 'not-allowed' : 'pointer' }}
+                style={{ width: '100%', marginTop: '0.75rem', padding: '1rem', border: 'none', borderRadius: '12px', background: submitting ? 'rgba(255,255,255,0.1)' : submitError ? '#f59e0b' : '#10b981', color: submitting ? 'rgba(255,255,255,0.5)' : '#000', fontSize: '1.1rem', fontWeight: 800, cursor: submitting ? 'not-allowed' : 'pointer' }}
               >
-                {submitting ? 'Sending...' : `Send to Kitchen — R${total.toFixed(2)}`}
+                {submitting ? 'Sending...' : submitError ? 'Retry Order' : `Send to Kitchen — R${total.toFixed(2)}`}
               </button>
               <button onClick={() => setStep('menu')} style={{ width: '100%', marginTop: '0.5rem', padding: '0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', background: 'transparent', color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', cursor: 'pointer' }}>
                 ← Add more items

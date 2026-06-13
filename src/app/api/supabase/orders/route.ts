@@ -5,19 +5,11 @@ import { canTransition } from '@/lib/order-state-machine'
 
 const VALID_ORDER_TYPES = ['pickup', 'delivery', 'dine-in']
 
-async function generateOrderRef(): Promise<string | null> {
-  try {
-    const now = new Date()
-    const yymmdd = now.toISOString().slice(2, 10).replace(/-/g, '')
-    const { count } = await supabaseAdmin
-      .from('orders')
-      .select('id', { count: 'exact', head: true })
-      .gte('created_at', new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString())
-    const seq = (count ?? 0) + 1
-    return `BOMA-${yymmdd}-${String(seq).padStart(3, '0')}`
-  } catch {
-    return null
-  }
+async function generateOrderRef(): Promise<string> {
+  const now = new Date()
+  const yymmdd = now.toISOString().slice(2, 10).replace(/-/g, '')
+  const random = crypto.randomUUID().replace(/-/g, '').slice(0, 6).toUpperCase()
+  return `BOMA-${yymmdd}-${random}`
 }
 
 function validateItemsJson(value: string): boolean {
@@ -93,6 +85,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid items_json format' }, { status: 400 })
     }
 
+    // Reject empty orders
+    const parsedItems = JSON.parse(items_json)
+    const items = Array.isArray(parsedItems) ? parsedItems : parsedItems?.items
+    if (!items || items.length === 0) {
+      return NextResponse.json({ error: 'Order must contain at least one item' }, { status: 400 })
+    }
+
     // Dedup: reject identical orders within 10s window
     const key = dedupKey(body)
     const last = recentCreations.get(key)
@@ -139,17 +138,19 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Validate status transitions
+    let current: { status: string } | null = null
     if (body.status) {
       // Fetch current order to validate transition
-      const { data: current, error: fetchError } = await supabaseAdmin
+      const { data: fetched, error: fetchError } = await supabaseAdmin
         .from('orders')
         .select('status')
         .eq('id', id)
         .single()
 
-      if (fetchError || !current) {
+      if (fetchError || !fetched) {
         return NextResponse.json({ error: 'Order not found' }, { status: 404 })
       }
+      current = fetched
 
       // Prevent transitions from completed/cancelled
       if (['completed', 'cancelled'].includes(current.status)) {
@@ -173,12 +174,19 @@ export async function PATCH(request: NextRequest) {
     const updateBody: Record<string, any> = { ...body }
     delete updateBody.id
 
-    const { error } = await supabaseAdmin
-      .from('orders')
-      .update(updateBody)
-      .eq('id', id)
+    let query = supabaseAdmin.from('orders').update(updateBody).eq('id', id)
+
+    // Optimistic lock: only update if status matches what we just validated
+    if (body.status && current) {
+      query = query.eq('status', current.status)
+    }
+
+    const { data: updated, error } = await query.select('id').maybeSingle()
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (body.status && !updated) {
+      return NextResponse.json({ error: 'Order was already modified by another request' }, { status: 409 })
+    }
     return NextResponse.json({ success: true })
   } catch {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })

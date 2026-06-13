@@ -191,6 +191,8 @@ export default function KitchenDisplay() {
   const [soundOn, setSoundOn] = useState(true)
   const [focusedCol, setFocusedCol] = useState(0)
   const [focusedIdx, setFocusedIdx] = useState(0)
+  const [connectionError, setConnectionError] = useState(false)
+  const [authExpired, setAuthExpired] = useState(false)
   const prevIdsRef = useRef<Set<string>>(new Set())
   const readyTimesRef = useRef<Map<string, number>>(new Map())
 
@@ -204,9 +206,13 @@ export default function KitchenDisplay() {
           body: JSON.stringify({ password: '__verify__', role: 'kitchen' }),
         }).then((r) => {
           if (r.ok) setAuthed(true)
-          else sessionStorage.removeItem('kitchen_auth')
+          else {
+            sessionStorage.removeItem('kitchen_auth')
+            setAuthed(false)
+          }
         }).catch(() => {
-          setAuthed(true)
+          sessionStorage.removeItem('kitchen_auth')
+          setAuthed(false)
         })
       }
     }
@@ -215,7 +221,17 @@ export default function KitchenDisplay() {
   const loadOrders = useCallback(async () => {
     try {
       const res = await fetch('/api/supabase/orders')
-      if (!res.ok) return
+      if (res.status === 401) {
+        setAuthExpired(true)
+        setConnectionError(false)
+        return
+      }
+      if (!res.ok) {
+        setConnectionError(true)
+        return
+      }
+      setConnectionError(false)
+      setAuthExpired(false)
       const data: Order[] = await res.json()
 
       const currentIds = new Set(data.map((o) => o.id))
@@ -247,16 +263,16 @@ export default function KitchenDisplay() {
       prevIdsRef.current = currentIds
       setOrders(data)
     } catch {
-      /* silent */
+      setConnectionError(true)
     }
   }, [soundOn])
 
   useEffect(() => {
-    if (!authed) return
+    if (!authed || authExpired) return
     loadOrders()
     const interval = setInterval(loadOrders, POLL_INTERVAL)
     return () => clearInterval(interval)
-  }, [authed, loadOrders])
+  }, [authed, authExpired, loadOrders])
 
   // Auto-cleanup ready orders
   useEffect(() => {
@@ -291,8 +307,8 @@ export default function KitchenDisplay() {
       if (res.ok) {
         setOrders((prev) => prev.map((o) => o.id === id ? { ...o, status } : o))
       }
-    } catch {
-      /* silent */
+    } catch (e) {
+      console.error('Failed to update order status:', e)
     } finally {
       setUpdating(null)
     }
@@ -475,6 +491,17 @@ export default function KitchenDisplay() {
           </button>
         </div>
       </div>
+
+      {connectionError && (
+        <div style={{ padding: '0.5rem 1.5rem', background: 'rgba(239,68,68,0.15)', borderBottom: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5', fontSize: '0.85rem', textAlign: 'center', flexShrink: 0 }}>
+          ⚠ Connection lost — showing cached orders. Retrying...
+        </div>
+      )}
+      {authExpired && (
+        <div style={{ padding: '0.5rem 1.5rem', background: 'rgba(239,68,68,0.15)', borderBottom: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5', fontSize: '0.85rem', textAlign: 'center', flexShrink: 0 }}>
+          ⚠ Session expired — please log out and log in again
+        </div>
+      )}
 
       {/* 3-Column Layout */}
       <div style={{

@@ -79,8 +79,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'logout' }),
+      });
+    } catch {
+      // Server cookie clearing is best-effort; state is cleared regardless
+    }
     localStorage.removeItem(USER_KEY);
+    sessionStorage.removeItem('kitchen_auth');
+    sessionStorage.removeItem('waiter_auth');
     setUser(null);
     setIsAuthenticated(false);
   };

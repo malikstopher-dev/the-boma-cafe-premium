@@ -7,7 +7,14 @@ const KITCHEN_COOKIE = 'boma_kitchen_auth';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { password, role } = body;
+    const { password, role, action } = body;
+
+    if (action === 'logout') {
+      const cookieStore = await cookies();
+      cookieStore.set(ADMIN_COOKIE, '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 0, path: '/' });
+      cookieStore.set(KITCHEN_COOKIE, '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 0, path: '/' });
+      return NextResponse.json({ success: true });
+    }
 
     if (role === 'kitchen') {
       const kitchenPassword = process.env.KITCHEN_PASSWORD;

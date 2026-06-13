@@ -44,22 +44,22 @@ function TableGrid({
               style={{
                 padding: '0.6rem 0.4rem',
                 borderRadius: '10px',
-                border: selectedTable === t.tableNumber ? '2px solid #f59e0b' : isOccupied ? '2px solid rgba(59,130,246,0.4)' : '2px solid rgba(255,255,255,0.06)',
-                background: selectedTable === t.tableNumber ? 'rgba(245,158,11,0.15)' : isOccupied ? 'rgba(59,130,246,0.1)' : 'rgba(255,255,255,0.03)',
+                border: selectedTable === t.tableNumber ? '2px solid #f59e0b' : isOccupied ? '2px solid rgba(59,130,246,0.4)' : '2px solid rgba(255,255,255,0.12)',
+                background: selectedTable === t.tableNumber ? '#f59e0b' : '#1c1c2e',
                 cursor: 'pointer',
-                color: '#fff',
+                color: selectedTable === t.tableNumber ? '#000000' : '#ffffff',
                 textAlign: 'center',
                 transition: 'all 0.15s',
               }}
             >
               <div style={{ fontSize: '1rem', fontWeight: 700 }}>{t.tableNumber}</div>
               {isOccupied && (
-                <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.15rem' }}>
+                <div style={{ fontSize: '0.55rem', fontWeight: 600, color: selectedTable === t.tableNumber ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.5)', marginTop: '0.15rem' }}>
                   R{t.total.toFixed(0)}
                 </div>
               )}
               {!isOccupied && (
-                <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.15)', marginTop: '0.15rem' }}>empty</div>
+                <div style={{ fontSize: '0.55rem', color: selectedTable === t.tableNumber ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.3)', marginTop: '0.15rem' }}>empty</div>
               )}
             </button>
           )
@@ -186,7 +186,9 @@ function CheckoutPanel({
       if (res.ok) {
         onPay(order.id, method)
       }
-    } catch { /* */ } finally {
+    } catch (e) {
+      console.error('Payment failed:', e)
+    } finally {
       setPaying(false)
     }
   }
@@ -344,12 +346,24 @@ export default function OrdersPOS() {
   const [orders, setOrders] = useState<SupabaseOrder[]>([])
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
   const [selectedTable, setSelectedTable] = useState<number | null>(null)
+  const [connectionError, setConnectionError] = useState(false)
+  const [authExpired, setAuthExpired] = useState(false)
   const prevCountRef = useRef(0)
 
   const loadOrders = useCallback(async () => {
     try {
       const res = await fetch('/api/supabase/orders')
-      if (!res.ok) return
+      if (res.status === 401) {
+        setAuthExpired(true)
+        setConnectionError(false)
+        return
+      }
+      if (!res.ok) {
+        setConnectionError(true)
+        return
+      }
+      setConnectionError(false)
+      setAuthExpired(false)
       const data: SupabaseOrder[] = await res.json()
       setOrders(data)
       if (data.length > prevCountRef.current && prevCountRef.current > 0) {
@@ -368,14 +382,17 @@ export default function OrdersPOS() {
         } catch { /* */ }
       }
       prevCountRef.current = data.length
-    } catch { /* */ }
+    } catch {
+      setConnectionError(true)
+    }
   }, [])
 
   useEffect(() => { loadOrders() }, [loadOrders])
   useEffect(() => {
+    if (authExpired) return
     const interval = setInterval(loadOrders, POLL_INTERVAL)
     return () => clearInterval(interval)
-  }, [loadOrders])
+  }, [loadOrders, authExpired])
 
   const activeOrders = orders.filter((o) => !['completed', 'cancelled'].includes(o.status))
   const selectedOrder = orders.find((o) => o.id === selectedOrderId) || null
@@ -415,7 +432,9 @@ export default function OrdersPOS() {
         body: JSON.stringify({ items_json: newItemsJson }),
       })
       loadOrders()
-    } catch { /* */ }
+    } catch (e) {
+      console.error('Failed to assign table:', e)
+    }
   }
 
   const handlePay = async (orderId: string, method: PaymentMethod) => {
@@ -428,11 +447,18 @@ export default function OrdersPOS() {
     <div style={{
       height: '100vh',
       display: 'flex',
+      flexDirection: 'column',
       background: '#0f0f1a',
       color: '#fff',
       fontFamily: "'Inter', -apple-system, sans-serif",
       overflow: 'hidden',
     }}>
+      {(connectionError || authExpired) && (
+        <div style={{ padding: '0.5rem 1.5rem', background: 'rgba(239,68,68,0.15)', borderBottom: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5', fontSize: '0.85rem', textAlign: 'center', flexShrink: 0 }}>
+          {authExpired ? '⚠ Session expired — please log out and log in again' : '⚠ Connection lost — showing cached data. Retrying...'}
+        </div>
+      )}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
       {/* LEFT: Table Grid */}
       <div style={{
         width: '240px',
@@ -527,6 +553,7 @@ export default function OrdersPOS() {
           tables={tables}
         />
       )}
+    </div>
     </div>
   )
 }
