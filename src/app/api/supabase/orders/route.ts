@@ -86,7 +86,13 @@ function enrichItems(items: OrderItemInput[]): {
   total: number
   error: string | null
 } {
-  const db = getDb()
+  let db: ReturnType<typeof getDb>
+  try {
+    db = getDb()
+  } catch (dbErr) {
+    console.error('enrichItems getDb failed:', (dbErr as Error)?.message ?? dbErr)
+    return { enriched: [], total: 0, error: 'Menu database unavailable' }
+  }
   const enriched: EnrichedItem[] = []
   let total = 0
 
@@ -158,18 +164,30 @@ export async function POST(request: NextRequest) {
   try {
     const ip = request.headers.get('x-forwarded-for') || 'unknown'
     if (!checkRateLimit(`order:${ip}`)) {
+      console.error(`order rate limited: ${ip}`)
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
     }
 
     const body = await request.json()
+    const bodyKeys = Object.keys(body)
+    console.error(`order body keys: [${bodyKeys.join(', ')}]`)
+
     const { customer_name, phone, order_type, requested_time, items, metadata } = body
     const rawItems = items ?? body.items_json
 
     if (!customer_name || !phone || !order_type || !rawItems) {
+      console.error('order missing fields:', {
+        hasCustomerName: !!customer_name,
+        hasPhone: !!phone,
+        hasOrderType: !!order_type,
+        hasRawItems: !!rawItems,
+        rawItemsType: typeof rawItems,
+      })
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     if (!VALID_ORDER_TYPES.includes(order_type)) {
+      console.error('order invalid type:', order_type)
       return NextResponse.json({ error: 'Invalid order type' }, { status: 400 })
     }
 
@@ -178,11 +196,14 @@ export async function POST(request: NextRequest) {
     let parsedMetadata: Record<string, unknown> = metadata ?? {}
 
     if (Array.isArray(rawItems)) {
+      console.error(`order items array (${rawItems.length} items)`)
       parsedItems = rawItems
     } else if (typeof rawItems === 'string') {
+      console.error(`order items_json string (${rawItems.length} chars)`)
       try {
         const legacy = JSON.parse(rawItems)
         const legacyItems = Array.isArray(legacy) ? legacy : legacy.items ?? []
+        console.error(`order parsed legacy items: ${legacyItems.length} items`)
         parsedItems = legacyItems.map((i: any) => ({
           id: i.id,
           quantity: i.quantity ?? 1,
@@ -192,27 +213,34 @@ export async function POST(request: NextRequest) {
         }))
         const legacyMeta = legacy.metadata
         if (legacyMeta) parsedMetadata = { ...parsedMetadata, ...legacyMeta }
-      } catch {
+      } catch (parseErr) {
+        console.error('order items_json parse error:', (parseErr as Error)?.message ?? parseErr)
         return NextResponse.json({ error: 'Invalid items format' }, { status: 400 })
       }
     } else {
+      console.error('order rawItems is neither array nor string:', typeof rawItems)
       return NextResponse.json({ error: 'Items must be an array or JSON string' }, { status: 400 })
     }
 
     if (parsedItems.length === 0) {
+      console.error('order parsedItems empty')
       return NextResponse.json({ error: 'Order must contain at least one item' }, { status: 400 })
     }
 
     for (const item of parsedItems) {
       if (!item.id || typeof item.quantity !== 'number' || item.quantity < 1) {
+        console.error('order item validation failed:', { id: item.id, quantity: item.quantity, quantityType: typeof item.quantity })
         return NextResponse.json({ error: 'Each item must have id and quantity >= 1' }, { status: 400 })
       }
     }
 
+    console.error('order enrichItems start')
     const { enriched, total, error: enrichError } = enrichItems(parsedItems)
     if (enrichError) {
+      console.error('order enrichItems error:', enrichError)
       return NextResponse.json({ error: enrichError }, { status: 400 })
     }
+    console.error(`order enrichItems OK: ${enriched.length} items, total=${total}`)
 
     if (total < MIN_TOTAL || total > MAX_TOTAL) {
       return NextResponse.json({ error: 'Invalid total' }, { status: 400 })
