@@ -89,52 +89,72 @@ export const dataService = {
   // Clear all data (for admin reset)
   clearAllData: () => {
     if (typeof window === 'undefined') return;
-    Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
+    try {
+      Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
+    } catch { /* storage unavailable */ }
   },
 
   // Initialize with defaults
   initializeDefaults: () => {
     if (typeof window === 'undefined') return;
-    if (!localStorage.getItem(STORAGE_KEYS.settings)) {
-      setToStorage(STORAGE_KEYS.settings, defaultSettings);
-    }
-    if (!localStorage.getItem(STORAGE_KEYS.categories)) {
-      setToStorage(STORAGE_KEYS.categories, defaultCategories);
-    }
-    if (!localStorage.getItem(STORAGE_KEYS.menuItems)) {
-      setToStorage(STORAGE_KEYS.menuItems, defaultMenuItems);
-    } else {
-      // Always sync menu items with latest defaults (including images)
-      const existing = getFromStorage(STORAGE_KEYS.menuItems, defaultMenuItems) as any[];
-      const defaultIds = defaultMenuItems.map(m => m.id);
-      const updated = existing.map(item => {
-        const defaultItem = defaultMenuItems.find(d => d.id === item.id);
-        if (defaultItem && defaultItem.image) {
-          return { ...item, image: defaultItem.image };
-        }
-        return item;
-      });
-      setToStorage(STORAGE_KEYS.menuItems, updated);
-    }
-    if (!localStorage.getItem(STORAGE_KEYS.events)) {
-      setToStorage(STORAGE_KEYS.events, defaultEvents);
-    }
-    if (!localStorage.getItem(STORAGE_KEYS.promotions)) {
-      setToStorage(STORAGE_KEYS.promotions, defaultPromotions);
-    }
-    if (!localStorage.getItem(STORAGE_KEYS.gallery)) {
-      setToStorage(STORAGE_KEYS.gallery, defaultGallery);
-    }
-    if (!localStorage.getItem(STORAGE_KEYS.popup)) {
-      setToStorage(STORAGE_KEYS.popup, defaultPopup);
-    }
-    if (!localStorage.getItem(STORAGE_KEYS.announcement)) {
-      setToStorage(STORAGE_KEYS.announcement, defaultAnnouncement);
-    }
-    if (!localStorage.getItem(STORAGE_KEYS.testimonials)) {
-      setToStorage(STORAGE_KEYS.testimonials, defaultTestimonials);
-    }
-  }
+    try {
+      if (!localStorage.getItem(STORAGE_KEYS.settings)) {
+        setToStorage(STORAGE_KEYS.settings, defaultSettings);
+      }
+    } catch {}
+    try {
+      if (!localStorage.getItem(STORAGE_KEYS.categories)) {
+        setToStorage(STORAGE_KEYS.categories, defaultCategories);
+      }
+    } catch {}
+    try {
+      if (!localStorage.getItem(STORAGE_KEYS.menuItems)) {
+        setToStorage(STORAGE_KEYS.menuItems, defaultMenuItems);
+      } else {
+        const existing = getFromStorage(STORAGE_KEYS.menuItems, defaultMenuItems) as any[];
+        const defaultIds = defaultMenuItems.map(m => m.id);
+        const updated = existing.map(item => {
+          const defaultItem = defaultMenuItems.find(d => d.id === item.id);
+          if (defaultItem && defaultItem.image) {
+            return { ...item, image: defaultItem.image };
+          }
+          return item;
+        });
+        setToStorage(STORAGE_KEYS.menuItems, updated);
+      }
+    } catch {}
+    try {
+      if (!localStorage.getItem(STORAGE_KEYS.events)) {
+        setToStorage(STORAGE_KEYS.events, defaultEvents);
+      }
+    } catch {}
+    try {
+      if (!localStorage.getItem(STORAGE_KEYS.promotions)) {
+        setToStorage(STORAGE_KEYS.promotions, defaultPromotions);
+      }
+    } catch {}
+    try {
+      if (!localStorage.getItem(STORAGE_KEYS.gallery)) {
+        setToStorage(STORAGE_KEYS.gallery, defaultGallery);
+      }
+    } catch {}
+    try {
+      if (!localStorage.getItem(STORAGE_KEYS.popup)) {
+        setToStorage(STORAGE_KEYS.popup, defaultPopup);
+      }
+    } catch {}
+    try {
+      if (!localStorage.getItem(STORAGE_KEYS.announcement)) {
+        setToStorage(STORAGE_KEYS.announcement, defaultAnnouncement);
+      }
+    } catch {}
+    try {
+      if (!localStorage.getItem(STORAGE_KEYS.testimonials)) {
+        setToStorage(STORAGE_KEYS.testimonials, defaultTestimonials);
+      }
+    } catch {}
+  },
+
 };
 
 export function generateId(): string {

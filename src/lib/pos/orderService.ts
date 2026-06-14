@@ -96,7 +96,11 @@ async function generateOrderRef(): Promise<string> {
   const now = new Date()
   const yymmdd = now.toISOString().slice(2, 10).replace(/-/g, '')
   const buf = new Uint8Array(4)
-  crypto.getRandomValues(buf)
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(buf)
+  } else {
+    for (let i = 0; i < 4; i++) buf[i] = Math.floor(Math.random() * 256)
+  }
   const random = Array.from(buf).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase()
   return `BOMA-${yymmdd}-${random}`
 }

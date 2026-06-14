@@ -49,7 +49,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('boma_cart', JSON.stringify(items));
+    try {
+      localStorage.setItem('boma_cart', JSON.stringify(items));
+    } catch { /* storage full or unavailable — persistence loss is non-critical */ }
   }, [items]);
 
   const addItem = (item: CartItem) => {

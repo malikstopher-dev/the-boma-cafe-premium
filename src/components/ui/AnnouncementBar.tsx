@@ -13,10 +13,12 @@ export default function AnnouncementBar({ text, link, linkText }: AnnouncementBa
   const [isClosed, setIsClosed] = useState(false);
 
   useEffect(() => {
-    const closed = sessionStorage.getItem('announcement_bar_closed');
-    if (closed) {
-      setIsClosed(true);
-    }
+    try {
+      const closed = sessionStorage.getItem('announcement_bar_closed');
+      if (closed) {
+        setIsClosed(true);
+      }
+    } catch { /* sessionStorage unavailable */ }
   }, []);
 
   if (!text || !isVisible || isClosed) return null;
@@ -44,7 +46,7 @@ export default function AnnouncementBar({ text, link, linkText }: AnnouncementBa
         <button 
           onClick={() => {
             setIsClosed(true);
-            sessionStorage.setItem('announcement_bar_closed', 'true');
+            try { sessionStorage.setItem('announcement_bar_closed', 'true'); } catch {}
           }}
           aria-label="Close announcement"
           style={{

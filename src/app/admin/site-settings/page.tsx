@@ -170,15 +170,15 @@ export default function AdminSiteSettings() {
         setExperience({ ...settings.experience });
         setEntertainment({ ...settings.entertainment });
         setVenueHire({ ...settings.venueHire });
-        setContact({ ...settings.contact, phone2: settings.contact.phone2 || '', whatsapp: settings.contact.whatsapp || '' });
+        setContact({ ...settings.contact, phone2: settings.contact?.phone2 || '', whatsapp: settings.contact?.whatsapp || '' });
         setPromoBar({ ...settings.promoBar });
         setBranding({ 
           ...settings.branding, 
-          facebook: settings.branding.facebook || '',
-          instagram: settings.branding.instagram || '',
-          twitter: settings.branding.twitter || '',
-          tiktok: settings.branding.tiktok || '',
-          youtube: settings.branding.youtube || ''
+          facebook: settings.branding?.facebook || '',
+          instagram: settings.branding?.instagram || '',
+          twitter: settings.branding?.twitter || '',
+          tiktok: settings.branding?.tiktok || '',
+          youtube: settings.branding?.youtube || ''
         });
         setSeo({ ...settings.seo });
       } catch (error) {
