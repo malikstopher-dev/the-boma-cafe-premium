@@ -55,7 +55,6 @@ function PasswordGate({ onSuccess }: { onSuccess: () => void }) {
         body: JSON.stringify({ password, role: 'kitchen' }),
       })
       if (res.ok) {
-        sessionStorage.setItem('waiter_auth', 'true')
         onSuccess()
       } else {
         setError('Invalid password')
@@ -156,28 +155,6 @@ export default function WaiterPage() {
   const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const stored = sessionStorage.getItem('waiter_auth')
-      if (stored === 'true') {
-        fetch('/api/admin/auth', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password: '__verify__', role: 'kitchen' }),
-        }).then((r) => {
-          if (r.ok) setAuthed(true)
-          else {
-            sessionStorage.removeItem('waiter_auth')
-            setAuthed(false)
-          }
-        }).catch(() => {
-          sessionStorage.removeItem('waiter_auth')
-          setAuthed(false)
-        })
-      }
-    }
-  }, [])
-
-  useEffect(() => {
     if (!authed) return
     fetch('/api/cms/menu')
       .then((r) => r.json())
@@ -225,9 +202,6 @@ export default function WaiterPage() {
     try {
       const items = cart.map((c) => ({
         id: c.id,
-        name: c.name,
-        description: c.description,
-        price: c.price,
         quantity: c.quantity,
         notes: itemNotes[c.id] || '',
       }))
@@ -239,8 +213,8 @@ export default function WaiterPage() {
           phone: 'waiter-order',
           order_type: 'dine-in',
           requested_time: 'ASAP',
-          items_json: JSON.stringify({ items, metadata: { tableNumber, paymentStatus: 'unpaid', orderNotes } }),
-          total,
+          items,
+          metadata: { tableNumber, paymentStatus: 'unpaid', orderNotes },
         }),
       })
       if (!res.ok) {

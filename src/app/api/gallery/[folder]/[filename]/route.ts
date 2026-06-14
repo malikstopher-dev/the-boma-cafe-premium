@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { requireAnyRole } from '@/lib/auth';
 
 const VALID_FOLDERS = ['events', 'food', 'venue', 'people', 'promotions'];
 
@@ -8,6 +9,9 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { folder: string; filename: string } }
 ) {
+  const authError = await requireAnyRole(['admin', 'kitchen'])
+  if (authError) return authError
+
   const { folder, filename } = params;
 
   if (!VALID_FOLDERS.includes(folder)) {

@@ -92,7 +92,6 @@ function PasswordGate({ onSuccess }: { onSuccess: () => void }) {
         body: JSON.stringify({ password, role: 'kitchen' }),
       })
       if (res.ok) {
-        sessionStorage.setItem('kitchen_auth', 'true')
         onSuccess()
       } else {
         setError('Invalid kitchen password')
@@ -195,28 +194,6 @@ export default function KitchenDisplay() {
   const [authExpired, setAuthExpired] = useState(false)
   const prevIdsRef = useRef<Set<string>>(new Set())
   const readyTimesRef = useRef<Map<string, number>>(new Map())
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const stored = sessionStorage.getItem('kitchen_auth')
-      if (stored === 'true') {
-        fetch('/api/admin/auth', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password: '__verify__', role: 'kitchen' }),
-        }).then((r) => {
-          if (r.ok) setAuthed(true)
-          else {
-            sessionStorage.removeItem('kitchen_auth')
-            setAuthed(false)
-          }
-        }).catch(() => {
-          sessionStorage.removeItem('kitchen_auth')
-          setAuthed(false)
-        })
-      }
-    }
-  }, [])
 
   const loadOrders = useCallback(async () => {
     try {
@@ -374,7 +351,6 @@ export default function KitchenDisplay() {
   }, [authed, focusedCol, focusedIdx, orders, updating])
 
   const handleLogout = () => {
-    sessionStorage.removeItem('kitchen_auth')
     setAuthed(false)
   }
 

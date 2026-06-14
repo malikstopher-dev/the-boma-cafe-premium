@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getInquiries, saveInquiry, markInquiryRead } from '@/lib/db';
-import { requireAuth } from '@/lib/server-auth';
+import { requireAnyRole } from '@/lib/auth';
 
 export async function GET() {
-  const authError = await requireAuth()
+  const authError = await requireAnyRole(['admin', 'kitchen'])
   if (authError) return authError
 
   try {
@@ -16,7 +16,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const authError = await requireAuth()
+  const authError = await requireAnyRole(['admin', 'kitchen'])
   if (authError) return authError
 
   try {
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const authError = await requireAuth()
+  const authError = await requireAnyRole(['admin', 'kitchen'])
   if (authError) return authError
 
   try {

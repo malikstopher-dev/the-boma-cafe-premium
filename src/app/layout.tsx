@@ -1,6 +1,6 @@
 import { Playfair_Display, Poppins } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/lib/auth";
+import { AuthProvider } from "@/lib/auth-context";
 import { CartProvider } from "@/lib/cart";
 import { BookingProvider } from "@/lib/booking";
 import CartButton from "@/components/ui/CartButton";

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { getSession, expectedCookieValue } from '@/lib/auth';
+import { createHash } from 'node:crypto';
 
 const ADMIN_COOKIE = 'boma_admin_auth';
 const KITCHEN_COOKIE = 'boma_kitchen_auth';
@@ -25,10 +27,11 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
       }
       const cookieStore = await cookies();
-      cookieStore.set(KITCHEN_COOKIE, 'true', {
+      cookieStore.set(KITCHEN_COOKIE, expectedCookieValue('kitchen'), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
+        path: '/',
         maxAge: 60 * 60 * 24,
       });
       return NextResponse.json({ success: true, role: 'kitchen' });
@@ -41,10 +44,11 @@ export async function POST(request: NextRequest) {
 
     if (password === adminPassword) {
       const cookieStore = await cookies();
-      cookieStore.set(ADMIN_COOKIE, 'true', {
+      cookieStore.set(ADMIN_COOKIE, expectedCookieValue('admin'), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
+        path: '/',
         maxAge: 60 * 60 * 24 * 7,
       });
 
@@ -60,13 +64,21 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
-    const cookieStore = await cookies();
-    const adminCookie = cookieStore.get(ADMIN_COOKIE);
+    const session = await getSession();
 
-    if (adminCookie?.value === 'true') {
+    if (session?.role === 'admin') {
       return NextResponse.json({
         authenticated: true,
+        role: 'admin',
         user: { id: '1', username: 'admin', email: 'admin@thebomacafe.co.za' }
+      });
+    }
+
+    if (session?.role === 'kitchen') {
+      return NextResponse.json({
+        authenticated: true,
+        role: 'kitchen',
+        user: { id: '2', username: 'kitchen', email: '' }
       });
     }
 

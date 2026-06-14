@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 const STATUS_LABELS: Record<string, string> = {
   pending: 'New',
@@ -11,6 +12,11 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 export async function GET(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for') || 'unknown'
+  if (!checkRateLimit(`track:${ip}`)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  }
+
   const { searchParams } = new URL(request.url)
   const ref = searchParams.get('ref')
 

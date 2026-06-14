@@ -1,42 +1,135 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { requireAuth } from '@/lib/server-auth'
+import { requireAnyRole } from '@/lib/auth'
 import { canTransition } from '@/lib/order-state-machine'
+import { checkRateLimit } from '@/lib/rate-limit'
+import { getDb } from '@/lib/db'
 
 const VALID_ORDER_TYPES = ['pickup', 'delivery', 'dine-in']
+
+const ALLOWED_PATCH_FIELDS = new Set([
+  'customer_name', 'phone', 'order_type', 'requested_time', 'status',
+  'items_json',
+])
+
+const MAX_TOTAL = 99999
+const MIN_TOTAL = 1
 
 async function generateOrderRef(): Promise<string> {
   const now = new Date()
   const yymmdd = now.toISOString().slice(2, 10).replace(/-/g, '')
-  const random = crypto.randomUUID().replace(/-/g, '').slice(0, 6).toUpperCase()
+  const random = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase()
   return `BOMA-${yymmdd}-${random}`
 }
 
-function validateItemsJson(value: string): boolean {
+interface OrderItemInput {
+  id: string
+  quantity: number
+  notes?: string
+  selectedSize?: { name: string }
+  selectedAddOns?: { name: string }[]
+}
+
+interface EnrichedItem {
+  id: string
+  name: string
+  description: string
+  price: number
+  quantity: number
+  notes: string
+  selectedSize?: { name: string; price: number }
+  selectedAddOns?: { name: string; price: number }[]
+}
+
+interface DbMenuItem {
+  id: string
+  name: string
+  description: string | null
+  price: string | null
+  sizes: string | null
+  add_ons: string | null
+}
+
+function resolveSizePrice(dbItem: DbMenuItem, selectedSize?: { name: string }): { price: number; matched: boolean } {
+  const basePrice = parseFloat(dbItem.price ?? '0')
+  if (isNaN(basePrice) || basePrice < 0) return { price: -1, matched: false }
+
+  if (selectedSize && dbItem.sizes) {
+    try {
+      const sizes: { name: string; price: number }[] = JSON.parse(dbItem.sizes)
+      const match = sizes.find((s) => s.name === selectedSize.name)
+      if (match) return { price: match.price, matched: true }
+      return { price: -1, matched: false }
+    } catch { /* malformed sizes JSON */ }
+  }
+
+  return { price: basePrice, matched: false }
+}
+
+function resolveAddOnPrices(dbItem: DbMenuItem, selectedAddOns?: { name: string }[]): { name: string; price: number }[] {
+  if (!selectedAddOns || !dbItem.add_ons) return []
   try {
-    const parsed = JSON.parse(value)
-    if (Array.isArray(parsed)) return parsed.every((i) => i.name && typeof i.quantity === 'number')
-    if (parsed && Array.isArray(parsed.items)) return parsed.items.every((i: any) => i.name && typeof i.quantity === 'number')
-    return false
+    const dbAddOns: { name: string; price: number }[] = JSON.parse(dbItem.add_ons)
+    return selectedAddOns
+      .map((s) => {
+        const match = dbAddOns.find((a) => a.name === s.name)
+        return match ? { name: match.name, price: match.price } : null
+      })
+      .filter(Boolean) as { name: string; price: number }[]
   } catch {
-    return false
+    return []
   }
 }
 
-// Simple in-memory dedup window — prevents duplicate POST within 5s
-const recentCreations = new Map<string, number>()
-setInterval(() => {
-  const cutoff = Date.now() - 10000
-  for (const [key, ts] of Array.from(recentCreations.entries())) {
-    if (ts < cutoff) recentCreations.delete(key)
-  }
-}, 10000)
+function enrichItems(items: OrderItemInput[]): {
+  enriched: EnrichedItem[]
+  total: number
+  error: string | null
+} {
+  const db = getDb()
+  const enriched: EnrichedItem[] = []
+  let total = 0
 
-function dedupKey(body: any): string {
-  return `${body.customer_name}|${body.total}|${body.order_type}|${JSON.stringify(body.items_json).slice(0, 200)}`
+  for (const item of items) {
+    const row = db.prepare(
+      'SELECT id, name, description, price, sizes, add_ons FROM menu_items WHERE id = ?'
+    ).get(item.id) as DbMenuItem | undefined
+
+    if (!row) {
+      return { enriched: [], total: 0, error: `Menu item not found: ${item.id}` }
+    }
+
+    const { price: itemPrice, matched: sizeMatched } = resolveSizePrice(row, item.selectedSize)
+    if (itemPrice < 0) {
+      const reason = item.selectedSize ? `Size "${item.selectedSize.name}" not found for item: ${row.name}` : `Invalid price for item: ${row.name}`
+      return { enriched: [], total: 0, error: reason }
+    }
+
+    const resolvedAddOns = resolveAddOnPrices(row, item.selectedAddOns)
+    const addOnTotal = resolvedAddOns.reduce((s, a) => s + a.price, 0)
+    const lineTotal = (itemPrice + addOnTotal) * item.quantity
+
+    enriched.push({
+      id: row.id,
+      name: row.name,
+      description: row.description ?? '',
+      price: itemPrice + addOnTotal,
+      quantity: item.quantity,
+      notes: item.notes ?? '',
+      ...(sizeMatched && item.selectedSize ? { selectedSize: { name: item.selectedSize.name, price: itemPrice } } : {}),
+      ...(resolvedAddOns.length > 0 ? { selectedAddOns: resolvedAddOns } : {}),
+    })
+
+    total += lineTotal
+  }
+
+  return { enriched, total: Math.round(total * 100) / 100, error: null }
 }
 
 export async function GET(request: NextRequest) {
+  const authError = await requireAnyRole(['admin', 'kitchen'])
+  if (authError) return authError
+
   const { searchParams } = new URL(request.url)
   const orderRef = searchParams.get('order_ref')
 
@@ -48,12 +141,9 @@ export async function GET(request: NextRequest) {
       .maybeSingle()
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    if (!data) return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+    if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     return NextResponse.json(data)
   }
-
-  const authError = await requireAuth()
-  if (authError) return authError
 
   const { data, error } = await supabaseAdmin
     .from('orders')
@@ -66,56 +156,74 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { customer_name, phone, order_type, requested_time, items_json, total } = body
+    const ip = request.headers.get('x-forwarded-for') || 'unknown'
+    if (!checkRateLimit(`order:${ip}`)) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+    }
 
-    if (!customer_name || !phone || !order_type || !items_json || total === undefined) {
+    const body = await request.json()
+    const { customer_name, phone, order_type, requested_time, items, metadata } = body
+
+    if (!customer_name || !phone || !order_type || !items) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     if (!VALID_ORDER_TYPES.includes(order_type)) {
-      return NextResponse.json({ error: `Invalid order type. Must be one of: ${VALID_ORDER_TYPES.join(', ')}` }, { status: 400 })
+      return NextResponse.json({ error: 'Invalid order type' }, { status: 400 })
     }
 
-    if (typeof total !== 'number' || total < 0) {
-      return NextResponse.json({ error: 'Invalid total' }, { status: 400 })
-    }
-
-    if (!validateItemsJson(items_json)) {
-      return NextResponse.json({ error: 'Invalid items_json format' }, { status: 400 })
-    }
-
-    // Reject empty orders
-    const parsedItems = JSON.parse(items_json)
-    const items = Array.isArray(parsedItems) ? parsedItems : parsedItems?.items
-    if (!items || items.length === 0) {
+    if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'Order must contain at least one item' }, { status: 400 })
     }
 
-    // Dedup: reject identical orders within 10s window
-    const key = dedupKey(body)
-    const last = recentCreations.get(key)
-    if (last && Date.now() - last < 10000) {
-      return NextResponse.json({ error: 'Duplicate order detected' }, { status: 429 })
+    for (const item of items) {
+      if (!item.id || typeof item.quantity !== 'number' || item.quantity < 1) {
+        return NextResponse.json({ error: 'Each item must have id and quantity >= 1' }, { status: 400 })
+      }
     }
-    recentCreations.set(key, Date.now())
+
+    const { enriched, total, error: enrichError } = enrichItems(items)
+    if (enrichError) {
+      return NextResponse.json({ error: enrichError }, { status: 400 })
+    }
+
+    if (total < MIN_TOTAL || total > MAX_TOTAL) {
+      return NextResponse.json({ error: 'Invalid total' }, { status: 400 })
+    }
+
+    const items_json = JSON.stringify({
+      items: enriched,
+      metadata: metadata ?? {},
+    })
+
+    const order_ref = await generateOrderRef()
 
     const { data, error } = await supabaseAdmin
       .from('orders')
-      .insert([{ customer_name, phone, order_type, requested_time, items_json, total, status: 'pending' }])
+      .insert([{
+        customer_name, phone, order_type, requested_time,
+        items_json, total, server_computed_total: total,
+        status: 'pending', order_ref,
+      }])
       .select()
       .single()
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
-    const order_ref = await generateOrderRef()
-    if (order_ref && data) {
-      const { error: refError } = await supabaseAdmin
-        .from('orders')
-        .update({ order_ref })
-        .eq('id', data.id)
-
-      if (!refError) data.order_ref = order_ref
+    if (error) {
+      if (error.message?.includes('duplicate') || error.message?.includes('unique')) {
+        const ref = await generateOrderRef()
+        const { data: retry, error: retryError } = await supabaseAdmin
+          .from('orders')
+          .insert([{
+            customer_name, phone, order_type, requested_time,
+            items_json, total, server_computed_total: total,
+            status: 'pending', order_ref: ref,
+          }])
+          .select()
+          .single()
+        if (retryError) return NextResponse.json({ error: retryError.message }, { status: 500 })
+        return NextResponse.json({ success: true, order: retry }, { status: 201 })
+      }
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json({ success: true, order: data }, { status: 201 })
@@ -125,7 +233,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const authError = await requireAuth()
+  const authError = await requireAnyRole(['admin', 'kitchen'])
   if (authError) return authError
 
   try {
@@ -137,10 +245,46 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Order ID required' }, { status: 400 })
     }
 
-    // Validate status transitions
-    let current: { status: string } | null = null
-    if (body.status) {
-      // Fetch current order to validate transition
+    // Whitelist: only allow specific fields
+    const updateBody: Record<string, any> = {}
+    for (const key of Object.keys(body)) {
+      if (ALLOWED_PATCH_FIELDS.has(key)) {
+        updateBody[key] = body[key]
+      }
+    }
+
+    if (Object.keys(updateBody).length === 0) {
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
+    }
+
+    // items_json PATCH: only metadata merge allowed — never pricing
+    if (updateBody.items_json) {
+      try {
+        const patched = JSON.parse(updateBody.items_json)
+        const { data: existing } = await supabaseAdmin
+          .from('orders')
+          .select('items_json')
+          .eq('id', id)
+          .single()
+
+        if (existing) {
+          const current = JSON.parse(existing.items_json)
+          const newItems = patched.items ?? current.items
+          if (JSON.stringify(newItems) !== JSON.stringify(current.items)) {
+            return NextResponse.json({ error: 'Cannot modify order items via PATCH' }, { status: 400 })
+          }
+          updateBody.items_json = JSON.stringify({
+            items: current.items,
+            metadata: { ...(current.metadata ?? {}), ...(patched.metadata ?? {}) },
+          })
+        }
+      } catch {
+        return NextResponse.json({ error: 'Invalid items_json format' }, { status: 400 })
+      }
+    }
+
+    let currentStatus: string | null = null
+    if (updateBody.status) {
       const { data: fetched, error: fetchError } = await supabaseAdmin
         .from('orders')
         .select('status')
@@ -148,44 +292,36 @@ export async function PATCH(request: NextRequest) {
         .single()
 
       if (fetchError || !fetched) {
-        return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+        return NextResponse.json({ error: 'Not found' }, { status: 404 })
       }
-      current = fetched
+      currentStatus = fetched.status
 
-      // Prevent transitions from completed/cancelled
-      if (['completed', 'cancelled'].includes(current.status)) {
-        return NextResponse.json({ error: `Cannot update a ${current.status} order` }, { status: 400 })
+      if (['completed', 'cancelled'].includes(currentStatus)) {
+        return NextResponse.json({ error: `Cannot update a ${currentStatus} order` }, { status: 400 })
       }
 
-      // Validate transition is allowed
-      if (!canTransition(current.status as any, body.status as any)) {
-        // Allow cancel from any active status
-        if (body.status !== 'cancelled') {
-          return NextResponse.json({ error: `Invalid transition: ${current.status} → ${body.status}` }, { status: 400 })
+      if (!canTransition(currentStatus as any, updateBody.status as any)) {
+        if (updateBody.status !== 'cancelled') {
+          return NextResponse.json({ error: `Invalid transition: ${currentStatus} → ${updateBody.status}` }, { status: 400 })
         }
       }
 
-      // Prevent double-payment (already completed check)
-      if (body.status === 'completed' && current.status === 'completed') {
+      if (updateBody.status === 'completed' && currentStatus === 'completed') {
         return NextResponse.json({ error: 'Order already completed' }, { status: 400 })
       }
     }
 
-    const updateBody: Record<string, any> = { ...body }
-    delete updateBody.id
-
     let query = supabaseAdmin.from('orders').update(updateBody).eq('id', id)
 
-    // Optimistic lock: only update if status matches what we just validated
-    if (body.status && current) {
-      query = query.eq('status', current.status)
+    if (updateBody.status && currentStatus) {
+      query = query.eq('status', currentStatus)
     }
 
     const { data: updated, error } = await query.select('id').maybeSingle()
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    if (body.status && !updated) {
-      return NextResponse.json({ error: 'Order was already modified by another request' }, { status: 409 })
+    if (updateBody.status && !updated) {
+      return NextResponse.json({ error: 'Conflict' }, { status: 409 })
     }
     return NextResponse.json({ success: true })
   } catch {
@@ -194,7 +330,7 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const authError = await requireAuth()
+  const authError = await requireAnyRole(['admin', 'kitchen'])
   if (authError) return authError
 
   const { searchParams } = new URL(request.url)

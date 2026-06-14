@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { requireAnyRole } from '@/lib/auth';
 
 const VALID_FOLDERS = ['events', 'food', 'venue', 'people', 'promotions'];
 
 export async function POST(request: NextRequest) {
+  const authError = await requireAnyRole(['admin', 'kitchen'])
+  if (authError) return authError
+
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File;

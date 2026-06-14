@@ -79,21 +79,18 @@ export default function Home() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [allSettings, ann, pop, items, evts, promos] = await Promise.all([
-          cmsService.getAllSettings(),
-          cmsService.getAnnouncement(),
-          cmsService.getPopup(),
-          cmsService.getMenuItems(),
-          cmsService.getEvents(),
-          cmsService.getPromotions()
+        const [publicData, itemsRes] = await Promise.all([
+          fetch('/api/cms/public').then(r => r.json()),
+          fetch('/api/menu/public').then(r => r.json()),
         ]);
-        setSiteSettings(allSettings);
-        setSettings(allSettings);
-        setAnnouncement(ann);
-        setPopup(pop);
+        const items = itemsRes?.menuItems || [];
+        setSiteSettings(publicData.settings);
+        setSettings(publicData.settings);
+        setAnnouncement(publicData.announcement);
+        setPopup(publicData.popup);
         setMenuItems(items);
-        setEvents(evts);
-        setPromotions(promos);
+        setEvents(publicData.events);
+        setPromotions(publicData.promotions);
       } catch (error) {
         console.error('Error loading CMS data:', error);
       } finally {

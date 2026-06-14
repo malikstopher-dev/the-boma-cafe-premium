@@ -19,8 +19,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const USER_KEY = 'boma_admin_user';
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<AdminUser | null>(null);
@@ -41,13 +39,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (result.authenticated && result.user) {
         setUser(result.user);
         setIsAuthenticated(true);
-        localStorage.setItem(USER_KEY, JSON.stringify(result.user));
-      } else {
-        localStorage.removeItem(USER_KEY);
       }
     } catch {
-      // Server is the sole authority — never authenticate from localStorage
-      localStorage.removeItem(USER_KEY);
+      // Server is the sole authority
     } finally {
       setIsLoading(false);
     }
@@ -59,7 +53,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (result.success && result.user) {
         setUser(result.user);
         setIsAuthenticated(true);
-        localStorage.setItem(USER_KEY, JSON.stringify(result.user));
         return true;
       }
       if (result.error) {
@@ -82,9 +75,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // Server cookie clearing is best-effort; state is cleared regardless
     }
-    localStorage.removeItem(USER_KEY);
-    sessionStorage.removeItem('kitchen_auth');
-    sessionStorage.removeItem('waiter_auth');
     setUser(null);
     setIsAuthenticated(false);
   };

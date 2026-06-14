@@ -55,13 +55,12 @@ export default function CartButton() {
   const submitOrderToSupabase = async () => {
     const itemsPayload = items.map(item => ({
       id: item.id,
-      name: item.name,
-      price: item.price,
       quantity: item.quantity,
-      category: item.category,
-      selectedSize: item.selectedSize,
-      selectedAddOns: item.selectedAddOns,
       notes: item.notes,
+      ...(item.selectedSize ? { selectedSize: { name: item.selectedSize } } : {}),
+      ...(item.selectedAddOns && item.selectedAddOns.length > 0
+        ? { selectedAddOns: item.selectedAddOns.map(name => ({ name })) }
+        : {}),
     }));
 
     const res = await fetch('/api/supabase/orders', {
@@ -72,8 +71,7 @@ export default function CartButton() {
         phone: customerInfo.phone || 'No phone',
         order_type: customerInfo.orderType.toLowerCase(),
         requested_time: customerInfo.requestedTime || 'ASAP',
-        items_json: JSON.stringify(itemsPayload),
-        total,
+        items: itemsPayload,
       }),
     });
 

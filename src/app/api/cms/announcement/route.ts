@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAnnouncement, saveAnnouncement } from '@/lib/db';
-import { requireAuth } from '@/lib/server-auth';
+import { requireAnyRole } from '@/lib/auth';
 
 export async function GET() {
+  const authError = await requireAnyRole(['admin', 'kitchen'])
+  if (authError) return authError
+
   try {
     const announcement = getAnnouncement();
     return NextResponse.json(announcement);
@@ -13,7 +16,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const authError = await requireAuth()
+  const authError = await requireAnyRole(['admin', 'kitchen'])
   if (authError) return authError
 
   try {

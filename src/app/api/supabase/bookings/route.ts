@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { requireAuth } from '@/lib/server-auth'
+import { requireAnyRole } from '@/lib/auth'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 export async function GET() {
-  const authError = await requireAuth()
+  const authError = await requireAnyRole(['admin', 'kitchen'])
   if (authError) return authError
 
   const { data, error } = await supabaseAdmin
@@ -20,11 +21,24 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || 'unknown'
+    if (!checkRateLimit(`booking:${ip}`)) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+    }
+
     const body = await request.json()
     const { name, phone, email, booking_date, booking_time, guests, notes } = body
 
     if (!name || !phone || !email || !booking_date || !booking_time || !guests) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+
+    if (typeof guests !== 'number' || guests < 1 || guests > 100) {
+      return NextResponse.json({ error: 'Invalid guest count' }, { status: 400 })
+    }
+
+    if (!email.includes('@') || !email.includes('.')) {
+      return NextResponse.json({ error: 'Invalid email' }, { status: 400 })
     }
 
     const { data, error } = await supabaseAdmin
@@ -44,7 +58,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const authError = await requireAuth()
+  const authError = await requireAnyRole(['admin', 'kitchen'])
   if (authError) return authError
 
   try {
@@ -72,7 +86,7 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const authError = await requireAuth()
+  const authError = await requireAnyRole(['admin', 'kitchen'])
   if (authError) return authError
 
   const { searchParams } = new URL(request.url)
