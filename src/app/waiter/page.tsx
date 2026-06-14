@@ -214,6 +214,7 @@ export default function WaiterPage() {
           order_type: 'dine-in',
           requested_time: 'ASAP',
           items,
+          table_number: String(tableNumber),
           metadata: { tableNumber, paymentStatus: 'unpaid', orderNotes },
         }),
       })
