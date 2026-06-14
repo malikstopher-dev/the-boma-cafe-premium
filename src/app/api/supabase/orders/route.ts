@@ -3,8 +3,8 @@ import { getAdminClient } from '@/lib/supabase'
 import { requireAnyRole } from '@/lib/auth'
 import { canTransition } from '@/lib/order-state-machine'
 import { checkRateLimit } from '@/lib/rate-limit'
-import { validateOrder } from '@/lib/pos/validateOrder'
-import { insertOrder } from '@/lib/pos/orderService'
+import { validateOrder, sanitizeOrderInput } from '@/lib/pos/validateOrder'
+import { createOrder } from '@/lib/pos/orderService'
 
 const ALLOWED_PATCH_FIELDS = new Set([
   'customer_name', 'phone', 'order_type', 'requested_time', 'status',
@@ -46,7 +46,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
     }
 
-    const body = await request.json()
+    const raw = await request.json()
+
+    // ── Sanitize: strip unknown fields before validation ──
+    const body = sanitizeOrderInput(raw)
 
     // ── Central validation ─────────────────────────────────
     const validation = validateOrder(body)
@@ -59,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Process order ──────────────────────────────────────
-    const { order, duplicate, error } = await insertOrder(body)
+    const { order, duplicate, error } = await createOrder(body as any)
 
     if (error) {
       return NextResponse.json({ error }, { status: 400 })

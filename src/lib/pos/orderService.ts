@@ -1,6 +1,6 @@
 import { getAdminClient } from '@/lib/supabase'
 import { getMenuItemsByIds, type DbMenuItem } from '@/lib/menu-prices'
-import type { CreateOrderInput, EnrichedItem, OrderItemInput, OrderRecord, OrderType, OrderStatus } from './types'
+import type { EnrichedItem, OrderItemInput, OrderRecord, OrderStatus } from './types'
 
 const MIN_TOTAL = 1
 const MAX_TOTAL = 99999
@@ -42,7 +42,7 @@ function resolveAddOnPrices(
   }
 }
 
-export async function enrichItems(items: OrderItemInput[]): Promise<{
+async function enrichItems(items: OrderItemInput[]): Promise<{
   enriched: EnrichedItem[]
   total: number
   error: string | null
@@ -88,6 +88,10 @@ export async function enrichItems(items: OrderItemInput[]): Promise<{
   return { enriched, total: Math.round(total * 100) / 100, error: null }
 }
 
+function generateIdempotencyKey(): string {
+  return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}-${Math.random().toString(36).slice(2, 6)}`
+}
+
 async function generateOrderRef(): Promise<string> {
   const now = new Date()
   const yymmdd = now.toISOString().slice(2, 10).replace(/-/g, '')
@@ -99,16 +103,12 @@ async function generateOrderRef(): Promise<string> {
 
 const SUBMISSION_WINDOW_MS = 5000
 
-interface SubmissionTracker {
-  key: string
-  timestamp: number
-}
+interface Tracker { key: string; timestamp: number }
 
-let recentSubmissions: SubmissionTracker[] = []
+let recentSubmissions: Tracker[] = []
 
-function isDuplicateSubmission(input: CreateOrderInput): boolean {
+function isDuplicateSubmission(key: string): boolean {
   const now = Date.now()
-  const key = input.idempotency_key || JSON.stringify({ name: input.customer_name, phone: input.phone, items: input.items })
   recentSubmissions = recentSubmissions.filter(s => now - s.timestamp < SUBMISSION_WINDOW_MS)
   const hit = recentSubmissions.find(s => s.key === key)
   if (hit) return true
@@ -116,35 +116,54 @@ function isDuplicateSubmission(input: CreateOrderInput): boolean {
   return false
 }
 
-export async function insertOrder(input: CreateOrderInput): Promise<{
+async function wait(ms: number): Promise<void> {
+  return new Promise(r => setTimeout(r, ms))
+}
+
+export type CreateOrderResult = {
   order: OrderRecord | null
   duplicate: boolean
   error: string | null
-}> {
-  // ── Dedup check (in-memory window) ─────────────────────────
-  if (isDuplicateSubmission(input)) {
+}
+
+export async function createOrder(input: {
+  customer_name: string
+  phone: string
+  order_type: string
+  requested_time?: string
+  items: OrderItemInput[]
+  idempotency_key?: string
+  table_number?: string
+  delivery_address?: string
+}): Promise<CreateOrderResult> {
+  const idempotencyKey = input.idempotency_key || generateIdempotencyKey()
+
+  // ── In-memory dedup (same request within 5s window) ────────
+  if (isDuplicateSubmission(idempotencyKey)) {
     return { order: null, duplicate: true, error: 'Duplicate submission detected — please wait' }
   }
 
-  // ── Idempotency check (DB) ─────────────────────────────────
-  if (input.idempotency_key) {
+  // ── DB idempotency check (column may be null, handle gracefully) ──
+  try {
     const { data: existing } = await getAdminClient()
       .from('orders')
       .select('*')
-      .eq('idempotency_key', input.idempotency_key)
+      .eq('idempotency_key', idempotencyKey)
       .maybeSingle()
 
     if (existing) {
       return { order: existing as unknown as OrderRecord, duplicate: true, error: null }
     }
+  } catch {
+    // Column may not exist yet (schema cache delay) — continue
   }
 
   // ── Normalize items ────────────────────────────────────────
   const parsedItems: OrderItemInput[] = input.items.map((i: any) => ({
     menu_item_id: i.menu_item_id || i.id,
     quantity: i.quantity ?? 1,
-    selected_size: i.selected_size || (i.selectedSize ? (typeof i.selectedSize === 'string' ? i.selectedSize : i.selectedSize.name) : undefined),
-    selected_add_ons: i.selected_add_ons || (i.selectedAddOns ? i.selectedAddOns.map((a: any) => typeof a === 'string' ? a : a.name) : undefined),
+    selected_size: i.selected_size,
+    selected_add_ons: i.selected_add_ons,
   }))
 
   // ── Server-authoritative pricing ───────────────────────────
@@ -160,7 +179,8 @@ export async function insertOrder(input: CreateOrderInput): Promise<{
   const items_json = JSON.stringify({ items: enriched, metadata: {} })
   const order_ref = await generateOrderRef()
 
-  const insertPayload: Record<string, any> = {
+  // ── Build insert payload (ONLY known columns, NO raw passthrough) ──
+  const insertPayload: Record<string, unknown> = {
     customer_name: input.customer_name.trim(),
     phone: input.phone.trim(),
     order_type: input.order_type,
@@ -169,20 +189,31 @@ export async function insertOrder(input: CreateOrderInput): Promise<{
     total,
     status: 'pending' as OrderStatus,
     order_ref,
-    ...(input.table_number ? { table_number: input.table_number.trim() } : {}),
-    ...(input.delivery_address ? { delivery_address: input.delivery_address.trim() } : {}),
+    idempotency_key: idempotencyKey,
   }
 
-  if (input.idempotency_key) {
-    insertPayload.idempotency_key = input.idempotency_key
+  if (input.table_number) {
+    insertPayload.table_number = input.table_number.trim()
   }
 
-  // ── Insert with retry on duplicate key ─────────────────────
-  const MAX_RETRIES = 2
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+  if (input.delivery_address) {
+    insertPayload.delivery_address = input.delivery_address.trim()
+  }
+
+  // ── Insert with retry (handles schema cache delays) ────────
+  const MAX_ATTEMPTS = 3
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    if (attempt > 0) {
+      await wait(1000 * attempt)
+    }
+
+    const payload = attempt > 0
+      ? { ...insertPayload, order_ref: await generateOrderRef() }
+      : insertPayload
+
     const { data, error } = await getAdminClient()
       .from('orders')
-      .insert([attempt > 0 ? { ...insertPayload, order_ref: await generateOrderRef() } : insertPayload])
+      .insert([payload])
       .select()
       .single()
 
@@ -190,22 +221,32 @@ export async function insertOrder(input: CreateOrderInput): Promise<{
       return { order: data as unknown as OrderRecord, duplicate: false, error: null }
     }
 
-    if (error?.message?.includes('duplicate') || error?.message?.includes('unique')) {
-      if (input.idempotency_key) {
-        const { data: dup } = await getAdminClient()
-          .from('orders')
-          .select('*')
-          .eq('idempotency_key', input.idempotency_key)
-          .maybeSingle()
-        if (dup) {
-          return { order: dup as unknown as OrderRecord, duplicate: true, error: null }
-        }
-      }
-      continue
-    }
+    if (error) {
+      const msg = (error.message ?? '').toLowerCase()
 
-    if (attempt === MAX_RETRIES) {
-      return { order: null, duplicate: false, error: error?.message || 'Failed to create order' }
+      // Schema cache delay — column not yet visible
+      if (msg.includes('column') && msg.includes('does not exist')) {
+        continue
+      }
+
+      // Duplicate key — return existing
+      if (msg.includes('duplicate') || msg.includes('unique')) {
+        try {
+          const { data: dup } = await getAdminClient()
+            .from('orders')
+            .select('*')
+            .eq('idempotency_key', idempotencyKey)
+            .maybeSingle()
+          if (dup) {
+            return { order: dup as unknown as OrderRecord, duplicate: true, error: null }
+          }
+        } catch { /* ignore */ }
+        continue
+      }
+
+      if (attempt === MAX_ATTEMPTS - 1) {
+        return { order: null, duplicate: false, error: error.message || 'Failed to create order' }
+      }
     }
   }
 

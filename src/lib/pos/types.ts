@@ -29,6 +29,11 @@ export interface CreateOrderInput {
   delivery_address?: string
 }
 
+export const ALLOWED_ORDER_FIELDS = new Set([
+  'customer_name', 'phone', 'order_type', 'requested_time', 'items',
+  'idempotency_key', 'table_number', 'delivery_address',
+])
+
 export interface ValidationError {
   field: string
   message: string

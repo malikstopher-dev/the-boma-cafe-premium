@@ -91,8 +91,6 @@ export default function CartButton() {
     }
     lastSubmitRef.current = now
 
-    const idempotencyKey = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
-
     const itemsPayload = items.map(item => ({
       menu_item_id: item?.menuItemId || item?.id || '',
       quantity: item?.quantity ?? 1,
@@ -115,7 +113,6 @@ export default function CartButton() {
       order_type: cOrderType,
       requested_time: cRequestedTime,
       items: itemsPayload,
-      idempotency_key: idempotencyKey,
       ...(cOrderType === 'dine-in' && cTableNumber ? { table_number: cTableNumber } : {}),
       ...(cOrderType === 'delivery' && cDeliveryAddress ? { delivery_address: cDeliveryAddress } : {}),
     }

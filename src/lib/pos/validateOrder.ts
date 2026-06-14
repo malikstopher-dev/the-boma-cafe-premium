@@ -1,6 +1,17 @@
 import type { CreateOrderInput, OrderType, ValidationResult } from './types'
+import { ALLOWED_ORDER_FIELDS } from './types'
 
 const VALID_ORDER_TYPES: OrderType[] = ['pickup', 'delivery', 'dine-in']
+
+export function sanitizeOrderInput(input: Record<string, unknown>): Record<string, unknown> {
+  const clean: Record<string, unknown> = {}
+  for (const key of Object.keys(input)) {
+    if (ALLOWED_ORDER_FIELDS.has(key)) {
+      clean[key] = input[key]
+    }
+  }
+  return clean
+}
 
 export function validateOrder(input: unknown): ValidationResult {
   const errors: ValidationResult['errors'] = []
