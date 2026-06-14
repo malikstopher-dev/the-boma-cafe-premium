@@ -163,8 +163,9 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const { customer_name, phone, order_type, requested_time, items, metadata } = body
+    const rawItems = items ?? body.items_json
 
-    if (!customer_name || !phone || !order_type || !items) {
+    if (!customer_name || !phone || !order_type || !rawItems) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
@@ -172,17 +173,43 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid order type' }, { status: 400 })
     }
 
-    if (!Array.isArray(items) || items.length === 0) {
+    // Parse items from either new format (items[]) or legacy (items_json string)
+    let parsedItems: OrderItemInput[]
+    let parsedMetadata: Record<string, unknown> = metadata ?? {}
+
+    if (Array.isArray(rawItems)) {
+      parsedItems = rawItems
+    } else if (typeof rawItems === 'string') {
+      try {
+        const legacy = JSON.parse(rawItems)
+        const legacyItems = Array.isArray(legacy) ? legacy : legacy.items ?? []
+        parsedItems = legacyItems.map((i: any) => ({
+          id: i.id,
+          quantity: i.quantity ?? 1,
+          notes: i.notes ?? '',
+          ...(i.selectedSize ? { selectedSize: typeof i.selectedSize === 'string' ? { name: i.selectedSize } : { name: i.selectedSize.name } } : {}),
+          ...(i.selectedAddOns && i.selectedAddOns.length > 0 ? { selectedAddOns: i.selectedAddOns.map((a: any) => typeof a === 'string' ? { name: a } : { name: a.name }) } : {}),
+        }))
+        const legacyMeta = legacy.metadata
+        if (legacyMeta) parsedMetadata = { ...parsedMetadata, ...legacyMeta }
+      } catch {
+        return NextResponse.json({ error: 'Invalid items format' }, { status: 400 })
+      }
+    } else {
+      return NextResponse.json({ error: 'Items must be an array or JSON string' }, { status: 400 })
+    }
+
+    if (parsedItems.length === 0) {
       return NextResponse.json({ error: 'Order must contain at least one item' }, { status: 400 })
     }
 
-    for (const item of items) {
+    for (const item of parsedItems) {
       if (!item.id || typeof item.quantity !== 'number' || item.quantity < 1) {
         return NextResponse.json({ error: 'Each item must have id and quantity >= 1' }, { status: 400 })
       }
     }
 
-    const { enriched, total, error: enrichError } = enrichItems(items)
+    const { enriched, total, error: enrichError } = enrichItems(parsedItems)
     if (enrichError) {
       return NextResponse.json({ error: enrichError }, { status: 400 })
     }
@@ -193,7 +220,7 @@ export async function POST(request: NextRequest) {
 
     const items_json = JSON.stringify({
       items: enriched,
-      metadata: metadata ?? {},
+      metadata: parsedMetadata,
     })
 
     const order_ref = await generateOrderRef()
@@ -227,7 +254,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true, order: data }, { status: 201 })
-  } catch {
+  } catch (err) {
+    console.error('order POST error:', (err as Error)?.message ?? err)
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 }
