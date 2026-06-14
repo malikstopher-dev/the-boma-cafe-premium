@@ -25,6 +25,7 @@ interface MenuCategory {
 interface CartItem {
   id: string
   name: string
+  description: string
   price: number
   quantity: number
   notes: string
@@ -157,7 +158,7 @@ export default function WaiterPage() {
       if (existing) {
         return prev.map((c) => c.id === item.id ? { ...c, quantity: c.quantity + 1 } : c)
       }
-      return [...prev, { id: item.id, name: item.name, price: price ?? (parseFloat(item.price) || 0), quantity: 1, notes: '' }]
+      return [...prev, { id: item.id, name: item.name, description: item.description, price: price ?? (parseFloat(item.price) || 0), quantity: 1, notes: '' }]
     })
   }
 
@@ -176,6 +177,7 @@ export default function WaiterPage() {
       const items = cart.map((c) => ({
         id: c.id,
         name: c.name,
+        description: c.description,
         price: c.price,
         quantity: c.quantity,
         notes: itemNotes[c.id] || '',
@@ -188,7 +190,7 @@ export default function WaiterPage() {
           phone: 'waiter-order',
           order_type: 'dine-in',
           requested_time: 'ASAP',
-          items_json: JSON.stringify({ items, metadata: { tableNumber, paymentStatus: 'unpaid' } }),
+          items_json: JSON.stringify({ items, metadata: { tableNumber, paymentStatus: 'unpaid', orderNotes } }),
           total,
         }),
       })

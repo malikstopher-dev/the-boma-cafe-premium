@@ -580,10 +580,12 @@ export default function KitchenDisplay() {
                 const readyAge = readyTs ? Date.now() - readyTs : 0
                 const fading = order.status === 'ready' && readyAge > READY_CLEANUP_MS - 30000
 
-                let items: any[] = []
-                try { items = JSON.parse(order.items_json) } catch { /* */ }
+                let parsed: any = []
+                try { parsed = JSON.parse(order.items_json) } catch { /* */ }
+                const items: any[] = Array.isArray(parsed) ? parsed : (parsed?.items || [])
+                const metadata = parsed?.metadata || {}
 
-                const hasNotes = items.some((i: any) => i.notes)
+                const hasNotes = items.some((i: any) => i.notes) || !!metadata.orderNotes
 
                 const displayRef = order.order_ref || `#${order.id.slice(0, 8).toUpperCase()}`
 
@@ -651,6 +653,11 @@ export default function KitchenDisplay() {
                             <span>
                               <strong style={{ color: '#fff', fontSize: '1.1rem' }}>{item.quantity}x</strong>{' '}
                               <span style={{ color: 'rgba(255,255,255,0.85)' }}>{item.name}</span>
+                              {item.description && (
+                                <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.25)', marginTop: '0.1rem', lineHeight: 1.3 }}>
+                                  {item.description}
+                                </div>
+                              )}
                             </span>
                             {item.notes && (
                               <span style={{
@@ -685,6 +692,23 @@ export default function KitchenDisplay() {
                             <strong>{item.name}:</strong> {item.notes}
                           </div>
                         ))}
+                      </div>
+                    )}
+
+                    {metadata.orderNotes && (
+                      <div style={{
+                        background: 'rgba(239,68,68,0.12)',
+                        border: '2px solid rgba(239,68,68,0.5)',
+                        borderRadius: '10px',
+                        padding: '0.75rem',
+                        marginBottom: '0.75rem',
+                      }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#fca5a5', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          ⚠️ Special Instructions
+                        </span>
+                        <div style={{ fontSize: '1rem', color: '#fca5a5', marginTop: '0.35rem', lineHeight: 1.4 }}>
+                          {metadata.orderNotes}
+                        </div>
                       </div>
                     )}
 
