@@ -19,15 +19,6 @@ const SUBMISSION_COOLDOWN_MS = 3000
 
 export default function CartButton() {
   const cartCtx = useCart()
-  const items = Array.isArray(cartCtx?.items) ? cartCtx.items : []
-  const total = cartCtx?.total ?? 0
-  const addItem = cartCtx?.addItem ?? (() => {})
-  const removeItem = cartCtx?.removeItem ?? (() => {})
-  const updateQuantity = cartCtx?.updateQuantity ?? (() => {})
-  const clearCart = cartCtx?.clearCart ?? (() => {})
-  const isCartOpen = cartCtx?.isCartOpen ?? false
-  const openCart = cartCtx?.openCart ?? (() => {})
-  const closeCart = cartCtx?.closeCart ?? (() => {})
   const [isClient, setIsClient] = useState(false)
   const [isOrderSubmitting, setIsOrderSubmitting] = useState(false)
   const [orderError, setOrderError] = useState('')
@@ -45,47 +36,19 @@ export default function CartButton() {
   const [pendingSync, setPendingSync] = useState(0)
   const lastSubmitRef = useRef(0)
 
+  const items = Array.isArray(cartCtx?.items) ? cartCtx.items : []
+  const total = cartCtx?.total ?? 0
+  const clearCart = cartCtx?.clearCart ?? (() => {})
+  const isCartOpen = cartCtx?.isCartOpen ?? false
+  const openCart = cartCtx?.openCart ?? (() => {})
+  const closeCart = cartCtx?.closeCart ?? (() => {})
+
   useEffect(() => {
     setIsClient(true)
     syncPendingOrders().then(r => {
       if (r.synced > 0 || r.failed > 0) setPendingSync(r.synced)
     })
   }, [])
-
-  if (!isClient) return null
-  if (!Array.isArray(items)) return null
-
-  const safeItems = items
-  const itemCount = safeItems.reduce((sum, item) => sum + (item?.quantity ?? 0), 0)
-
-  const handleDecrease = (item: any) => {
-    if (!item?.id) return
-    const qty = item?.quantity ?? 1
-    if (qty > 1) {
-      updateQuantity(item.id, qty - 1)
-    } else {
-      removeItem(item.id)
-    }
-  }
-
-  const handleIncrease = (item: any) => {
-    if (!item?.id) return
-    addItem({
-      id: item.id,
-      menuItemId: item.menuItemId,
-      name: item.name ?? '',
-      price: item.price ?? 0,
-      quantity: 1,
-      category: item.category,
-      selectedSize: item.selectedSize,
-      selectedAddOns: item.selectedAddOns,
-      notes: item.notes,
-    })
-  }
-
-  const handleRemove = (id: string) => {
-    if (id) removeItem(id)
-  }
 
   const validateForm = useCallback((): boolean => {
     const errs: FieldErrors = {}
@@ -105,7 +68,7 @@ export default function CartButton() {
       errs.phone = 'Enter a valid phone number (7-20 digits)'
     }
 
-    if (safeItems.length === 0) {
+    if (items.length === 0) {
       errs.items = 'Your cart is empty'
     }
 
@@ -119,7 +82,7 @@ export default function CartButton() {
 
     setFieldErrors(errs)
     return Object.keys(errs).length === 0
-  }, [customerInfo, safeItems.length])
+  }, [customerInfo, items.length])
 
   const submitOrder = useCallback(async (): Promise<string> => {
     const now = Date.now()
@@ -130,7 +93,7 @@ export default function CartButton() {
 
     const idempotencyKey = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 
-    const itemsPayload = safeItems.map(item => ({
+    const itemsPayload = items.map(item => ({
       menu_item_id: item?.menuItemId || item?.id || '',
       quantity: item?.quantity ?? 1,
       ...(item?.selectedSize ? { selected_size: item.selectedSize } : {}),
@@ -180,7 +143,7 @@ export default function CartButton() {
 
     const order = data?.order ?? null
     return order?.order_ref || ''
-  }, [safeItems, customerInfo])
+  }, [items, customerInfo])
 
   const resetCart = useCallback(() => {
     clearCart()
@@ -190,6 +153,44 @@ export default function CartButton() {
     setFieldErrors({})
     setCustomerInfo({ name: '', phone: '', orderType: 'pickup', requestedTime: '', notes: '', tableNumber: '', deliveryAddress: '' })
   }, [clearCart, closeCart])
+
+  const addItem = cartCtx?.addItem ?? (() => {})
+  const removeItem = cartCtx?.removeItem ?? (() => {})
+  const updateQuantity = cartCtx?.updateQuantity ?? (() => {})
+
+  if (!isClient) return null
+  if (!Array.isArray(items)) return null
+
+  const itemCount = items.reduce((sum, item) => sum + (item?.quantity ?? 0), 0)
+
+  const handleDecrease = (item: any) => {
+    if (!item?.id) return
+    const qty = item?.quantity ?? 1
+    if (qty > 1) {
+      updateQuantity(item.id, qty - 1)
+    } else {
+      removeItem(item.id)
+    }
+  }
+
+  const handleIncrease = (item: any) => {
+    if (!item?.id) return
+    addItem({
+      id: item.id,
+      menuItemId: item.menuItemId,
+      name: item.name ?? '',
+      price: item.price ?? 0,
+      quantity: 1,
+      category: item.category,
+      selectedSize: item.selectedSize,
+      selectedAddOns: item.selectedAddOns,
+      notes: item.notes,
+    })
+  }
+
+  const handleRemove = (id: string) => {
+    if (id) removeItem(id)
+  }
 
   const handleWhatsAppOrder = async () => {
     if (isOrderSubmitting) return
@@ -212,7 +213,7 @@ export default function CartButton() {
       const cTableNumber = customerInfo?.tableNumber ?? ''
       const cDeliveryAddress = customerInfo?.deliveryAddress ?? ''
 
-      const message = generateOrderMessage(safeItems, total, {
+      const message = generateOrderMessage(items, total, {
         name: cName,
         phone: cPhone,
         orderType: cOrderType === 'pickup' ? 'Pickup' : cOrderType === 'delivery' ? 'Delivery' : 'Dine-in',
@@ -263,7 +264,7 @@ export default function CartButton() {
     }
   }
 
-  const showOrderSuccess = !!orderRef && safeItems.length === 0
+  const showOrderSuccess = !!orderRef && items.length === 0
 
   return (
     <>
@@ -338,7 +339,7 @@ export default function CartButton() {
                   </button>
                 </div>
               </div>
-            ) : safeItems.length === 0 ? (
+            ) : items.length === 0 ? (
               <div className={styles.emptyState}>
                 <div className={styles.emptyIcon}>🛒</div>
                 <p className={styles.emptyTitle}>Your cart is empty</p>
@@ -348,7 +349,7 @@ export default function CartButton() {
               <>
                 {/* Cart Items */}
                 <div className={styles.itemsList}>
-                  {safeItems.map((item: any, idx: number) => {
+                  {items.map((item: any, idx: number) => {
                     const qty = item?.quantity ?? 1
                     const price = item?.price ?? 0
                     const itemTotal = price * qty
