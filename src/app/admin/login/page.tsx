@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function AdminLogin() {
   const [password, setPassword] = useState('');
@@ -10,6 +10,8 @@ export default function AdminLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/admin/dashboard';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,7 +21,7 @@ export default function AdminLogin() {
     const success = await login(password);
     
     if (success) {
-      router.push('/admin/dashboard');
+      router.push(redirectTo);
     } else {
       setError('Invalid password. Please try again.');
     }

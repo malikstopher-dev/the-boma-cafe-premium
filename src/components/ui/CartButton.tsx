@@ -91,6 +91,10 @@ export default function CartButton() {
     }
     lastSubmitRef.current = now
 
+    const idempotencyKey = crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+
     const itemsPayload = items.map(item => ({
       menu_item_id: item?.menuItemId || item?.id || '',
       quantity: item?.quantity ?? 1,
@@ -112,6 +116,7 @@ export default function CartButton() {
       phone: cPhone,
       order_type: cOrderType,
       requested_time: cRequestedTime,
+      idempotency_key: idempotencyKey,
       items: itemsPayload,
       ...(cOrderType === 'dine-in' && cTableNumber ? { table_number: cTableNumber } : {}),
       ...(cOrderType === 'delivery' && cDeliveryAddress ? { delivery_address: cDeliveryAddress } : {}),
@@ -222,11 +227,9 @@ export default function CartButton() {
       const url = formatWhatsAppUrl(message)
       window.open(url, '_blank')
 
-      setTimeout(() => {
-        clearCart()
-        closeCart()
-        setCustomerInfo({ name: '', phone: '', orderType: 'pickup', requestedTime: '', notes: '', tableNumber: '', deliveryAddress: '' })
-      }, 0)
+      clearCart()
+      closeCart()
+      setCustomerInfo({ name: '', phone: '', orderType: 'pickup', requestedTime: '', notes: '', tableNumber: '', deliveryAddress: '' })
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to save order'
       setOrderError(msg)
@@ -248,11 +251,9 @@ export default function CartButton() {
       const ref = await submitOrder()
       setOrderRef(ref)
 
-      setTimeout(() => {
-        clearCart()
-        closeCart()
-        setCustomerInfo({ name: '', phone: '', orderType: 'pickup', requestedTime: '', notes: '', tableNumber: '', deliveryAddress: '' })
-      }, 0)
+      clearCart()
+      closeCart()
+      setCustomerInfo({ name: '', phone: '', orderType: 'pickup', requestedTime: '', notes: '', tableNumber: '', deliveryAddress: '' })
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to save order'
       setOrderError(msg)
