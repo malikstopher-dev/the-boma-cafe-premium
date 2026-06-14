@@ -18,7 +18,16 @@ interface FieldErrors {
 const SUBMISSION_COOLDOWN_MS = 3000
 
 export default function CartButton() {
-  const { items, total, addItem, removeItem, updateQuantity, clearCart, isCartOpen, openCart, closeCart } = useCart()
+  const cartCtx = useCart()
+  const items = Array.isArray(cartCtx?.items) ? cartCtx.items : []
+  const total = cartCtx?.total ?? 0
+  const addItem = cartCtx?.addItem ?? (() => {})
+  const removeItem = cartCtx?.removeItem ?? (() => {})
+  const updateQuantity = cartCtx?.updateQuantity ?? (() => {})
+  const clearCart = cartCtx?.clearCart ?? (() => {})
+  const isCartOpen = cartCtx?.isCartOpen ?? false
+  const openCart = cartCtx?.openCart ?? (() => {})
+  const closeCart = cartCtx?.closeCart ?? (() => {})
   const [isClient, setIsClient] = useState(false)
   const [isOrderSubmitting, setIsOrderSubmitting] = useState(false)
   const [orderError, setOrderError] = useState('')
@@ -26,7 +35,7 @@ export default function CartButton() {
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
     phone: '',
-    orderType: 'Pickup' as 'Pickup' | 'Delivery' | 'Dine-in',
+    orderType: 'pickup' as OrderType,
     requestedTime: '',
     notes: '',
     tableNumber: '',
@@ -44,23 +53,28 @@ export default function CartButton() {
   }, [])
 
   if (!isClient) return null
+  if (!Array.isArray(items)) return null
 
-  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0)
+  const safeItems = items
+  const itemCount = safeItems.reduce((sum, item) => sum + (item?.quantity ?? 0), 0)
 
-  const handleDecrease = (item: typeof items[0]) => {
-    if (item.quantity > 1) {
-      updateQuantity(item.id, item.quantity - 1)
+  const handleDecrease = (item: any) => {
+    if (!item?.id) return
+    const qty = item?.quantity ?? 1
+    if (qty > 1) {
+      updateQuantity(item.id, qty - 1)
     } else {
       removeItem(item.id)
     }
   }
 
-  const handleIncrease = (item: typeof items[0]) => {
+  const handleIncrease = (item: any) => {
+    if (!item?.id) return
     addItem({
       id: item.id,
       menuItemId: item.menuItemId,
-      name: item.name,
-      price: item.price,
+      name: item.name ?? '',
+      price: item.price ?? 0,
       quantity: 1,
       category: item.category,
       selectedSize: item.selectedSize,
@@ -70,40 +84,43 @@ export default function CartButton() {
   }
 
   const handleRemove = (id: string) => {
-    removeItem(id)
+    if (id) removeItem(id)
   }
 
-  // ── Client-side validation ─────────────────────────────────
   const validateForm = useCallback((): boolean => {
     const errs: FieldErrors = {}
+    const name = customerInfo?.name ?? ''
+    const phone = customerInfo?.phone ?? ''
+    const orderType = customerInfo?.orderType ?? 'pickup'
+    const tableNumber = customerInfo?.tableNumber ?? ''
+    const deliveryAddress = customerInfo?.deliveryAddress ?? ''
 
-    if (!customerInfo.name.trim()) {
+    if (!name.trim()) {
       errs.name = 'Name is required'
     }
 
-    if (!customerInfo.phone.trim()) {
+    if (!phone.trim()) {
       errs.phone = 'Phone number is required'
-    } else if (!/^[\d\s+\-()]{7,20}$/.test(customerInfo.phone.trim())) {
+    } else if (!/^[\d\s+\-()]{7,20}$/.test(phone.trim())) {
       errs.phone = 'Enter a valid phone number (7-20 digits)'
     }
 
-    if (items.length === 0) {
+    if (safeItems.length === 0) {
       errs.items = 'Your cart is empty'
     }
 
-    if (customerInfo.orderType === 'Dine-in' && !customerInfo.tableNumber.trim()) {
+    if (orderType === 'dine-in' && !tableNumber.trim()) {
       errs.tableNumber = 'Table number is required for dine-in'
     }
 
-    if (customerInfo.orderType === 'Delivery' && !customerInfo.deliveryAddress.trim()) {
+    if (orderType === 'delivery' && !deliveryAddress.trim()) {
       errs.deliveryAddress = 'Delivery address is required'
     }
 
     setFieldErrors(errs)
     return Object.keys(errs).length === 0
-  }, [customerInfo, items.length])
+  }, [customerInfo, safeItems.length])
 
-  // ── Submit to API ──────────────────────────────────────────
   const submitOrder = useCallback(async (): Promise<string> => {
     const now = Date.now()
     if (now - lastSubmitRef.current < SUBMISSION_COOLDOWN_MS) {
@@ -113,28 +130,31 @@ export default function CartButton() {
 
     const idempotencyKey = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 
-    const itemsPayload = items.map(item => ({
-      menu_item_id: item.menuItemId || item.id,
-      quantity: item.quantity,
-      ...(item.selectedSize ? { selected_size: item.selectedSize } : {}),
-      ...(item.selectedAddOns && item.selectedAddOns.length > 0
+    const itemsPayload = safeItems.map(item => ({
+      menu_item_id: item?.menuItemId || item?.id || '',
+      quantity: item?.quantity ?? 1,
+      ...(item?.selectedSize ? { selected_size: item.selectedSize } : {}),
+      ...(item?.selectedAddOns && item.selectedAddOns.length > 0
         ? { selected_add_ons: item.selectedAddOns }
         : {}),
     }))
 
+    const cName = customerInfo?.name?.trim() || 'Guest'
+    const cPhone = customerInfo?.phone?.trim() || 'No phone'
+    const cOrderType = customerInfo?.orderType ?? 'pickup'
+    const cTableNumber = customerInfo?.tableNumber?.trim() ?? ''
+    const cDeliveryAddress = customerInfo?.deliveryAddress?.trim() ?? ''
+    const cRequestedTime = customerInfo?.requestedTime || 'ASAP'
+
     const payload = {
-      customer_name: customerInfo.name.trim(),
-      phone: customerInfo.phone.trim(),
-      order_type: customerInfo.orderType.toLowerCase() as OrderType,
-      requested_time: customerInfo.requestedTime || 'ASAP',
+      customer_name: cName,
+      phone: cPhone,
+      order_type: cOrderType,
+      requested_time: cRequestedTime,
       items: itemsPayload,
       idempotency_key: idempotencyKey,
-      ...(customerInfo.orderType === 'Dine-in' && customerInfo.tableNumber.trim()
-        ? { table_number: customerInfo.tableNumber.trim() }
-        : {}),
-      ...(customerInfo.orderType === 'Delivery' && customerInfo.deliveryAddress.trim()
-        ? { delivery_address: customerInfo.deliveryAddress.trim() }
-        : {}),
+      ...(cOrderType === 'dine-in' && cTableNumber ? { table_number: cTableNumber } : {}),
+      ...(cOrderType === 'delivery' && cDeliveryAddress ? { delivery_address: cDeliveryAddress } : {}),
     }
 
     const res = await fetch('/api/supabase/orders', {
@@ -145,13 +165,22 @@ export default function CartButton() {
 
     if (!res.ok) {
       enqueueOrder(payload)
-      const data = await res.json()
-      throw new Error(data.error || 'Failed to save order')
+      let errorMsg = 'Failed to save order'
+      try {
+        const errorData = await res.json()
+        errorMsg = errorData?.error || errorMsg
+      } catch { /* ignore parse error */ }
+      throw new Error(errorMsg)
     }
 
-    const data = await res.json()
-    return data.order?.order_ref || ''
-  }, [items, customerInfo])
+    let data: any = {}
+    try {
+      data = await res.json()
+    } catch { /* ignore parse error */ }
+
+    const order = data?.order ?? null
+    return order?.order_ref || ''
+  }, [safeItems, customerInfo])
 
   const resetCart = useCallback(() => {
     clearCart()
@@ -159,7 +188,7 @@ export default function CartButton() {
     setOrderRef('')
     setOrderError('')
     setFieldErrors({})
-    setCustomerInfo({ name: '', phone: '', orderType: 'Pickup', requestedTime: '', notes: '', tableNumber: '', deliveryAddress: '' })
+    setCustomerInfo({ name: '', phone: '', orderType: 'pickup', requestedTime: '', notes: '', tableNumber: '', deliveryAddress: '' })
   }, [clearCart, closeCart])
 
   const handleWhatsAppOrder = async () => {
@@ -175,15 +204,34 @@ export default function CartButton() {
       const ref = await submitOrder()
       setOrderRef(ref)
 
-      const message = generateOrderMessage(items, total, customerInfo)
+      const cName = customerInfo?.name ?? ''
+      const cPhone = customerInfo?.phone ?? ''
+      const cOrderType = customerInfo?.orderType ?? 'pickup'
+      const cRequestedTime = customerInfo?.requestedTime ?? ''
+      const cNotes = customerInfo?.notes ?? ''
+      const cTableNumber = customerInfo?.tableNumber ?? ''
+      const cDeliveryAddress = customerInfo?.deliveryAddress ?? ''
+
+      const message = generateOrderMessage(safeItems, total, {
+        name: cName,
+        phone: cPhone,
+        orderType: cOrderType === 'pickup' ? 'Pickup' : cOrderType === 'delivery' ? 'Delivery' : 'Dine-in',
+        requestedTime: cRequestedTime,
+        notes: cNotes,
+        tableNumber: cTableNumber,
+        deliveryAddress: cDeliveryAddress,
+      })
       const url = formatWhatsAppUrl(message)
       window.open(url, '_blank')
 
-      clearCart()
-      closeCart()
-      setCustomerInfo({ name: '', phone: '', orderType: 'Pickup', requestedTime: '', notes: '', tableNumber: '', deliveryAddress: '' })
+      setTimeout(() => {
+        clearCart()
+        closeCart()
+        setCustomerInfo({ name: '', phone: '', orderType: 'pickup', requestedTime: '', notes: '', tableNumber: '', deliveryAddress: '' })
+      }, 0)
     } catch (err) {
-      setOrderError(err instanceof Error ? err.message : 'Failed to save order')
+      const msg = err instanceof Error ? err.message : 'Failed to save order'
+      setOrderError(msg)
     } finally {
       setIsOrderSubmitting(false)
     }
@@ -201,22 +249,21 @@ export default function CartButton() {
     try {
       const ref = await submitOrder()
       setOrderRef(ref)
-      clearCart()
-      closeCart()
-      setCustomerInfo({ name: '', phone: '', orderType: 'Pickup', requestedTime: '', notes: '', tableNumber: '', deliveryAddress: '' })
+
+      setTimeout(() => {
+        clearCart()
+        closeCart()
+        setCustomerInfo({ name: '', phone: '', orderType: 'pickup', requestedTime: '', notes: '', tableNumber: '', deliveryAddress: '' })
+      }, 0)
     } catch (err) {
-      setOrderError(err instanceof Error ? err.message : 'Failed to save order')
+      const msg = err instanceof Error ? err.message : 'Failed to save order'
+      setOrderError(msg)
     } finally {
       setIsOrderSubmitting(false)
     }
   }
 
-  const handleBackToCart = () => {
-    setOrderRef('')
-    setOrderError('')
-  }
-
-  const showOrderSuccess = !!orderRef && items.length === 0
+  const showOrderSuccess = !!orderRef && safeItems.length === 0
 
   return (
     <>
@@ -291,7 +338,7 @@ export default function CartButton() {
                   </button>
                 </div>
               </div>
-            ) : items.length === 0 ? (
+            ) : safeItems.length === 0 ? (
               <div className={styles.emptyState}>
                 <div className={styles.emptyIcon}>🛒</div>
                 <p className={styles.emptyTitle}>Your cart is empty</p>
@@ -301,14 +348,18 @@ export default function CartButton() {
               <>
                 {/* Cart Items */}
                 <div className={styles.itemsList}>
-                  {items.map(item => {
-                    const itemTotal = item.price * item.quantity
+                  {safeItems.map((item: any, idx: number) => {
+                    const qty = item?.quantity ?? 1
+                    const price = item?.price ?? 0
+                    const itemTotal = price * qty
+                    const itemName = item?.name ?? ''
+                    const itemId = item?.id ?? `item-${idx}`
                     const extras: string[] = []
-                    if (item.selectedSize) extras.push(`Size: ${item.selectedSize}`)
-                    if (item.selectedAddOns && item.selectedAddOns.length > 0) extras.push(`+${item.selectedAddOns.join(', +')}`)
+                    if (item?.selectedSize) extras.push(`Size: ${item.selectedSize}`)
+                    if (item?.selectedAddOns && item.selectedAddOns.length > 0) extras.push(`+${item.selectedAddOns.join(', +')}`)
 
                     return (
-                      <div key={item.id} className={styles.itemRow}>
+                      <div key={itemId} className={styles.itemRow}>
                         <div className={styles.qtyControls}>
                           <button
                             className={styles.qtyBtn}
@@ -317,7 +368,7 @@ export default function CartButton() {
                           >
                             −
                           </button>
-                          <span className={styles.qtyValue}>{item.quantity}</span>
+                          <span className={styles.qtyValue}>{qty}</span>
                           <button
                             className={styles.qtyBtn}
                             onClick={() => handleIncrease(item)}
@@ -327,7 +378,7 @@ export default function CartButton() {
                           </button>
                         </div>
                         <div className={styles.itemName}>
-                          {item.name}
+                          {itemName}
                           {extras.length > 0 && (
                             <span className={styles.itemNameSub}>{extras.join(' | ')}</span>
                           )}
@@ -335,7 +386,7 @@ export default function CartButton() {
                         <span className={styles.itemPrice}>R{itemTotal}</span>
                         <button
                           className={styles.deleteBtn}
-                          onClick={() => handleRemove(item.id)}
+                          onClick={() => handleRemove(itemId)}
                           aria-label="Remove item"
                         >
                           <i className="fas fa-trash-alt" />
@@ -361,7 +412,7 @@ export default function CartButton() {
                       <input
                         type="text"
                         placeholder="Your name *"
-                        value={customerInfo.name}
+                        value={customerInfo?.name ?? ''}
                         onChange={e => {
                           setCustomerInfo(prev => ({ ...prev, name: e.target.value }))
                           if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: undefined }))
@@ -374,7 +425,7 @@ export default function CartButton() {
                       <input
                         type="tel"
                         placeholder="Phone number *"
-                        value={customerInfo.phone}
+                        value={customerInfo?.phone ?? ''}
                         onChange={e => {
                           setCustomerInfo(prev => ({ ...prev, phone: e.target.value }))
                           if (fieldErrors.phone) setFieldErrors(prev => ({ ...prev, phone: undefined }))
@@ -386,32 +437,32 @@ export default function CartButton() {
                     <div className={styles.toggleRow}>
                       <button
                         type="button"
-                        onClick={() => setCustomerInfo(prev => ({ ...prev, orderType: 'Pickup' }))}
-                        className={`${styles.toggleBtn} ${customerInfo.orderType === 'Pickup' ? styles.toggleBtnActive : ''}`}
+                        onClick={() => setCustomerInfo(prev => ({ ...prev, orderType: 'pickup' }))}
+                        className={`${styles.toggleBtn} ${customerInfo?.orderType === 'pickup' ? styles.toggleBtnActive : ''}`}
                       >
                         🏪 Pickup
                       </button>
                       <button
                         type="button"
-                        onClick={() => setCustomerInfo(prev => ({ ...prev, orderType: 'Delivery' }))}
-                        className={`${styles.toggleBtn} ${customerInfo.orderType === 'Delivery' ? styles.toggleBtnActive : ''}`}
+                        onClick={() => setCustomerInfo(prev => ({ ...prev, orderType: 'delivery' }))}
+                        className={`${styles.toggleBtn} ${customerInfo?.orderType === 'delivery' ? styles.toggleBtnActive : ''}`}
                       >
                         🚚 Delivery
                       </button>
                       <button
                         type="button"
-                        onClick={() => setCustomerInfo(prev => ({ ...prev, orderType: 'Dine-in' }))}
-                        className={`${styles.toggleBtn} ${customerInfo.orderType === 'Dine-in' ? styles.toggleBtnActive : ''}`}
+                        onClick={() => setCustomerInfo(prev => ({ ...prev, orderType: 'dine-in' }))}
+                        className={`${styles.toggleBtn} ${customerInfo?.orderType === 'dine-in' ? styles.toggleBtnActive : ''}`}
                       >
                         🍽️ Dine-in
                       </button>
                     </div>
-                    {customerInfo.orderType === 'Delivery' && (
+                    {customerInfo?.orderType === 'delivery' && (
                       <div>
                         <input
                           type="text"
                           placeholder="Delivery address *"
-                          value={customerInfo.deliveryAddress}
+                          value={customerInfo?.deliveryAddress ?? ''}
                           onChange={e => {
                             setCustomerInfo(prev => ({ ...prev, deliveryAddress: e.target.value }))
                             if (fieldErrors.deliveryAddress) setFieldErrors(prev => ({ ...prev, deliveryAddress: undefined }))
@@ -421,12 +472,12 @@ export default function CartButton() {
                         {fieldErrors.deliveryAddress && <span className={styles.fieldError}>{fieldErrors.deliveryAddress}</span>}
                       </div>
                     )}
-                    {customerInfo.orderType === 'Dine-in' && (
+                    {customerInfo?.orderType === 'dine-in' && (
                       <div>
                         <input
                           type="text"
                           placeholder="Table number *"
-                          value={customerInfo.tableNumber}
+                          value={customerInfo?.tableNumber ?? ''}
                           onChange={e => {
                             setCustomerInfo(prev => ({ ...prev, tableNumber: e.target.value }))
                             if (fieldErrors.tableNumber) setFieldErrors(prev => ({ ...prev, tableNumber: undefined }))
@@ -439,13 +490,13 @@ export default function CartButton() {
                     <input
                       type="text"
                       placeholder="Requested time (e.g. 7:30 PM)"
-                      value={customerInfo.requestedTime}
+                      value={customerInfo?.requestedTime ?? ''}
                       onChange={e => setCustomerInfo(prev => ({ ...prev, requestedTime: e.target.value }))}
                       className={styles.input}
                     />
                     <textarea
                       placeholder="Additional notes (optional)"
-                      value={customerInfo.notes}
+                      value={customerInfo?.notes ?? ''}
                       onChange={e => setCustomerInfo(prev => ({ ...prev, notes: e.target.value }))}
                       rows={2}
                       className={styles.textarea}
