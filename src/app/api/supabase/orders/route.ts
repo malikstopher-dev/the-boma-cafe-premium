@@ -157,21 +157,25 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+    console.error('ORDER PAYLOAD:', JSON.stringify(body))
     const bodyKeys = Object.keys(body)
     console.error(`order body keys: [${bodyKeys.join(', ')}]`)
 
     const { customer_name, phone, order_type, requested_time, items, metadata, table_number, delivery_address } = body
     const rawItems = items ?? body.items_json
 
-    if (!customer_name || !phone || !order_type || !rawItems) {
-      console.error('order missing fields:', {
-        hasCustomerName: !!customer_name,
-        hasPhone: !!phone,
-        hasOrderType: !!order_type,
-        hasRawItems: !!rawItems,
-        rawItemsType: typeof rawItems,
-      })
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    // Strict field-level validation
+    if (!customer_name || typeof customer_name !== 'string' || !customer_name.trim()) {
+      return NextResponse.json({ error: 'Customer name is required' }, { status: 400 })
+    }
+    if (!phone || typeof phone !== 'string' || !phone.trim()) {
+      return NextResponse.json({ error: 'Phone number is required' }, { status: 400 })
+    }
+    if (!order_type || typeof order_type !== 'string') {
+      return NextResponse.json({ error: 'Order type is required' }, { status: 400 })
+    }
+    if (!rawItems) {
+      return NextResponse.json({ error: 'Order items are required' }, { status: 400 })
     }
 
     if (!VALID_ORDER_TYPES.includes(order_type)) {

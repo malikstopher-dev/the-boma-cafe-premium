@@ -95,10 +95,17 @@ export default function CartButton() {
     setIsOrderSubmitting(true);
 
     let ref = '';
+    let orderSuccess = false;
     try {
       ref = await submitOrderToSupabase();
+      orderSuccess = true;
     } catch (err) {
       setOrderError(err instanceof Error ? err.message : 'Failed to save order');
+    }
+
+    if (!orderSuccess) {
+      setIsOrderSubmitting(false);
+      return;
     }
 
     const message = generateOrderMessage(items, total, customerInfo);
@@ -121,6 +128,9 @@ export default function CartButton() {
     try {
       const ref = await submitOrderToSupabase();
       setOrderRef(ref);
+      clearCart();
+      closeCart();
+      setCustomerInfo({ name: '', phone: '', orderType: 'Pickup', requestedTime: '', notes: '', tableNumber: '', deliveryAddress: '' });
     } catch (err) {
       setOrderError(err instanceof Error ? err.message : 'Failed to save order');
     }
