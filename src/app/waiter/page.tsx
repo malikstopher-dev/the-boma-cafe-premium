@@ -142,6 +142,8 @@ export default function WaiterPage() {
   const [authed, setAuthed] = useState(false)
   const [step, setStep] = useState<'tables' | 'menu' | 'review'>(saved?.cart.length ? 'review' : 'tables')
   const [tableNumber, setTableNumber] = useState<number | null>(saved?.tableNumber ?? null)
+  const [waiters, setWaiters] = useState<{ id: string; name: string }[]>([])
+  const [waiterName, setWaiterName] = useState('')
   const [categories, setCategories] = useState<MenuCategory[]>([])
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
@@ -153,6 +155,14 @@ export default function WaiterPage() {
   const [done, setDone] = useState(false)
   const [orderRef, setOrderRef] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
+
+  useEffect(() => {
+    if (!authed) return
+    fetch('/api/waiters/active')
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setWaiters(data) })
+      .catch(() => {})
+  }, [authed])
 
   useEffect(() => {
     if (!authed) return
@@ -197,6 +207,7 @@ export default function WaiterPage() {
 
   const submitOrder = async () => {
     if (cart.length === 0 || !tableNumber) return
+    if (!waiterName) { setSubmitError('Please select your name (waiter)'); return }
     setSubmitError(null)
     setSubmitting(true)
     try {
@@ -214,6 +225,7 @@ export default function WaiterPage() {
           requested_time: 'ASAP',
           items,
           table_number: String(tableNumber),
+          waiter_name: waiterName || null,
         }),
       })
       if (!res.ok) {
@@ -242,9 +254,10 @@ export default function WaiterPage() {
       <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0f0f1a', color: '#fff', padding: '2rem', textAlign: 'center' }}>
         <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>✅</div>
         <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Order Sent!</h1>
-        <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '0.5rem' }}>Order for Table {tableNumber}</p>
+        <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '0.25rem' }}>Order for Table {tableNumber}</p>
+        {waiterName && <p style={{ color: '#dc2626', fontWeight: 600, marginBottom: '0.5rem' }}>Waiter: {waiterName}</p>}
         <p style={{ color: '#f59e0b', fontFamily: 'monospace', fontSize: '1.2rem', marginBottom: '2rem' }}>{orderRef}</p>
-        <button onClick={() => { setDone(false); setTableNumber(null); setStep('tables'); setSearchQuery('') }}
+        <button onClick={() => { setDone(false); setTableNumber(null); setWaiterName(''); setStep('tables'); setSearchQuery('') }}
           style={{ padding: '1rem 2rem', border: 'none', borderRadius: '12px', background: '#10b981', color: '#000', fontSize: '1rem', fontWeight: 700, cursor: 'pointer' }}
         >
           New Order
@@ -269,6 +282,7 @@ export default function WaiterPage() {
             <div>
               <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block' }}>Currently Serving</span>
               <span style={{ fontSize: '1.3rem', fontWeight: 800, color: '#10b981' }}>Table {tableNumber}</span>
+              {waiterName && <span style={{ fontSize: '0.75rem', color: '#dc2626', fontWeight: 600, marginLeft: '0.75rem' }}>{waiterName}</span>}
             </div>
           </div>
           {step === 'menu' && (
@@ -302,6 +316,27 @@ export default function WaiterPage() {
                 {n}
               </button>
             ))}
+          </div>
+          {/* Waiter selection */}
+          <div style={{ marginTop: '1rem' }}>
+            <label style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '0.4rem', fontWeight: 600 }}>
+              Your Name (Waiter) *
+            </label>
+            <select
+              value={waiterName}
+              onChange={e => setWaiterName(e.target.value)}
+              style={{
+                width: '100%', padding: '0.75rem 1rem', borderRadius: '10px',
+                border: waiterName ? '2px solid #10b981' : '2px solid rgba(255,255,255,0.1)',
+                background: 'rgba(255,255,255,0.04)', color: '#fff', fontSize: '1rem',
+                outline: 'none', cursor: 'pointer',
+              }}
+            >
+              <option value="">Select your name...</option>
+              {waiters.map(w => (
+                <option key={w.id} value={w.name} style={{ background: '#1c1c2e', color: '#fff' }}>{w.name}</option>
+              ))}
+            </select>
           </div>
         </div>
       )}

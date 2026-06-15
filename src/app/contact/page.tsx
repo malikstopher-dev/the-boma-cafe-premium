@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { dataService, generateId } from '@/lib/data';
+import { dataService } from '@/lib/data';
 import { siteSettingsService } from '@/lib/siteSettings';
 import { businessInfo, getReservationLink, getEventEnquiryLink } from '@/data/businessInfo';
 import PremiumHero from '@/components/ui/PremiumHero';

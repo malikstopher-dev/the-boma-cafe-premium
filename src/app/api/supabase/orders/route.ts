@@ -20,9 +20,31 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url)
   const orderRef = searchParams.get('order_ref')
+  const waiterStats = searchParams.get('waiter_stats')
 
   if (orderRef) {
+  if (waiterStats === 'true') {
     const { data, error } = await getAdminClient()
+      .from('orders')
+      .select('waiter_name')
+      .not('waiter_name', 'is', null)
+      .neq('waiter_name', '')
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    const counts: Record<string, number> = {}
+    for (const row of data) {
+      counts[row.waiter_name] = (counts[row.waiter_name] || 0) + 1
+    }
+
+    const result = Object.entries(counts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+
+    return NextResponse.json(result)
+  }
+
+  const { data, error } = await getAdminClient()
       .from('orders')
       .select('order_ref, customer_name, total, status, created_at')
       .eq('order_ref', orderRef)

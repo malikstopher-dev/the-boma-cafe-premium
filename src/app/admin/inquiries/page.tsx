@@ -1,92 +1,123 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { cmsService } from '@/lib/client-cms';
+import { useState, useEffect } from 'react'
+
+interface ContactMessage {
+  id: string
+  name: string
+  phone: string | null
+  email: string
+  subject: string | null
+  message: string
+  is_read: boolean
+  created_at: string
+}
 
 export default function AdminInquiries() {
-  const [inquiries, setInquiries] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [messages, setMessages] = useState<ContactMessage[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const loadInquiries = async () => {
-      try {
-        const data = await cmsService.getInquiries();
-        setInquiries(data);
-      } catch (error) {
-        console.error('Error loading inquiries:', error);
-      } finally {
-        setIsLoading(false);
+    loadMessages()
+  }, [])
+
+  const loadMessages = async () => {
+    try {
+      const res = await fetch('/api/supabase/contact')
+      if (res.ok) {
+        const data = await res.json()
+        setMessages(data)
       }
-    };
-    loadInquiries();
-  }, []);
+    } catch (err) {
+      console.error('Error loading messages:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const markAsRead = async (id: string) => {
     try {
-      await cmsService.markInquiryRead(id);
-      setInquiries(inquiries.map((i: any) => i.id === id ? { ...i, isRead: true } : i));
-    } catch (error) {
-      console.error('Error marking inquiry as read:', error);
+      const res = await fetch(`/api/supabase/contact?id=${id}`, { method: 'PATCH' })
+      if (res.ok) {
+        setMessages(messages.map(m => m.id === id ? { ...m, is_read: true } : m))
+      }
+    } catch (err) {
+      console.error('Error marking message read:', err)
     }
-  };
+  }
 
-  const deleteInquiry = async (id: string) => {
-    if (confirm('Delete this inquiry?')) {
-      setInquiries(inquiries.filter((i: any) => i.id !== id));
+  const deleteMessage = async (id: string) => {
+    if (!confirm('Delete this message?')) return
+    try {
+      const res = await fetch(`/api/supabase/contact?id=${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        setMessages(messages.filter(m => m.id !== id))
+      }
+    } catch (err) {
+      console.error('Error deleting message:', err)
     }
-  };
+  }
 
   if (isLoading) {
-    return <div style={{ padding: '2rem' }}>Loading...</div>;
+    return <div style={{ padding: '2rem' }}>Loading...</div>
   }
 
   return (
     <div>
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '2rem', color: 'var(--dark-brown)' }}>Contact Inquiries</h1>
-        <p style={{ color: 'var(--text-light)' }}>{inquiries.length} messages</p>
+        <p style={{ color: 'var(--text-light)' }}>{messages.length} message{messages.length !== 1 ? 's' : ''}</p>
       </div>
 
-      {inquiries.length === 0 ? (
+      {messages.length === 0 ? (
         <div style={{ background: 'var(--white)', padding: '3rem', borderRadius: '16px', textAlign: 'center' }}>
-          <p style={{ color: 'var(--text-light)' }}>No inquiries yet. Messages from the contact form will appear here.</p>
+          <p style={{ color: 'var(--text-light)' }}>
+            No messages yet. Contact form submissions will appear here.
+          </p>
         </div>
       ) : (
         <div style={{ display: 'grid', gap: '1rem' }}>
-          {inquiries.map((inquiry: any) => (
-            <div 
-              key={inquiry.id} 
-              style={{ 
-                background: 'var(--white)', 
-                padding: '1.5rem', 
-                borderRadius: '12px', 
+          {messages.map(msg => (
+            <div
+              key={msg.id}
+              style={{
+                background: 'var(--white)',
+                padding: '1.5rem',
+                borderRadius: '12px',
                 boxShadow: 'var(--shadow-sm)',
-                borderLeft: inquiry.isRead ? 'none' : '4px solid var(--primary)'
+                borderLeft: msg.is_read ? 'none' : '4px solid var(--primary)',
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                 <div>
-                  <h3 style={{ fontSize: '1.1rem', color: 'var(--dark-brown)', marginBottom: '0.25rem' }}>{inquiry.name}</h3>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>{inquiry.email} {inquiry.phone && `• ${inquiry.phone}`}</p>
+                  <h3 style={{ fontSize: '1.1rem', color: 'var(--dark-brown)', marginBottom: '0.25rem' }}>{msg.name}</h3>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>{msg.email} {msg.phone && `• ${msg.phone}`}</p>
+                  {msg.subject && (
+                    <span style={{
+                      display: 'inline-block', marginTop: '0.35rem',
+                      padding: '0.15rem 0.5rem', borderRadius: '6px',
+                      background: 'rgba(139,92,246,0.1)', color: '#7c3aed',
+                      fontSize: '0.8rem', fontWeight: 600,
+                    }}>
+                      {msg.subject}
+                    </span>
+                  )}
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  {!inquiry.isRead && (
-                    <button onClick={() => markAsRead(inquiry.id)} style={{ padding: '0.5rem 1rem', background: 'var(--cream)', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>Mark Read</button>
+                  {!msg.is_read && (
+                    <button onClick={() => markAsRead(msg.id)} style={{ padding: '0.5rem 1rem', background: 'var(--cream)', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>Mark Read</button>
                   )}
-                  <button onClick={() => deleteInquiry(inquiry.id)} style={{ padding: '0.5rem 1rem', background: '#fee2e2', border: 'none', borderRadius: '8px', cursor: 'pointer', color: '#dc2626', fontSize: '0.85rem' }}>Delete</button>
+                  <button onClick={() => deleteMessage(msg.id)} style={{ padding: '0.5rem 1rem', background: '#fee2e2', border: 'none', borderRadius: '8px', cursor: 'pointer', color: '#dc2626', fontSize: '0.85rem' }}>Delete</button>
                 </div>
               </div>
-              {inquiry.subject && (
-                <p style={{ fontWeight: 600, color: 'var(--dark-brown)', marginBottom: '0.5rem' }}>Subject: {inquiry.subject}</p>
-              )}
-              <p style={{ color: 'var(--text)', lineHeight: 1.6 }}>{inquiry.message}</p>
+              <p style={{ color: 'var(--text)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{msg.message}</p>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-light)', marginTop: '1rem' }}>
-                {new Date(inquiry.createdAt).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                {new Date(msg.created_at).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
               </p>
             </div>
           ))}
         </div>
       )}
     </div>
-  );
+  )
 }

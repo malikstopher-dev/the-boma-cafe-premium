@@ -36,6 +36,7 @@ export default function AdminDashboard() {
   const [events, setEvents] = useState(0);
   const [promotions, setPromotions] = useState(0);
   const [inquiries, setInquiries] = useState(0);
+  const [waiterStats, setWaiterStats] = useState<{ name: string; count: number }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -58,6 +59,13 @@ export default function AdminDashboard() {
       }
     };
     loadStats();
+
+    fetch('/api/supabase/orders?waiter_stats=true')
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) setWaiterStats(data)
+      })
+      .catch(() => {})
   }, []);
 
   const stats = [
@@ -96,6 +104,24 @@ export default function AdminDashboard() {
           </div>
         ))}
       </div>
+
+      {/* Orders By Waiter */}
+      {waiterStats.length > 0 && (
+        <div style={{ background: 'var(--white)', padding: '2rem', borderRadius: '18px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', marginBottom: '2rem' }}>
+          <h2 style={{ fontSize: '1.35rem', fontWeight: 600, color: 'var(--dark-brown)', marginBottom: '1.5rem' }}>Orders By Waiter</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {waiterStats.map((w, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem', flexShrink: 0 }}>
+                  {w.name.charAt(0).toUpperCase()}
+                </span>
+                <span style={{ flex: 1, fontWeight: 500, color: 'var(--dark-brown)' }}>{w.name}</span>
+                <span style={{ fontWeight: 700, color: 'var(--warm)', fontSize: '1.1rem' }}>{w.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Quick Actions */}
       <div style={{ background: 'var(--white)', padding: '2rem', borderRadius: '18px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', marginBottom: '2rem' }}>

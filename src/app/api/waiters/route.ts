@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient } from '@/lib/supabase'
 import { requireAnyRole } from '@/lib/auth'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   const authError = await requireAnyRole(['admin'])
   if (authError) return authError
