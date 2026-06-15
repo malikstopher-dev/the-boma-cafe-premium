@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   if (authError) return authError
 
   try {
-    const popup = getPopup();
+    const popup = await getPopup();
     return NextResponse.json(popup);
   } catch (error) {
     console.error('Error reading popup:', error);

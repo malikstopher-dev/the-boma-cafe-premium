@@ -7,8 +7,8 @@ export async function GET(request: NextRequest) {
   if (authError) return authError
 
   try {
-    const gallery = getGallery();
-    const boards = getGalleryBoards();
+    const gallery = await getGallery();
+    const boards = await getGalleryBoards();
     return NextResponse.json({ gallery, boards });
   } catch (error) {
     console.error('Error reading gallery:', error);
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const item = await request.json();
-    const saved = saveGalleryItem(item);
+    const saved = await saveGalleryItem(item);
     return NextResponse.json({ success: true, data: saved });
   } catch (error) {
     console.error('Error saving gallery item:', error);
@@ -36,7 +36,7 @@ export async function PUT(request: NextRequest) {
 
   try {
     const item = await request.json();
-    const saved = saveGalleryItem(item);
+    const saved = await saveGalleryItem(item);
     return NextResponse.json({ success: true, data: saved });
   } catch (error) {
     console.error('Error saving gallery item:', error);
@@ -51,7 +51,9 @@ export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
     if (body.items && Array.isArray(body.items)) {
-      body.items.forEach((item: any) => saveGalleryItem(item));
+      for (const item of body.items) {
+        await saveGalleryItem(item);
+      }
       return NextResponse.json({ success: true });
     }
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
@@ -70,7 +72,7 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get('id');
     
     if (id) {
-      const result = deleteGalleryItem(id);
+      const result = await deleteGalleryItem(id);
       return NextResponse.json({ success: result });
     }
     

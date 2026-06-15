@@ -1,978 +1,1194 @@
-# The Boma Café — Full System Audit & Operator Manual
+# THE BOMA CAFE — SYSTEM AUDIT & OPERATOR MANUAL
 
-**Date:** 15 June 2026  
-**Repository:** `malikstopher-dev/the-boma-cafe`  
-**Platform:** Next.js 14.2.3 on Vercel (serverless)  
-**Database:** Supabase PostgreSQL + Local SQLite (CMS)  
-**Auth:** Custom cookie-based (password-gated roles)
-
----
-
-## 1. System Architecture Overview
-
-```
-┌─────────────────────┐      ┌──────────────────────┐
-│    Customer Web     │      │   Admin / Staff Web   │
-│  (menu, contact,    │      │  (admin/*, /kitchen,  │
-│   track-order)      │      │   /waiter, /receipt)  │
-└────────┬────────────┘      └──────────┬───────────┘
-         │                              │
-         ▼                              ▼
-┌──────────────────────────────────────────────┐
-│           Next.js 14 (Vercel Serverless)      │
-│  ┌──────────┐  ┌──────────┐  ┌────────────┐  │
-│  │API Routes│  │  Pages   │  │ Middleware  │  │
-│  │ (route.ts)│  │(page.tsx)│  │  (edge)    │  │
-│  └────┬─────┘  └────┬─────┘  └─────┬──────┘  │
-│       │              │              │          │
-│       ▼              ▼              ▼          │
-│  ┌──────────────────────────────────────┐      │
-│  │         Service Layer                │      │
-│  │  lib/orderService, lib/order-        │      │
-│  │  state-machine, lib/pos/*,           │      │
-│  │  lib/auth, lib/rate-limit            │      │
-│  └──────────────┬───────────────────────┘      │
-│                 │                               │
-└─────────────────┼───────────────────────────────┘
-                  │
-     ┌────────────┼────────────┐
-     ▼            ▼            ▼
-┌─────────┐ ┌─────────┐ ┌──────────┐
-│Supabase │ │ SQLite  │ │Filesystem│
-│Postgres │ │ cms.db  │ │ uploads/ │
-│(orders, │ │(menu,   │ │ gallery/ │
-│bookings,│ │events,  │ │          │
-│contact, │ │promos,  │ │          │
-│waiters) │ │CMS,etc) │ │          │
-└─────────┘ └─────────┘ └──────────┘
-```
-
-### Key Design Decisions
-
-- **Orders use Supabase** (persists on Vercel, realtime capable)
-- **CMS content uses SQLite** (menu items, events, promotions, settings, gallery metadata — stored in `data/cms.db` in the project directory)
-- **Auth is custom cookie-based**, not Supabase Auth (passwords stored as env vars, SHA-256 hashed cookie)
-- **Offline queue** for order creation retries with backoff
-- **Rate limiting** is in-memory (resets per serverless instance)
-
-### Storage Systems
-
-| System | Used For | Persists on Vercel? | Realtime? |
-|--------|----------|---------------------|-----------|
-| Supabase (PostgreSQL) | orders, bookings, contact_messages, order_events, waiters | ✅ Yes | ✅ Yes (orders, order_events, waiters) |
-| SQLite (cms.db) | menu, events, promotions, CMS settings, gallery metadata, announcements, popups | ❌ No — project dir is read-only on Vercel | ❌ No |
-| Filesystem (public/uploads/) | menu images, gallery images | ❌ No — ephemeral storage | ❌ No |
-
-**⚠️ Critical Limitation:** SQLite CMS content and uploaded images do NOT persist across Vercel deployments. Data written via admin pages (menu items, events, promotions) is lost on redeploy. This is a known architectural issue — the CMS should ideally use Supabase or a blob store (R2/S3) for persistence.
+**Date:** 15 June 2026
+**Platform:** Next.js 14.2.3 (App Router) + Supabase (PostgreSQL) + Vercel
+**Repository:** github.com/malikstopher-dev/the-boma-cafe
+**Latest Commit:** 730c0d8 — Zero-trust: waiter middleware, x-user-scope, requireWaiter()
 
 ---
 
-## 2. Admin Audit
+## TABLE OF CONTENTS
 
-### 2.1 Admin Index (`/admin`)
-- **Purpose:** Redirects to `/admin/dashboard`
-- **Auth:** Cookie-based (middleware + layout AuthProvider)
-- **Actions:** None — pure redirect
+1. [System Architecture Overview](#1-system-architecture-overview)
+2. [Admin Audit](#2-admin-audit)
+3. [Orders System Audit](#3-orders-system-audit)
+4. [Kitchen Audit](#4-kitchen-audit)
+5. [Waiter Audit](#5-waiter-audit)
+6. [Tracking System Audit](#6-tracking-system-audit)
+7. [Security Audit](#7-security-audit)
+8. [Database Audit](#8-database-audit)
+9. [Production Readiness Scorecard](#9-production-readiness-scorecard)
+10. [Staff Training Manual](#10-staff-training-manual)
+11. [Known Bugs](#11-known-bugs)
+12. [Recommended Improvements](#12-recommended-improvements)
 
-### 2.2 Admin Dashboard (`/admin/dashboard`)
+---
 
-| Item | Detail |
-|------|--------|
-| **Purpose** | Overview of site stats (menu items, events, promotions, inquiries count) + "Orders By Waiter" section + quick actions |
-| **Data Source** | SQLite (cmsService.get*) for CMS stats; Supabase (`/api/supabase/orders?waiter_stats=true`) for waiter orders |
-| **Actions** | Quick action links to menu, events, promotions, popup management |
-| **Permissions** | Admin only (middleware + layout) |
-| **Back Button** | ✅ Yes — returns to previous page |
+## 1. SYSTEM ARCHITECTURE OVERVIEW
 
-**What can be edited/deleted:** Nothing directly on this page. It's read-only.
+### High-Level Stack
 
-### 2.3 Admin Orders (`/admin/orders`)
+```
+┌─────────────────────────────────────────────┐
+│                  Browser                      │
+│  (React 18 SPA + Server Components)          │
+├─────────────────────────────────────────────┤
+│           Next.js 14 App Router              │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
+│  │  Pages    │  │  API      │  │ Middleware│  │
+│  │ (RSC)     │  │  Routes   │  │ (Edge)   │  │
+│  └──────────┘  └──────────┘  └──────────┘   │
+├─────────────────────────────────────────────┤
+│              Supabase (PostgreSQL)           │
+│  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐       │
+│  │Orders│ │CMS   │ │Auth  │ │Realtime│      │
+│  └──────┘ └──────┘ └──────┘ └──────┘       │
+├─────────────────────────────────────────────┤
+│             Vercel Edge Network               │
+└─────────────────────────────────────────────┘
+```
 
-| Item | Detail |
-|------|--------|
-| **Purpose** | Full restaurant POS — manage all orders (pending, confirmed, preparing, ready, completed) |
-| **Data Source** | Supabase `orders` table (polled every 4 seconds) |
-| **Sidebar** | Table grid (tables 1-20) + order list + checkout panel |
-| **Permissions** | Admin (middleware + layout) |
+### Authentication Model (3-Role Cookie-Based)
 
-**Actions (OrderCard):**
+| Role | Cookie Name | Env Var | Middleware Route Access | API Access |
+|------|-------------|---------|------------------------|------------|
+| **admin** | `boma_admin_auth` | `ADMIN_PASSWORD` | All `/admin/*`, `/waiter/*` | Full |
+| **kitchen** | `boma_kitchen_auth` | `KITCHEN_PASSWORD` | `/admin/kitchen` only | View + update orders |
+| **waiter** | `boma_waiter_auth` | `WAITER_PASSWORD` | `/waiter` only | None via middleware; page uses public endpoints |
 
-| Button | Effect | Database Change |
-|--------|--------|----------------|
-| ✅ Accept | Move from pending → confirmed | Updates `orders.status`, inserts `order_events` row |
-| 🔵 Prepare | Move to preparing | Same |
-| 🟢 Ready | Move to ready | Same |
-| ✅ Complete | Move to completed | Same |
-| ❌ Cancel | Cancel order | Same |
-| 💳 Confirm Payment | Sets `payment_status='paid'`, records `payment_confirmed_at/by` | Updates `orders.payment_status` + timestamps |
+All passwords are SHA-256 hashed before comparison. No plaintext storage. Each role uses a **separate password** — sharing is possible but not recommended.
 
-**Workflows:**
-- Click table in sidebar → shows orders for that table
-- Click order card → opens checkout panel on right
-- Keyboard shortcut `1` = accept next pending order
-- Keyboard shortcut `2`/`3`/`4` = status transitions (blocked if payment required)
+### Route Protection Layers
+
+```
+Layer 1: Middleware (Edge Runtime)
+  └─ Matches: /admin/*, /waiter/*, /api/admin/*, /api/cms/*, /api/waiters/*, /api/gallery/*, /api/upload/*
+  └─ Validates cookies → sets x-user-role, x-auth-valid, x-user-scope headers
+  └─ Fails closed: invalid/missing cookie → redirect (pages) or 401 JSON (API)
+
+Layer 2: API Route Guards (Node.js Runtime)
+  └─ requireRole.ts functions (header-fast-path, cookie-fallback)
+  └─ requireAdmin(), requireKitchen(), requireAdminOrKitchen(), requireWaiter(), requireAuthenticated()
+
+Layer 3: Rate Limiting (in-memory)
+  └─ checkRateLimit(key): 10 requests per 60s window per IP
+  └─ Applied to: order creation, contact form, booking form, order tracking
+```
+
+### Page Inventory (58 Static Pages + 4 Dynamic Routes)
+
+| Route | Type | Auth Required | Purpose |
+|-------|------|---------------|---------|
+| `/` | Static | Public | Homepage |
+| `/about` | Static | Public | About page |
+| `/menu` | Static | Public | Online menu |
+| `/bar-menu` | Static | Public | Drinks menu |
+| `/events` | Static | Public | Events listing |
+| `/gallery` | Static | Public | Photo gallery |
+| `/promotions` | Static | Public | Promotions/offers |
+| `/entertainment` | Static | Public | Entertainment page |
+| `/experience` | Static | Public | Experience page |
+| `/contact` | Static | Public | Contact form |
+| `/track-order` | Static | Public | Order tracking |
+| `/waiter` | Dynamic | Waiter/Admin | Waiter order tablet |
+| `/receipt/[ref]` | Dynamic | Phone-verified or authed | Order receipt |
+| `/admin/login` | Static | None | Login page |
+| `/admin` | Static | Admin | Redirects to dashboard |
+| `/admin/dashboard` | Static | Admin | Home stats + quick links |
+| `/admin/orders` | Static | Admin | POS order management |
+| `/admin/kitchen` | Static | Admin/Kitch. | Kitchen Display System |
+| `/admin/analytics` | Static | Admin | Sales + product analytics |
+| `/admin/menu` | Static | Admin | Menu item CRUD |
+| `/admin/categories` | Static | Admin | Menu category management |
+| `/admin/events` | Static | Admin | Event CRUD |
+| `/admin/promotions` | Static | Admin | Promotion CRUD |
+| `/admin/gallery` | Static | Admin | Photo gallery management |
+| `/admin/popup` | Static | Admin | Popup banner config |
+| `/admin/announcement` | Static | Admin | Announcement bar config |
+| `/admin/site-settings` | Static | Admin | Full CMS content editor |
+| `/admin/content-map` | Static | Admin | Content navigation helper |
+| `/admin/contact-messages` | Static | Admin | View/delete contact msgs |
+| `/admin/inquiries` | Static | Admin | Manage inquiries |
+| `/admin/bookings` | Static | Admin | Booking management |
+| `/admin/waiters` | Static | Admin | Waiter list management |
+| `/admin/bar-menu` | Static | Admin | Bar drinks (LOCAL ONLY) |
+
+---
+
+## 2. ADMIN AUDIT
+
+### 2.1 `/admin/dashboard`
+
+**Purpose:** Command center showing system status at a glance.
+
+**What it displays:**
+- Menu items count, upcoming events count, active promotions count, unread inquiries count
+- Orders per waiter (from `waiter_stats` query)
+- Quick action links to menu, events, promotions, popup config
+- Getting Started guide for new admins
+
+**Actions:**
+| Action | Result | DB Effect |
+|--------|--------|-----------|
+| Click stat card | Navigates to relevant admin page | None |
+| Click Quick Action | Navigates to management page | None |
+| View waiter stats | Fetches `?waiter_stats=true` from orders | Read-only SELECT |
+
+**Permissions:** Admin only (middleware enforces)
+
+### 2.2 `/admin/orders`
+
+**Purpose:** Full POS order management — view, process, and complete orders.
+
+**Layout:** 3-panel design — Table grid (left) | Order cards (center) | Checkout panel (right)
+
+**Actions:**
+| Button | Action | DB Effect |
+|--------|--------|-----------|
+| Table button (1-20) | Filters orders to that table | None (client filter) |
+| Order card | Selects order, opens in checkout panel | None |
+| "Assign Table" dropdown | Sets `table_number` on order | `PATCH /api/supabase/orders` → UPDATE orders SET table_number |
+| "Confirm Payment" | Sets `payment_status='paid'` on pending | `PATCH` → UPDATE orders SET payment_status, payment_confirmed_at, payment_confirmed_by |
+| Cash/Card/Mobile toggle | Selects payment method | None (local state only) |
+| "Mark Paid (METHOD)" | Completes order + sets payment | `PATCH` → UPDATE orders SET status='completed', payment_status='paid' |
+| "Print Receipt" | `window.print()` for physical receipt | None |
+| "Show all orders" | Clears table filter | None (client filter) |
+
+**Real-time updates:** Polls `GET /api/supabase/orders` every 4 seconds. Audio alert (beep) on new orders.
+
+**Permissions:** Admin only (middleware blocks kitchen)
 
 **Limitations:**
-- No bulk operations
-- Cannot edit order items after creation
-- Cannot edit totals (server-authoritative)
-- Payment confirmation is manual
+- No pagination — all orders loaded at once. Will slow down with thousands of orders.
+- No order deletion from UI — only available via API DELETE
+- Payment confirmation is manual — no payment gateway integration
 
-### 2.4 Admin Bookings (`/admin/bookings`)
+### 2.3 `/admin/analytics`
 
-| Item | Detail |
-|------|--------|
-| **Purpose** | View and manage table booking requests from customers |
-| **Data Source** | Supabase `bookings` table |
-| **Permissions** | Admin (middleware + layout) |
-| **Back Button** | ✅ Yes |
+**Purpose:** Sales analytics with configurable time range.
+
+**What it shows:**
+- Total revenue (completed orders only)
+- Total orders count
+- Top 10 products (by quantity sold)
+- Order type breakdown (pickup/delivery/dine-in)
+- Daily revenue chart (last N days)
+- Order frequency chart (orders per day)
 
 **Actions:**
-- View booking details (name, phone, email, date, time, guests, notes)
-- Delete booking (with confirmation)
-- No status update buttons visible (status column exists but no approve/cancel UI)
+| Action | Result | DB Effect |
+|--------|--------|-----------|
+| Period dropdown (7/14/30/90 days) | Reloads analytics with new range | `GET /api/admin/analytics?days=N` → SELECT from orders |
+
+**Permissions:** Admin only (middleware + `requireAdmin` in API)
 
 **Limitations:**
-- Cannot change booking status (no confirm/cancel buttons)
-- No calendar view
-- No date filtering
+- Revenue = sum of completed order totals, regardless of payment status
+- No profit/cost tracking
+- No year-over-year comparison
+- No export (CSV/PDF)
 
-### 2.5 Admin Inquiries (`/admin/inquiries`)
+### 2.4 `/admin/menu`
 
-| Item | Detail |
-|------|--------|
-| **Purpose** | View contact form submissions from customers |
-| **Data Source** | Supabase `contact_messages` (via `/api/supabase/contact`) |
-| **Permissions** | Admin (middleware + layout) |
-| **Back Button** | ✅ Yes |
+**Purpose:** Manage food menu items (not categories).
+
+**CRUD:**
+| Action | DB Effect |
+|--------|-----------|
+| Add Item | `cmsService.saveMenuItem()` → INSERT into `menu_items` |
+| Edit Item | `cmsService.saveMenuItem()` → UPDATE `menu_items` |
+| Delete Item | `cmsService.deleteMenuItem(id)` → DELETE from `menu_items` |
+
+**Fields:** name, description, price, categoryId, sizes (JSON), addOns (JSON), options (JSON), image (base64), isAvailable, isFeatured, isOnPromo, promoBadge
+
+**Permissions:** Admin/Kitchen (API-level)
+
+**Notes:**
+- Image upload uses FileReader to base64 — stored as text in DB. Not ideal for large images.
+- No image size validation before upload.
+
+### 2.5 `/admin/categories`
+
+**Purpose:** Manage menu categories.
+
+**CRUD:**
+| Action | DB Effect |
+|--------|-----------|
+| Add Category | `cmsService.saveCategory()` → INSERT into `menu_categories` |
+| Edit Category | `cmsService.saveCategory()` → UPDATE `menu_categories` |
+| Enable/Disable | Toggles `isActive` → UPDATE `menu_categories` |
+| Delete Category | `cmsService.deleteCategory(id)` → DELETE from `menu_categories` |
+
+**Fields:** name, description, isActive
+
+**Permissions:** Admin/Kitchen
+
+### 2.6 `/admin/events`
+
+**Purpose:** Manage upcoming and past events + "Last Week" highlight section.
+
+**Tabs:** Upcoming Events | Past Events | Last Week Highlight
+
+**Event CRUD:**
+| Action | DB Effect |
+|--------|-----------|
+| Add Event | `cmsService.saveEvent()` → INSERT into `events` |
+| Edit Event | `cmsService.saveEvent()` → UPDATE `events` |
+| Delete Event | `cmsService.deleteEvent(id)` → DELETE from `events` |
+| Reorder Events | `cmsService.reorderEvents()` → UPDATE order_index for each |
+
+**Fields:** title, description, date, time, location, category, coverImage, galleryImages (JSON), status (upcoming/featured/past), showOnHomepage, ctaLabel, ctaLink, visible
+
+**Highlight CRUD:** Single config object — title, description, videoSrc, posterImage, ctaLabel, ctaLink, visible, autoplay, muted, loop
+
+**Permissions:** Admin/Kitchen
+
+### 2.7 `/admin/promotions`
+
+**Purpose:** Manage promotional offers.
+
+**CRUD:**
+| Action | DB Effect |
+|--------|-----------|
+| Add Promotion | `cmsService.savePromotion()` → INSERT into `promotions` |
+| Edit Promotion | `cmsService.savePromotion()` → UPDATE `promotions` |
+| Delete Promotion | `cmsService.deletePromotion(id)` → DELETE from `promotions` |
+
+**Fields:** title, description, image, priceText, ctaText, ctaLink, isActive, displayOnHomepage, startDate, endDate, orderIndex
+
+**Permissions:** Admin/Kitchen
+
+### 2.8 `/admin/gallery`
+
+**Purpose:** Manage photo gallery (CMS items + filesystem images).
+
+**Tabs:** Main Gallery (CMS) | Local Boards Gallery (filesystem)
+
+**Main Gallery CRUD:**
+| Action | DB Effect |
+|--------|-----------|
+| Add Item | `cmsService.saveGalleryItem()` → INSERT into `gallery` |
+| Edit Item | `cmsService.saveGalleryItem()` → UPDATE `gallery` |
+| Delete Item | `cmsService.deleteGalleryItem(id)` → DELETE from `gallery` |
+| Feature/Unfeature | Toggles `isFeatured` → UPDATE `gallery` |
+
+**Local Images:**
+| Action | DB Effect |
+|--------|-----------|
+| Upload | File saved to `public/gallery/<folder>/` | None (filesystem) |
+| Delete | File deleted from `public/gallery/<folder>/` | None (filesystem) |
+
+**Permissions:** Admin/Kitchen
+
+**Known Issue:** Uploads to Vercel's ephemeral filesystem may fail on subsequent deploys. The code catches the error and shows an alert about Vercel read-only filesystem.
+
+### 2.9 `/admin/popup`
+
+**Purpose:** Configure the popup announcement overlay.
+
+**Fields:** type, title, description, image, ctaText, ctaLink, isEnabled, showOncePerSession, startDate, endDate, startTime, endTime, activeDays (JSON), adultPrice, kidsPrice
+
+**Permissions:** Admin/Kitchen
+
+**Note:** Single config object — no multiple popups.
+
+### 2.10 `/admin/announcement`
+
+**Purpose:** Scrolling announcement bar at top of public site.
+
+**Fields:** text, link, linkText, isEnabled
+
+**Permissions:** Admin/Kitchen
+
+### 2.11 `/admin/site-settings`
+
+**Purpose:** Full website content management across 9 tabs.
+
+**Tabs:** Homepage, About, Experience, Entertainment, Venue Hire, Contact, Promo Bar, Branding, SEO
+
+**Total fields:** ~100+ text/textarea inputs across all tabs
+
+**Permissions:** Admin/Kitchen
+
+**Note:** All settings saved together as a single bulk operation. No granular per-field saving.
+
+### 2.12 `/admin/bookings`
+
+**Purpose:** View and manage table bookings.
 
 **Actions:**
+| Button | Action | DB Effect |
+|--------|--------|-----------|
+| Confirm | Sets status='confirmed' | `PATCH` → UPDATE bookings SET status='confirmed' |
+| Cancel | Sets status='cancelled' | `PATCH` → UPDATE bookings SET status='cancelled' |
+| Mark Completed | Sets status='completed' | `PATCH` → UPDATE bookings SET status='completed' |
+| Delete | Removes booking | `DELETE` → DELETE from bookings |
 
-| Button | Effect | Database Change |
-|--------|--------|----------------|
-| Mark Read | Marks message as read (removes blue left border) | PATCH `contact_messages.is_read = true` |
-| Delete | Removes message | DELETE from `contact_messages` |
+**Filters:** Search (by name), Status filter (All/Pending/Confirmed/Cancelled/Completed)
 
-**Features:**
-- Unread messages have blue left border
-- Shows subject badge (if present)
-- Shows name, email, phone, message, date
+**Permissions:** Admin/Kitchen
 
-### 2.6 Admin Menu (`/admin/menu`)
+### 2.13 `/admin/contact-messages` & `/admin/inquiries`
 
-| Item | Detail |
-|------|--------|
-| **Purpose** | CRUD for menu items (food menu) |
-| **Data Source** | SQLite (via cmsService) |
-| **Permissions** | Admin (middleware + layout) |
-| **Back Button** | ✅ Yes |
+**Purpose:** View and manage contact form submissions.
 
 **Actions:**
-- Add menu item (name, description, price, category, image, sizes, add-ons, availability)
-- Edit menu item
-- Delete menu item (with confirmation)
-- Toggle availability
-- Upload image (base64 stored in SQLite)
+| Button | Action | DB Effect |
+|--------|--------|-----------|
+| Mark Read | Sets is_read=true | `PATCH` → UPDATE contact_messages SET is_read=true |
+| Delete | Removes message | `DELETE` → DELETE from contact_messages |
 
-**⚠️ Limitation:** Images stored as base64 in SQLite → lost on Vercel redeploy. Menu items themselves also lost since SQLite is ephemeral on Vercel.
+**Permissions:** Admin/Kitchen
 
-### 2.7 Admin Bar Menu (`/admin/bar-menu`)
+### 2.14 `/admin/waiters`
 
-Same structure as Admin Menu but for drinks/cocktails. Same SQLite limitations.
+**Purpose:** Manage wait staff list.
 
-### 2.8 Admin Categories (`/admin/categories`)
+**CRUD:**
+| Action | DB Effect |
+|--------|-----------|
+| Add Waiter | `POST /api/waiters` → INSERT into `waiters` |
+| Edit Name | `PATCH /api/waiters` → UPDATE waiters SET name |
+| Toggle Duty | `PATCH /api/waiters` → UPDATE waiters SET active=¬active |
+| Delete Waiter | `DELETE /api/waiters` → DELETE from waiters |
 
-| Item | Detail |
-|------|--------|
-| **Purpose** | Manage menu categories (e.g., Starters, Mains, Desserts) |
-| **Data Source** | SQLite |
-| **Permissions** | Admin |
-| **Back Button** | ✅ Yes |
+**Permissions:** Admin only (API enforces)
 
-**Actions:** Add, edit, delete categories. Toggle active/inactive.
+**Note:** Deleting a waiter removes them from the assignment list but does NOT delete historical orders referencing them.
 
-### 2.9 Admin Events (`/admin/events`)
+### 2.15 `/admin/bar-menu`
 
-| Item | Detail |
-|------|--------|
-| **Purpose** | Manage events (upcoming, past, highlighted) |
-| **Data Source** | SQLite |
-| **Permissions** | Admin |
-| **Back Button** | ✅ Yes |
+**Purpose:** Manage bar/drinks menu.
 
-**Actions:** Add, edit, delete events. Upload images. Tabs for upcoming/past/highlighted.
+**⚠️ CRITICAL BUG:** All CRUD is purely client-side localStorage. 84 hardcoded default drinks. **NO data persists to server.** All changes lost on page refresh or browser close.
 
-**⚠️ Limitation:** Events stored in SQLite — lost on Vercel redeploy.
+**Permissions:** Admin/Kitchen (by route, but data doesn't actually persist)
 
-### 2.10 Admin Promotions (`/admin/promotions`)
+### 2.16 `/admin/content-map`
 
-Same as Events. SQLite-backed.
+**Purpose:** Navigation helper showing all content areas with links.
 
-### 2.11 Admin Gallery (`/admin/gallery`)
+**Actions:** All items are `<Link>` elements to other admin pages. No API calls. No CRUD.
 
-| Item | Detail |
-|------|--------|
-| **Purpose** | Manage photo gallery (events, food, venue, people, promotions folders) |
-| **Data Source** | Filesystem (public/gallery/) + SQLite metadata |
-| **Permissions** | Admin |
-| **Back Button** | ✅ Yes |
+### 2.17 `/admin/login`
 
-**Actions:** Upload images, delete images. Categorized by folder.
-
-**⚠️ Limitation:** Images uploaded to server filesystem — lost on Vercel redeploy.
-
-### 2.12 Admin Popup (`/admin/popup`)
-
-| Item | Detail |
-|------|--------|
-| **Purpose** | Configure a promotional popup that appears on the website |
-| **Data Source** | SQLite |
-| **Permissions** | Admin |
-| **Back Button** | ✅ Yes |
-
-**Actions:** Edit popup content (title, description, image, CTA, enable/disable, show-once-per-session).
-
-### 2.13 Admin Announcement (`/admin/announcement`)
-
-| Item | Detail |
-|------|--------|
-| **Purpose** | Configure announcement bar at top of website |
-| **Data Source** | SQLite |
-| **Permissions** | Admin |
-| **Back Button** | ✅ Yes |
-
-**Actions:** Edit announcement text, link, link text, enable/disable.
-
-### 2.14 Admin Site Settings (`/admin/site-settings`)
-
-| Item | Detail |
-|------|--------|
-| **Purpose** | Configure homepage hero, experience cards, about section, contact info |
-| **Data Source** | SQLite + JSON file |
-| **Permissions** | Admin |
-| **Back Button** | ✅ Yes |
-
-**Actions:** Edit all site-wide settings across multiple tabs (homepage, about, contact, orders).
-
-### 2.15 Admin Waiters (`/admin/waiters`)
-
-| Item | Detail |
-|------|--------|
-| **Purpose** | Manage waiters (add, edit, toggle duty, delete) |
-| **Data Source** | Supabase `waiters` table (via `/api/waiters`) |
-| **Permissions** | Admin ONLY (not kitchen) |
-| **Back Button** | ✅ Yes |
+**Purpose:** Admin/Kitchen/Waiter authentication.
 
 **Actions:**
+| Action | Result | DB Effect |
+|--------|--------|-----------|
+| Enter password + submit | Validates against env var, sets auth cookie | None |
+| Logout | Clears all auth cookies | None |
 
-| Button | Effect | Database Change |
-|--------|--------|----------------|
-| + Add | Creates new waiter | INSERT into `waiters` |
-| ✏️ | Inline edit name | PATCH `waiters.name` |
-| 🟢/🔴 | Toggle on/off duty | PATCH `waiters.active` |
-| 🗑️ | Delete waiter (with confirmation modal) | DELETE from `waiters` |
+**Login flow:**
+1. User enters password
+2. Frontend guesses role: tries admin first, falls back to kitchen
+3. Waiter login is separate (via `/waiter` page)
+4. On success: cookie set, redirect to dashboard
 
-**Features:** Search, sort (on-duty first, then alphabetical), created date display, duplicate name prevention.
-
-### 2.16 Admin Analytics (`/admin/analytics`)
-
-| Item | Detail |
-|------|--------|
-| **Purpose** | Revenue analytics, order statistics, top products |
-| **Data Source** | Supabase `orders` (via `/api/admin/analytics`) |
-| **Permissions** | Admin ONLY |
-| **Back Button** | ✅ Yes |
-
-**Shows:** Revenue over time, order frequency, top products by qty/revenue, order type breakdown.
-
-### 2.17 Admin Kitcken (`/admin/kitchen`)
-
-**See Section 4 (Kitchen Audit) below.**
+**Permissions:** None (public endpoint)
 
 ---
 
-## 3. Orders System Audit
+## 3. ORDERS SYSTEM AUDIT
 
-### 3.1 How Orders Enter the System
-
-```
-Customer Website
-├── /menu          → Add to cart → Checkout → POST /api/supabase/orders
-├── /waiter        → Waiter creates dine-in order → POST /api/supabase/orders
-├── WhatsApp       → Manual (phone/WhatsApp call, staff creates order in admin)
-└── Admin POS      → Staff creates order manually in /admin/orders
-
-All paths converge to: POST /api/supabase/orders
-```
-
-### 3.2 Order Creation Flow
+### 3.1 Order Entry Points
 
 ```
-Customer clicks "Place Order"
-         │
-         ▼
-validateOrder() checks:
-  ├── customer_name required
-  ├── phone required (non-empty)
-  ├── order_type must be 'pickup', 'delivery', or 'dine-in'
-  ├── requested_time required
-  ├── items array non-empty
-  ├── each item has menu_item_id + quantity
-  ├── for 'dine-in': table_number required, waiter_name required
-  └── for 'delivery': delivery_address required
-         │
-         ▼
-sanitizeOrderInput() strips unknown fields
-         │
-         ▼
-createOrder():
-  ├── Generates order_ref (BOMA-YYMMDD-NNN)
-  ├── Calculates total server-side (ignores client-submitted total)
-  ├── Checks idempotency_key (if provided, prevents duplicates)
-  ├── Inserts into Supabase `orders` table
-  ├── Logs ORDER_CREATED event in `order_events`
-  └── Returns order with ref
+                    ┌─────────────────────┐
+                    │    Customer orders    │
+                    │  via website (mobile) │
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────▼──────────┐
+                    │  POST /api/orders/   │
+                    │  create (public,     │
+                    │  rate-limited)       │
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────▼──────────┐
+                    │   sanitizeOrderInput │
+                    │   → validateOrder    │
+                    │   → enrichItems      │
+                    │   (server pricing)   │
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────▼──────────┐
+                    │  INSERT into orders  │
+                    │  (with idempotency   │
+                    │   key dedup)         │
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────▼──────────┐
+                    │  logOrderEvent       │
+                    │  (ORDER_CREATED)     │
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────▼──────────┐
+                    │  Realtime broadcast  │
+                    │  → Kitchen Display   │
+                    └─────────────────────┘
 ```
 
-### 3.3 Required vs Optional Fields
+### 3.2 Waiter Orders
 
-| Field | Required | Notes |
-|-------|----------|-------|
-| customer_name | ✅ | Trimmed, non-empty |
-| phone | ✅ | Trimmed, non-empty |
-| order_type | ✅ | 'pickup', 'delivery', or 'dine-in' |
-| requested_time | ✅ | Free text (e.g., "ASAP", "18:30") |
-| items | ✅ | Array of {menu_item_id, quantity} |
-| table_number | ✅ (dine-in) | For dine-in orders |
-| waiter_name | ✅ (dine-in) | For dine-in orders; stored as snapshot |
-| delivery_address | ✅ (delivery) | For delivery orders |
-| idempotency_key | Optional | Prevents duplicate submissions |
-| notes | Optional | Per-item notes in items array |
+```
+Waiter logs in → PasswordGate (client-side)
+  → Fetches active waiters (/api/waiters/active)
+  → Fetches menu (/api/menu/public)
+  → Selects table number (1-20)
+  → Selects waiter name from active list
+  → Adds items to cart
+  → Submits POST /api/supabase/orders
+    (same public endpoint as customer orders)
+```
+
+### 3.3 Order Validation Rules
+
+| Field | Required? | Validation |
+|-------|-----------|------------|
+| `customer_name` | Yes | Non-empty string, trimmed |
+| `phone` | Yes | 7-20 chars, digits/spaces/+-() |
+| `order_type` | Yes | Must be 'pickup', 'delivery', or 'dine-in' |
+| `items` | Yes | Array, min 1 item |
+| `items[].menu_item_id` | Yes | String |
+| `items[].quantity` | Yes | Number >= 1 |
+| `table_number` | If dine-in | Non-empty string |
+| `waiter_name` | If dine-in | Non-empty string |
+| `delivery_address` | If delivery | Non-empty string |
+| `idempotency_key` | No | String if present |
 
 ### 3.4 Order Status Flow
 
 ```
-                ┌─────────┐
-                │ PENDING │
-                └────┬────┘
-                     │
-                ┌────▼─────┐
-                │ CONFIRMED │
-                └────┬─────┘
-                     │
-                ┌────▼─────┐
-                │ PREPARING │
-                └────┬─────┘
-                     │
-                ┌────▼───┐
-                │  READY  │
-                └────┬───┘
-                     │
-                ┌────▼──────┐
-                │ COMPLETED │
-                └───────────┘
-
-  Any state ──→ CANCELLED
+                    ┌──────────┐
+                    │  PENDING  │ ← Initial state for all orders
+                    └────┬─────┘
+                         │
+              ┌──────────┴──────────┐
+              │                     │
+     ┌────────▼────────┐   ┌───────▼──────┐
+     │   CONFIRMED      │   │  CANCELLED   │
+     │  (accepted by    │   │  (any status)│
+     │   kitchen)       │   └──────────────┘
+     └────────┬────────┘
+              │
+     ┌────────▼────────┐
+     │   PREPARING      │
+     │  (being cooked)  │
+     └────────┬────────┘
+              │
+     ┌────────▼────────┐
+     │     READY        │
+     │  (ready for      │
+     │   pickup/delivery│
+     │   or serving)    │
+     └────────┬────────┘
+              │
+     ┌────────▼────────┐
+     │   COMPLETED      │
+     │  (delivered/     │
+     │   served/paid)   │
+     └─────────────────┘
 ```
 
-**Transitions enforced by state machine** (`src/lib/order-state-machine.ts`):
-- Only forward transitions allowed (pending → confirmed → preparing → ready → completed)
-- Completed/cancelled orders are terminal (cannot be changed)
-- Payment check: `delivery` orders must have `payment_status='paid'` before transitioning to confirmed/preparing/ready/completed
+**State machine rules:**
+- `pending → confirmed`: Kitchen accepts order (requires payment for delivery)
+- `confirmed → preparing`: Kitchen starts cooking
+- `preparing → ready`: Kitchen finishes preparation
+- `ready → completed`: Admin marks as paid/collected
+- Any non-terminal → `cancelled`: Admin only (kitchen cannot cancel)
 
 ### 3.5 Payment Flow
 
 ```
-Order created → payment_status = 'pending'
-
-For DELIVERY orders:
-  - Kitchen cannot accept/prepare until payment confirmed
-  - Admin must click "Confirm Payment" on order card
-  - Sets payment_status = 'paid', records who confirmed and when
-  - Then kitchen can proceed
-
-For PICKUP orders:
-  - No payment confirmation required to proceed
-  - Can be prepared while payment is pending
-
-For DINE-IN orders:
-  - No payment flow (pay at restaurant)
-
-Refund: Admin can change payment_status to 'refunded' (no UI button yet)
+                  ┌───────────────────┐
+                  │  payment_status    │
+                  │  = 'pending'       │
+                  └────────┬──────────┘
+                           │
+              ┌────────────┴────────────┐
+              │                         │
+    ┌─────────▼────────┐    ┌──────────▼─────────┐
+    │  Delivery Order   │    │  Pickup / Dine-in  │
+    │  Payment required │    │  Pay on collection │
+    │  before dispatch  │    │  or after service  │
+    └─────────┬─────────┘    └──────────┬─────────┘
+              │                         │
+    ┌─────────▼─────────┐    ┌──────────▼─────────┐
+    │  Admin confirms   │    │  Admin marks paid  │
+    │  payment (PATCH)  │    │  on completion     │
+    └─────────┬─────────┘    └──────────┬─────────┘
+              │                         │
+              └────────────┬────────────┘
+                           │
+                  ┌────────▼────────┐
+                  │ payment_status  │
+                  │ = 'paid'        │
+                  └─────────────────┘
 ```
 
-### 3.6 Kitchen Flow
+**Payment verification rule:** Delivery orders require `payment_status === 'paid'` before the kitchen can transition from `pending` to `confirmed`. Pickup and dine-in orders can be processed without payment.
+
+### 3.6 Server-Authoritative Pricing
 
 ```
-1. New order appears in "NEW ORDERS" column (kitchen display)
-2. Staff clicks Accept (or keyboard 1)
-   → Moves to "IN PREP" column
-   → Status changes to 'confirmed'
-3. Staff clicks Start Prep
-   → Remains in "IN PREP" column
-   → Status changes to 'preparing'
-4. Staff clicks Ready
-   → Moves to "READY" column
-   → Status changes to 'ready'
-   → Order auto-clears after 5 minutes
-5. Admin marks as Completed from admin orders page
+Customer sends: { items: [{ menu_item_id: "abc", quantity: 2 }] }
+                                        │
+Server looks up: menu_items_supabase    │
+  WHERE id = 'abc' → price: "85.00"     │
+  Resolves sizes/add-ons from JSON       │
+  Computes: linePrice * quantity         │
+  Sets: total = server-side computed     │
+                                        │
+Customer's submitted price: IGNORED     │
+Server's computed price: USED           │
+                                        │
+Result: items_json = { items: [{         │
+  menu_item_id: "abc",                   │
+  name: "Burger",                        │
+  price: 85.00,                          │
+  quantity: 2,                           │
+  subtotal: 170.00                       │
+}], metadata: {} }                       │
+total: 170.00                            │
 ```
 
-### 3.7 Tracking Flow
+### 3.7 Idempotency Protection (Duplicate Order Prevention)
 
-```
-Customer enters order_ref on /track-order
-         │
-         ▼
-GET /api/track-order?ref=XXX
-         │
-         ▼
-Returns: order_ref, customer_name, total, status,
-         payment_status, order_type, waiter_name,
-         table_number, status_label, created_at
-         │
-         ▼
-Page shows:
-  - Status workflow (pending → confirmed → preparing → ready → completed)
-  - Payment status section
-  - Waiter/table for dine-in orders
-  - Auto-polls every 10 seconds
-  - Stops polling on completed/cancelled
-```
+**Two-layer deduplication:**
+
+1. **In-memory (5-second window):** `isDuplicateSubmission()` tracks recent idempotency keys. Returns "Duplicate submission detected" for identical keys within 5 seconds.
+2. **Database (unique index):** `idempotency_key` column with partial unique index `WHERE idempotency_key IS NOT NULL`. Duplicate key returns existing order.
+
+**Order reference format:** `BOMA-YYMMDD-XXXXXXXX` (date + 8 hex chars)
+
+### 3.8 Allowed PATCH Fields
+
+Only these fields can be updated via PATCH:
+
+`customer_name`, `phone`, `order_type`, `requested_time`, `status`, `items_json`, `table_number`, `delivery_address`, `payment_status`, `payment_confirmed_at`, `payment_confirmed_by`, `waiter_name`
+
+Items in `items_json` cannot be modified — only metadata can be updated.
 
 ---
 
-## 4. Kitchen Audit
+## 4. KITCHEN AUDIT
 
-### 4.1 Kitchen Page (`/admin/kitchen`)
+### 4.1 Kitchen Display System (`/admin/kitchen`)
 
-**Purpose:** Real-time kitchen display for food preparation staff
+**Authentication:** Dual-layer:
+1. Client-side PasswordGate asking for kitchen password
+2. Middleware checks `boma_kitchen_auth` or `boma_admin_auth` cookie
+3. On 401 from orders API: shows "Session expired" banner
 
-**Auth:** Client-side password gate (kitchen password) — NOT protected by middleware
+**Display:** 3-column Kanban board
 
-**Layout:** 3-column kanban board
+```
+┌──────────────────┐ ┌─────────────────┐ ┌──────────────────┐
+│   NEW ORDERS     │ │    IN PREP      │ │      READY       │
+│   (pending)      │ │ (confirmed +    │ │   (ready)        │
+│    Yellow bg     │ │  preparing)     │ │    Green bg      │
+│                  │ │   Blue bg       │ │                  │
+│  ┌────────────┐  │ │  ┌───────────┐  │ │  ┌────────────┐  │
+│  │ ACCEPT btn │  │ │  │Start Prep │  │ │  │ Auto-clear │  │
+│  │ (if paid)  │  │ │  │button    │  │ │  │ in X min   │  │
+│  └────────────┘  │ │  └───────────┘  │ │  └────────────┘  │
+└──────────────────┘ └─────────────────┘ └──────────────────┘
+```
 
-| Column | Statuses | Color | What Staff See |
-|--------|----------|-------|----------------|
-| NEW ORDERS | pending | Yellow | All new unaccepted orders |
-| IN PREP | confirmed, preparing | Blue | Orders being worked on |
-| READY | ready | Green | Completed orders (auto-clear after 5 min) |
+### 4.2 Kitchen Actions
 
-### 4.2 What Kitchen Staff See (per order card)
+| Button | Keyboard | Status Transition | Condition |
+|--------|----------|-------------------|-----------|
+| ACCEPT | `1` | pending → confirmed | Non-dine-in must have payment='paid' |
+| Start Prep | `2` | confirmed → preparing | None |
+| Mark Ready | `3` | preparing → ready | None |
+| (auto) | — | ready → completed | After 5 minutes idle |
 
-- Order reference (e.g., BOMA-250615-001)
-- Time since order placed
-- Order type (pickup/delivery/dine-in)
-- Payment status badge (for delivery — shows 🟠 Awaiting Payment or 🟢 Paid)
-- Customer name (if provided)
-- Waiter name (for dine-in — shown in red)
-- Table number (for dine-in — shown in red, bold)
+**What kitchen CANNOT do (enforced server-side):**
+- Cancel orders (returns 403)
+- Modify payment status (returns 403)
+- Change customer details (name, phone, order_type, address, waiter, table — returns 403)
+- Delete orders (admin only)
+
+### 4.3 Kitchen Order Card Details
+
+Each card shows:
+- Order reference number (e.g., `BOMA-250615-AB12CD34`)
+- Order type badge (Pickup/Delivery/Dine-in) with color coding
+- Payment status badge (Paid/Awaiting Payment)
+- Time since order was placed
+- Customer name
+- Waiter name (red, for dine-in)
+- Table number (red, for dine-in)
 - Items list with quantities
-- Item notes
-- Order notes
+- Special notes (yellow section for item notes, red section for order notes)
 
-### 4.3 Kitchen Actions
+### 4.4 Real-Time Architecture
 
-| Action | Trigger | Effect | Status Change |
-|--------|---------|--------|---------------|
-| Accept order | Button click or keyboard `1` | Moves to IN PREP | pending → confirmed |
-| Start preparing | Button click or keyboard `1` | Stays in IN PREP | confirmed → preparing |
-| Mark ready | Button click or keyboard `3` | Moves to READY | preparing → ready (or confirmed → ready) |
-| Sound toggle | Click 🔊 button | Toggle new-order sound on/off | — |
+```
+┌───────────────────┐
+│   Kitchen Page     │
+│   (Browser)        │
+├───────────────────┤
+│ 1. Initial fetch:  │──── GET /api/supabase/orders
+│ 2. Supabase        │──── postgres_changes subscription
+│    Realtime        │     (INSERT + UPDATE on orders)
+│ 3. Fallback:       │──── Polling every 5 seconds
+│    (if sub fails)  │
+└───────────────────┘
+```
 
-**What kitchen CANNOT do:**
-- Cannot complete orders (admin only)
-- Cannot cancel orders
-- Cannot edit order items
-- Cannot modify prices
-- Cannot process payments
-- Cannot accept unpaid delivery orders (blocked)
-- Cannot delete orders
+### 4.5 Audio Notifications
+- **New order:** 880 Hz sine beep (0.4s) — when previously unseen `pending` order appears
+- **Order ready:** 660 Hz triangle chime (0.6s) — when order transitions to `ready`
+- Sound can be toggled on/off
 
-### 4.4 Real-Time Updates
-
-- **Initial load:** Fetches all orders from `/api/supabase/orders`
-- **Live updates:** Supabase Realtime subscription on `orders` table (INSERT + UPDATE)
-- **New order sound:** AudioContext beep (880Hz) when new pending order arrives
-- **Ready chime:** Triangle wave (660Hz) when order marked ready
-- **Auto-cleanup:** Orders in "READY" column are automatically removed after 5 minutes
-- **Polling fallback:** Re-fetches every 30 seconds
-
-### 4.5 Keyboard Shortcuts
-
-| Key | Action |
-|-----|--------|
-| `1` | Accept next pending order / start prep |
-| `2` | (reserved) |
-| `3` | Mark focused order as ready |
-| `Arrow` keys | Navigate between order cards |
+### 4.6 Keyboard Navigation
+- `←` `→`: Move between columns
+- `↑` `↓`: Move between cards
+- `1`: Accept selected order (pending → confirmed)
+- `2`: Start preparing selected order (confirmed → preparing)
+- `3`: Mark selected order as ready (preparing → ready)
 
 ---
 
-## 5. Waiter Page Audit
+## 5. WAITER AUDIT
 
 ### 5.1 Waiter Page (`/waiter`)
 
-**Purpose:** Allow waiters to create dine-in orders from tableside
+**Purpose:** Mobile-optimized dine-in order creation for wait staff.
 
-**Auth:** Client-side password gate (uses KITCHEN_PASSWORD — shared with kitchen)
+**Authentication:** Client-side PasswordGate → `POST /api/admin/auth` with `role: 'waiter'` → sets `boma_waiter_auth` cookie. Middleware now validates this cookie and protects the `/waiter/` page.
 
 ### 5.2 Order Creation Flow
 
 ```
-STEP 1: SELECT TABLE
-  ├── Grid of tables 1-20
-  └── Click table → moves to menu
+Step 1: Select Table
+  └─ Click table number (1-20 grid)
+  └─ Select waiter name from dropdown (fetched from /api/waiters/active)
 
-STEP 2: ADD ITEMS
-  ├── Category chips filter menu items
-  ├── Click item to add to cart
-  ├── Search bar to find items
-  ├── Cart icon shows item count
-  └── Click cart → moves to review
+Step 2: Add Items
+  └─ Category chips (horizontal scroll)
+  └─ Search bar
+  └─ Items grid — tap to add (default quantity 1)
+  └─ Cart icon with count in header bar
 
-STEP 3: REVIEW & SUBMIT
-  ├── Shows table number + waiter name
-  ├── Shows all items with quantities
-  ├── Can adjust quantities
-  ├── Waiter must be selected (dropdown of active waiters)
-  ├── Table number must be set
-  └── Click "Send" → order submitted
+Step 3: Review
+  └─ Cart items with quantities (+/- buttons)
+  └─ Per-item notes field
+  └─ Order notes field
+  └─ Total display
+  └─ Submit button → POST /api/supabase/orders
+
+Step 4: Done
+  └─ Success message with order reference
+  └─ "New Order" button resets everything
 ```
 
-### 5.3 Required Information
+### 5.3 What Waiter Orders Include
 
-| Field | Required | Source |
-|-------|----------|--------|
-| Table number | ✅ | Selected from grid |
-| Waiter name | ✅ | Dropdown (from `/api/waiters/active`) |
-| Items | ✅ | At least 1 item in cart |
-| Customer name | Auto | Set to `Table {number}` |
-| Phone | Auto | Set to `'waiter-order'` |
+```json
+{
+  "customer_name": "Table 7",
+  "phone": "waiter-order",
+  "order_type": "dine-in",
+  "requested_time": "ASAP",
+  "items": [
+    { "menu_item_id": "abc", "quantity": 2 },
+    { "menu_item_id": "def", "quantity": 1 }
+  ],
+  "table_number": "7",
+  "waiter_name": "John"
+}
+```
 
-### 5.4 After Submission
-
-- Shows success screen with order reference
-- "New Order" button resets for next order
-- Order appears in kitchen display
-
-### 5.5 Limitations
-
+### 5.4 Limitations
+- Only dine-in orders (no pickup/delivery via waiter)
+- Customer name is always "Table N" (auto-generated)
+- Phone is always "waiter-order" (placeholder)
+- No size/add-on selection on menu items
 - No order editing after submission
-- No ability to view past orders
-- No ability to split bills
-- No payment processing
-- No custom customer names (always "Table X")
-- No delivery or pickup — dine-in only
-- Uses kitchen password (not separate waiter password)
+- Cart saved to localStorage (survives page refresh)
+- No payment handling on waiter page
 
 ---
 
-## 6. Tracking Audit
+## 6. TRACKING SYSTEM AUDIT
 
-### 6.1 Tracking Page (`/track-order`)
+### 6.1 Customer Tracking (`/track-order`)
 
-**Purpose:** Allow customers to look up order status
+**Purpose:** Public order tracking page — enter order reference, see live status.
 
-**Auth:** None (public)
+**How it works:**
+1. User enters order reference (e.g., BOMA-250615-XXXX)
+2. `GET /api/track-order?ref=BOMA-XXXX` returns limited order data
+3. Displayed fields: customer_name, total, status (with human label), payment_status, order_type, waiter_name, table_number, created_at
 
-### 6.2 How It Works
+**Status labels shown to customer:**
+- pending → "New"
+- confirmed → "Accepted"
+- preparing → "Preparing"
+- ready → "Ready"
+- completed → "Completed"
+- cancelled → "Cancelled"
 
-1. Customer enters their order reference (e.g., BOMA-250615-001)
-2. Clicks "Track"
-3. Fetches `GET /api/track-order?ref=XXX`
-4. Displays status with workflow progress
+### 6.2 Receipt Page (`/receipt/[ref]`)
 
-### 6.3 What Customer Sees
+**Purpose:** Full order receipt visible via link.
 
-- Order reference
-- Current status with color badge
-- Workflow progress (pending → confirmed → preparing → ready → completed)
-- Payment status (paid/pending/refunded) with contextual message
-- Customer name, total, order date
-- Waiter name (for dine-in)
-- Table number (for dine-in)
-- Cancellation notice (if cancelled)
+**Authentication options:**
+1. **Phone verification:** Enter phone number → compared with stored phone → redirect with `?verified=true`
+2. **Admin/Kitchen session:** Bypasses phone verification — full details shown
+3. **Admin/kitchen but phone-verified:** Same as #2
 
-### 6.4 What Updates Are Real-Time
+**Phone verification flow:**
+1. Form submits to `POST /api/receipt/verify`
+2. Server looks up order by `order_ref`, compares normalized phone numbers
+3. On match: redirect to `/receipt/[ref]?verified=true`
+4. On mismatch: HTML alert "Phone number does not match this order"
 
-- Page auto-polls every 10 seconds
-- Polling stops when order reaches completed or cancelled
-- No WebSocket/Realtime — polling only
+**Data shown on receipt:**
+- Order reference, customer name, items, total, status, order type
+- Waiter name + table number (for dine-in)
+- **Sensitive fields hidden from non-authed:** delivery_address, phone
 
-### 6.5 Rate Limiting
-
-- 10 requests per minute per IP
-
----
-
-## 7. Security Audit
-
-### 7.1 CRITICAL Issues
-
-| # | Issue | Severity | Status |
-|---|-------|----------|--------|
-| 1 | **Receipt page has no auth** — `getAdminClient()` with service_role key, selects ALL order data by ref. Anyone with a ref can view full order details including delivery address, phone, payment info. | 🔴 CRITICAL | Unfixed |
-| 2 | **DEV mode bypasses ALL auth** — middleware skips cookie check when `NODE_ENV === 'development'` | 🔴 CRITICAL | Unfixed |
-| 3 | **SQLite CMS data lost on Vercel** — all menu items, events, promotions, settings, images are stored in `data/cms.db` which is read-only on Vercel serverless. Data written via admin CMS is lost on every redeploy. | 🔴 CRITICAL | Unfixed |
-
-### 7.2 HIGH Issues
-
-| # | Issue | Severity | Status |
-|---|-------|----------|--------|
-| 4 | Empty default passwords — env vars default to `''` if not set | 🟠 HIGH | Unfixed |
-| 5 | No brute-force protection on login endpoint | 🟠 HIGH | Unfixed |
-| 6 | Track-order exposes customer data publicly | 🟠 HIGH | Unfixed |
-| 7 | Active waiters list has no auth | 🟠 HIGH | Unfixed |
-| 8 | Kitchen page is client-side-only auth (no middleware protection) | 🟠 HIGH | Unfixed |
-
-### 7.3 MEDIUM Issues
-
-| # | Issue | Severity | Status |
-|---|-------|----------|--------|
-| 9 | Waiter page uses kitchen password (not separate WAITER_PASSWORD) | 🟡 MEDIUM | Unfixed |
-| 10 | No rate limiting on authenticated PATCH/DELETE endpoints | 🟡 MEDIUM | Unfixed |
-| 11 | Rate limiting is in-memory (per-instance on Vercel) | 🟡 MEDIUM | Unfixed |
-| 12 | Admin cookies valid for 7 days with no rotation/revocation | 🟡 MEDIUM | Unfixed |
-
-### 7.4 LOW Issues
-
-| # | Issue | Severity | Status |
-|---|-------|----------|--------|
-| 13 | No CSRF protection (mitigated by sameSite cookies) | 🟢 LOW | Unfixed |
-| 14 | No Content Security Policy headers | 🟢 LOW | Unfixed |
-| 15 | `dangerouslySetInnerHTML` on receipt page | 🟢 LOW | Unfixed |
-| 16 | No password change mechanism | 🟢 LOW | Unfixed |
-
-### 7.5 Auth Summary
-
-```
-Authentication layers (defense in depth):
-
-Public pages:            No auth (intentional)
-Admin pages (routes):    Middleware (edge) + Layout AuthProvider (client) + API role checks
-Admin pages (kitchen):   Client-side PasswordGate ONLY
-Waiter page:             Client-side PasswordGate ONLY  
-Receipt page:            NO AUTH
-API routes (orders):     Public POST (rate-limited), Protected GET/PATCH/DELETE
-API routes (admin):      Protected by requireAnyRole(['admin', 'kitchen'])
-API routes (CMS):        Protected by requireAnyRole(['admin', 'kitchen'])
-API routes (public):     No auth (menu, gallery, track-order, waiters/active)
-```
+**Rate limiting:** `track-order` endpoint is rate-limited by IP (10 req/60s). Receipt verify is not rate-limited (form-based, but could be abused).
 
 ---
 
-## 8. Database Audit
+## 7. SECURITY AUDIT
 
-### 8.1 Tables Summary
+### 7.1 Summary Table
 
-| Table | Columns | RLS | Realtime | Storage |
-|-------|---------|-----|----------|---------|
-| `orders` | ~17 | Yes | Yes | Supabase |
-| `order_events` | 7 | Yes | Yes | Supabase |
-| `bookings` | 9 | Yes | No | Supabase |
-| `contact_messages` | 8 | Yes | No | Supabase |
-| `waiters` | 4 | Yes | Yes | Supabase |
-| `menu_items_supabase` | 6 | Yes | No | Supabase |
+| Finding | Severity | Status | Details |
+|---------|----------|--------|---------|
+| Bar menu data does not persist | Medium | Unfixed | All CRUD is local state — lost on refresh |
+| CMS upload folder not whitelisted | Medium | Unfixed | `/api/cms/upload` accepts any `folder` param |
+| No audit logging | Medium | Unfixed | Sensitive actions not logged |
+| Rate limiting is in-memory (per-instance) | Low | Unfixed | Resets on server restart, doesn't work across Vercel instances |
+| Inquiries table still in SQLite | Low | Known | Not migrated to Supabase — may exist in old DB |
+| page_content table only in SQLite | Low | Known | Not migrated to Supabase |
+| Server-computed pricing in orderService | ✅ Secure | Fixed | Prices resolved server-side from DB |
+| Middleware API protection | ✅ Secure | Fixed | 401 JSON for unauthorized API access |
+| Waiter auth at middleware level | ✅ Secure | Fixed | Added in commit 730c0d8 |
+| Kitchen restrictions in PATCH handler | ✅ Secure | Fixed | Kitchen cannot cancel/modify payment |
+| Role headers as identity tokens | ✅ Secure | Fixed | x-user-role, x-auth-valid, x-user-scope |
+| Idempotency dedup (dual-layer) | ✅ Secure | Fixed | Memory + DB unique index |
+| Rate limiting on order/contact/booking POST | ✅ Secure | Fixed | 10 req/60s per IP |
+| Phone normalization + comparison (receipt) | ✅ Secure | Fixed | Handles multiple SA formats |
+| Order field whitelist (PATCH) | ✅ Secure | Fixed | Only ALLOWED_PATCH_FIELDS can be updated |
+| NO dev mode bypass in middleware | ✅ Secure | Fixed | Removed in previous audit |
 
-### 8.2 Orders Table (Final Schema)
+### 7.2 Exposed Paths (Public)
 
-```
-id                  UUID PRIMARY KEY
-customer_name       TEXT NOT NULL
-phone               TEXT NOT NULL
-order_type          TEXT NOT NULL CHECK ('pickup','delivery','dine-in')
-requested_time      TEXT NOT NULL
-items_json          TEXT NOT NULL
-total               NUMERIC(10,2) NOT NULL CHECK (>= 0)
-status              TEXT NOT NULL DEFAULT 'pending' CHECK (pending,confirmed,preparing,ready,completed,cancelled)
-created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
-order_ref           TEXT NOT NULL UNIQUE
-server_computed_total  NUMERIC(10,2)
-table_number        TEXT
-delivery_address    TEXT
-idempotency_key     TEXT (unique partial index)
-payment_status      TEXT NOT NULL DEFAULT 'pending' CHECK (pending,paid,refunded)
-payment_confirmed_at  TIMESTAMPTZ
-payment_confirmed_by  TEXT
-waiter_name         TEXT
-```
+These paths require NO authentication:
 
-### 8.3 Key Relationships
+| Path | Method | Risk |
+|------|--------|------|
+| `/api/menu/public` | GET | Low — only returns active/available items |
+| `/api/cms/public` | GET | Low — returns public CMS data (settings, events, gallery) |
+| `/api/track-order` | GET | Low — rate-limited, returns limited fields |
+| `/api/receipt/verify` | POST | Low — requires phone match |
+| `/api/supabase/orders` | POST | **Medium** — rate-limited, could be used to create fake waiter orders |
+| `/api/supabase/bookings` | POST | Low — rate-limited, creates booking requests |
+| `/api/supabase/contact` | POST | Low — rate-limited, creates contact messages |
+| `/api/admin/auth` | POST | Low — login endpoint (password required) |
+| `/api/waiters/active` | GET | Low — returns waiter names only |
+| `/waiter` | Page | **Medium** — now has middleware protection (commit 730c0d8) |
 
-```
-orders.id ──→ order_events.order_id (CASCADE DELETE)
-```
+### 7.3 Critical Security Concern: Public Order POST
 
-No other foreign key relationships (waiter_name is a snapshot string, not FK to waiters table).
+The `POST /api/supabase/orders` endpoint is publicly accessible (rate-limited only). This means:
+- Anyone can create orders with any `waiter_name` and `table_number`
+- Anyone can create fake orders to disrupt kitchen operations
+- No server-side verification that `waiter_name` matches an authenticated session
 
-### 8.4 Risks
+**Mitigation:** Rate limiting (10 req/60s) limits blast radius, but a persistent attacker could create 10 orders per minute.
 
-- **No referential integrity** between `orders.waiter_name` and `waiters.name` (intentional — snapshots)
-- **No foreign key** from `order_events.order_id` to `orders.id` is implicit (but there is a CASCADE DELETE in migration 009)
-- **No index** on `orders.status` (frequent query filter) — could slow down kitchen queries at scale
-- **No index** on `orders.order_type` (used in analytics queries)
-- **No partition** on `orders` table — at thousands of rows, queries might slow
-
----
-
-## 9. Production Readiness Scorecard
-
-| Subsystem | Score | Reasoning |
-|-----------|-------|-----------|
-| **Orders** | 7/10 | Core flow works well. Missing: bulk operations, item editing, refund UI. State machine is solid. Payment flow is correct. |
-| **Kitchen** | 8/10 | Real-time updates work great. Sound notifications, keyboard shortcuts, auto-cleanup. Limitation: client-side-only auth. |
-| **Waiter** | 6/10 | Functional but basic. No waiter-specific auth, no split bills, no order history, no custom customer names. |
-| **Admin** | 6/10 | CMS features work but SQLite data loss on deploy is a showstopper. Orders POS is solid. Analytics are basic. |
-| **Tracking** | 7/10 | Simple polling works. Shows all relevant info. No real-time updates. Rate-limited. |
-| **CMS** | 3/10 | **CRITICAL ISSUE:** All CMS data (menu, events, promotions, settings, images) stored in SQLite — lost on every Vercel redeploy. This makes the CMS effectively non-functional in production. |
-| **Authentication** | 5/10 | Works but rough edges. No brute-force protection, 7-day cookies with no rotation, kitchen auth is client-side only, empty passwords by default. |
-| **Database** | 7/10 | Good schema design. Missing some indexes. RLS is defense-in-depth. Order state machine is solid. Event logging is excellent. |
-
-### Overall: 6/10
-
-**What works:** Orders system, kitchen display, payment flow, waiter management, tracking.  
-**What's broken:** CMS persistence, image uploads, receipt security, login security.  
-**What's missing:** Refund UI, bulk operations, waiter-specific auth, proper file storage.
+**Recommended fix:** Add waiter-auth verification for dine-in orders or create a separate authenticated waiter order endpoint.
 
 ---
 
-## 10. Staff Training Manual
+## 8. DATABASE AUDIT
+
+### 8.1 Supabase Tables (PostgreSQL)
+
+#### `orders` — Core order data (16 columns)
+| Column | Type | Purpose | Risk |
+|--------|------|---------|------|
+| id | UUID PK | Unique order identifier | None |
+| customer_name | TEXT NOT NULL | Customer name | None |
+| phone | TEXT NOT NULL | Contact number | PII — exposed on receipt with verification |
+| order_type | TEXT CHECK | pickup/delivery/dine-in | None |
+| requested_time | TEXT NOT NULL | When customer wants order | None |
+| items_json | TEXT NOT NULL | Order items + metadata | Large — could grow |
+| total | NUMERIC(10,2) | Server-computed total | Single source of truth |
+| status | TEXT CHECK | State machine status | None |
+| payment_status | TEXT CHECK | pending/paid/refunded | None |
+| payment_confirmed_at | TIMESTAMPTZ | When payment confirmed | None |
+| payment_confirmed_by | TEXT | Who confirmed payment | Audit trail |
+| order_ref | TEXT UNIQUE | Public reference (BOMA-...) | Unique — used for tracking |
+| table_number | TEXT | Dine-in table assignment | None |
+| delivery_address | TEXT | Delivery location | Sensitive — hidden from non-authed |
+| waiter_name | TEXT | Waiter who served | None |
+| idempotency_key | TEXT (unique index) | Dedup key | Partial unique index |
+
+**Relationships:** FK to `order_events(order_id)` via cascade delete
+**Realtime:** Yes (publication `supabase_realtime`)
+
+#### `order_events` — Audit log (7 columns)
+| Column | Type | Purpose |
+|--------|------|---------|
+| id | UUID PK | Unique event ID |
+| order_id | UUID FK → orders(id) ON DELETE CASCADE | Related order |
+| event_type | TEXT | Type: ORDER_CREATED, ORDER_CONFIRMED, etc. |
+| from_status | TEXT | Previous status |
+| to_status | TEXT | New status |
+| created_by | TEXT | Who triggered (admin/kitchen/system) |
+| metadata | JSONB | Extra data (order_ref, total) |
+
+**Risks:** None — append-only audit log. Growing table, but no pagination implemented.
+
+#### `bookings` — Table reservations (11 columns)
+Standard booking fields (name, phone, email, date, time, guests, notes, status, created_at).
+
+**Risk:** No automated cleanup of old bookings.
+
+#### `contact_messages` — Contact form submissions (8 columns)
+name, phone, email, subject, message, is_read, read_at, created_at.
+
+**Risk:** No rate limit on bulk MARK_READ operations (PATCH).
+
+#### `waiters` — Staff list (4 columns)
+id, name, active, created_at.
+
+**Risk:** No auth on waiter API (admin-only via `requireAdmin`).
+
+#### CMS Tables (10 tables created in migration 015)
+- `site_settings`, `menu_categories`, `menu_items`, `events`, `last_week_highlights`
+- `promotions`, `gallery`, `gallery_boards`, `popup`, `announcement`
+
+All have public read + service-role write RLS policies. Safe — public can read, only admin client can write.
+
+### 8.2 SQLite Tables (Legacy — `data/cms.db`)
+
+**Still present but not actively used for CMS:** After migration 015, all CMS data reads/writes go through Supabase. SQLite `data/cms.db` still exists but is no longer the backing store.
+
+**Two tables NOT migrated to Supabase:**
+
+| Table | Content | Risk |
+|-------|---------|------|
+| `inquiries` | Contact form inquiries with read tracking | Data loss if SQLite file is deleted |
+| `page_content` | Key-value page content storage | Unknown if any code still reads this |
+
+### 8.3 Database Risks Summary
+
+| Risk | Severity | Mitigation |
+|------|----------|------------|
+| No pagination on orders query | Medium | Will slow down with 10k+ orders |
+| No pagination on any CMS list | Medium | Same issue |
+| order_events grows unbounded | Low | No retention policy |
+| SQLite file still present | Low | Not connected to runtime |
+| Two menu_items tables (overlap) | Low | CMS menu_items is the canonical one |
+
+---
+
+## 9. PRODUCTION READINESS SCORECARD
+
+### 9.1 Scoring (0-10)
+
+| Subsystem | Score | Justification |
+|-----------|-------|---------------|
+| **Orders** | **8/10** | Server-authoritative pricing, idempotency, state machine, rate limiting. Missing: audit logging, pagination. |
+| **Kitchen** | **9/10** | Real-time updates, keyboard nav, audio alerts, auto-cleanup. Sound UX. Minor: no cancel button available (by design). |
+| **Waiter** | **7/10** | Clean UX, step-by-step flow, cart recovery. Missing: size/add-on selection, payment handling. |
+| **Admin** | **7/10** | Full CMS coverage, analytics, booking management. Bar menu is BROKEN (local only). Site-settings has 100+ fields with no validation. |
+| **Tracking** | **8/10** | Rate-limited, phone verification for receipts, status labels. Missing: real-time updates (requires page refresh). |
+| **CMS** | **8/10** | Fully migrated to Supabase, persistent across deploys. No image storage solution (lost on Vercel redeploy). |
+| **Authentication** | **9/10** | 3-role cookie auth, middleware protection, API guards. Missing: rate limiting on login endpoint, no brute-force protection. |
+| **Database** | **8/10** | Well-structured, 15 migrations, RLS policies, realtime enabled. Legacy SQLite still present. Two menu_items tables could cause confusion. |
+
+### 9.2 Overall Score: **8/10**
+
+**Passes production checks:**
+- ✅ All API routes have auth guards
+- ✅ Middleware protects admin + API paths
+- ✅ Server-authoritative pricing (no client trust)
+- ✅ Idempotency for order creation
+- ✅ Rate limiting on public write endpoints
+- ✅ State machine for order transitions
+- ✅ Kitchen role restrictions enforced server-side
+- ✅ Phone verification for receipt access
+- ✅ Build completes with zero errors
+- ✅ 58/58 static pages generate successfully
+- ✅ Middleware compiles at 28 kB
+
+**Fails production checks:**
+- ❌ No audit logging
+- ❌ Bar menu data is client-only (lost on refresh)
+- ❌ No login rate limiting (brute-force possible)
+- ❌ No pagination on order/CMS lists
+- ❌ Image uploads lost on Vercel redeploy
+- ❌ In-memory rate limit resets on restart
+- ❌ Dual database (SQLite + Supabase) for legacy tables
+
+---
+
+## 10. STAFF TRAINING MANUAL
 
 ### 10.1 ADMIN MANUAL
 
-#### How to Log In
-1. Navigate to `https://the-boma-cafe.vercel.app/admin/login`
-2. Enter the admin password (provided by management)
-3. You will be redirected to the dashboard
-4. Session lasts 7 days (re-login required after)
-
 #### How to Process Orders
-1. Go to **Orders** in the sidebar
-2. The left panel shows a table grid:
-   - Tables with active orders are highlighted blue
-3. Click a table to see its orders
-4. Order cards show: ref, customer, type, items, total, status, payment status
-5. Actions per order:
-   - **Accept** — confirm the order
-   - **Prepare / Ready / Complete** — move through statuses
-   - **Confirm Payment** — for delivery orders, click after payment received
-   - **Cancel** — cancel the order
-6. Keyboard shortcut: `1` to accept the top pending order
+
+1. Navigate to **Admin → Orders** (`/admin/orders`)
+2. The 3-panel view shows:
+   - **Left:** Table grid — click a table number to filter orders
+   - **Center:** Order cards — click to select
+   - **Right:** Checkout panel — payment and completion
+3. **To confirm payment:** Select order → click "Confirm Payment"
+4. **To mark as paid and complete:** Select order → choose payment method (Cash/Card/Mobile) → click "Mark Paid (METHOD)"
+5. **To print receipt:** Click "Print Receipt" button on completed orders
+6. **To assign a table:** Use the dropdown on undesignated orders
 
 #### How to Manage Menu
-1. Go to **Menu** in the sidebar
-2. Click **Add Item** to create a new menu item
-3. Fill in: name, description, price, category
-4. Optional: image, sizes (e.g., Small/Large with different prices), add-ons
-5. Toggle **Available** to show/hide from customer menu
-6. Click item to edit; ✕ to delete
 
-**⚠️ Warning:** Menu items are stored locally and may be lost on redeploy.
+1. Navigate to **Admin → Menu** (`/admin/menu`)
+2. **Add item:** Click "+ Add Item" → fill form (name, price, category, image) → Save
+3. **Edit item:** Click pencil icon on item → modify fields → Save
+4. **Delete item:** Click trash icon → confirm → deleted
+5. **Image upload:** Click file input → select image → preview appears → Save
+6. **Categories:** Navigate to **Admin → Categories** (`/admin/categories`) to create/edit/delete categories
+7. **Items without a category** won't appear on the public menu
 
 #### How to Manage Promotions
-1. Go to **Promotions** in the sidebar
-2. Click **Add Promotion**
-3. Set title, description, date range, CTA link
-4. Toggle **Active** to show/hide on website
-5. Toggle **Display on Homepage** / **Display as Popup** / **Display on Menu**
+
+1. Navigate to **Admin → Promotions** (`/admin/promotions`)
+2. **Add promotion:** Click "+ Add Promotion" → fill title, description, dates, CTA → Save
+3. **Set display locations:** Check boxes for Homepage, Popup, Promotions Page, Menu
+4. **Active toggle:** Set `isActive` checkbox to enable/disable
+5. **Delete:** Click trash icon → confirm
 
 #### How to Manage Events
-1. Go to **Events** in the sidebar
-2. Tabs: Upcoming / Past / Highlighted
-3. Click **Add Event** to create
-4. Set title, description, date, image, CTA
-5. Toggle **Featured** to highlight on homepage
+
+1. Navigate to **Admin → Events** (`/admin/events`)
+2. **Tabs:** Upcoming Events (future), Past Events (archived), Last Week Highlight (homepage video)
+3. **Add event:** Switch to correct tab → "+ Add Event" → fill form → Save
+4. **Cover image:** Paste URL (not file upload) — must be hosted elsewhere
+5. **Gallery images:** One URL per line in the gallery textarea
+6. **Reorder:** Use drag handles (PATCH bulk reorder)
 
 #### How to Handle Bookings
-1. Go to **Bookings** in the sidebar
-2. View all booking requests with customer details
-3. No approve/cancel buttons currently — contact customer directly
-4. Delete outdated bookings with the **Delete** button
+
+1. Navigate to **Admin → Bookings** (`/admin/bookings`)
+2. **Search:** By customer name
+3. **Filter:** By status (All/Pending/Confirmed/Cancelled/Completed)
+4. **Confirm:** Click "Confirm" on pending booking → customer's table is reserved
+5. **Cancel:** Click "Cancel" → booking cancelled
+6. **Complete:** Click "Mark Completed" after the event
+7. **Delete:** Click "Delete" → removes from database entirely (use sparingly)
 
 #### How to Approve Payments
-1. Go to **Orders** in the sidebar
-2. Find a delivery order with "🟠 Pending" payment badge
-3. Click **Confirm Payment** button on the order card
-4. The payment status changes to "🟢 Paid"
-5. The kitchen can now prepare the order
 
-#### How to Use Analytics
-1. Go to **Analytics** in the sidebar
-2. Shows: revenue chart, daily order count, top products, order type breakdown
-3. Data from last 30 days
+1. Navigate to **Admin → Orders** (`/admin/orders`)
+2. Find the order with "Awaiting Payment" badge
+3. Select the order card
+4. If customer paid by EFT/cash in person: click "Confirm Payment"
+5. The order is now released for kitchen processing (delivery) or can be completed (pickup/dine-in)
+6. **Note:** Payment confirmation is manual — the system does NOT integrate with any payment processor
 
-#### How to Manage Waiters
-1. Go to **Waiters** in the sidebar
-2. **Add:** Type name in the top input, click "+ Add"
-3. **Edit:** Click the ✏️ button, type new name, press Enter
-4. **Toggle Duty:** Click the 🟢/🔴 button
-5. **Delete:** Click 🗑️, confirm in the modal
-6. **Search:** Type in the search box to filter
-7. Only active (🟢 ON DUTY) waiters appear in the waiter ordering screen
+#### How to Use Site Settings
+
+1. Navigate to **Admin → Site Settings** (`/admin/site-settings`)
+2. **9 tabs:** Homepage, About, Experience, Entertainment, Venue Hire, Contact, Promo Bar, Branding, SEO
+3. Edit any text fields — changes appear immediately on the public website
+4. Click "Save [Tab] Settings" to persist each tab's changes
+5. **Images:** Use externally hosted URLs (or upload via Gallery → copy URL → paste into settings)
+6. **Promo Bar:** The yellow/orange announcement strip at the top of every page
 
 ### 10.2 KITCHEN MANUAL
 
-#### How to Access Kitchen
-1. Navigate to `https://the-boma-cafe.vercel.app/admin/kitchen`
-2. Enter the kitchen password (provided by management)
-3. The kitchen display opens in full-screen mode
+#### How to Access Kitchen Display
 
-#### What You See
-- **NEW ORDERS** (yellow) — orders waiting to be accepted
-- **IN PREP** (blue) — orders being worked on
-- **READY** (green) — completed orders waiting for pickup/delivery
+1. Go to `/admin/kitchen` in the browser
+2. Enter the **kitchen password** (provided by management)
+3. The 3-column Kanban board loads automatically
 
 #### How to Receive Orders
-1. A new order appears in the **NEW ORDERS** column
-2. A beep sound plays (if sound is enabled)
-3. Click the **Accept** button (or press keyboard `1`)
-4. The order moves to **IN PREP**
 
-#### How to Prepare Orders
-1. Order is in **IN PREP** column
-2. Read the items and any notes
-3. Click **Start Preparing** (or keyboard `1`) when you begin
-4. Click **Ready** (or keyboard `3`) when finished
-5. The order moves to **READY** column
+1. **Audio alert:** A "ding" sound plays when a new order arrives
+2. **Visual:** A yellow-bordered card appears in the "NEW ORDERS" column
+3. **Card shows:** Order reference, items with quantities, special instructions, time elapsed
+4. **Payment status:** Delivery orders show "Awaiting Payment" or "Paid" badge
+5. **IMPORTANT:** Non-dine-in orders must have "Paid" badge before you can accept them
 
-#### How to Handle Payments
-- **Delivery orders:** Will show "🟠 Awaiting Payment" if not yet paid. You CANNOT accept these until admin confirms payment.
-- **Pickup/Dine-in:** No payment block — proceed as normal
+#### How to Process Orders
 
-#### Sound & Notifications
-- Click the 🔊 button to toggle new-order sounds on/off
-- Orders auto-clear from READY column after 5 minutes
+**Keyboard shortcuts (fastest way):**
+- `1` = Accept (pending → confirmed)
+- `2` = Start Prep (confirmed → preparing)
+- `3` = Mark Ready (preparing → ready)
+- `←` `→` = Move between columns
+- `↑` `↓` = Move between cards
 
-#### What You CANNOT Do
-- Complete orders (admin does this)
-- Cancel orders
-- Edit items or prices
-- Process payments
-- Delete orders
+**Button method:**
+1. **Accept:** Click "ACCEPT" on a new order → moves to "IN PREP" column
+2. **Start Prep:** Click "Start Prep" → order is being cooked
+3. **Mark Ready:** Click "Mark Ready" → order moves to "READY" column
+4. **Auto-complete:** Ready orders automatically complete after 5 minutes (fade-out animation)
+
+#### What Kitchen CANNOT Do
+
+- ❌ Cancel orders (only admin can cancel)
+- ❌ Modify payment status
+- ❌ Change customer name, phone, or address
+- ❌ Change order type
+- ❌ Delete orders
 
 ### 10.3 WAITER MANUAL
 
-#### How to Log In
-1. Open `https://the-boma-cafe.vercel.app/waiter` on a tablet/phone
-2. Enter the waiter password (same as kitchen password)
-3. The ordering screen opens
+#### How to Access Waiter Page
 
-#### How to Create a Dine-In Order
+1. Go to `/waiter` on any tablet or phone
+2. Enter the **waiter password** (provided by management)
+3. The waiter order screen loads
+
+#### How to Create Dine-In Orders
 
 **Step 1: Select Table**
-- Grid shows tables 1-20
-- Tap the table number you're serving
-- **Also select your name** from the dropdown below the grid
+- Tap the table number (1-20 grid)
+- Select your name from the "Your Name (Waiter)" dropdown
 
 **Step 2: Add Items**
 - Browse by category (chips at top)
-- Tap any item to add to cart
-- Use the search bar to find items quickly
-- Tap the cart icon (bottom) to review
+- Use search to find items
+- Tap item to add to cart (quantity 1)
+- Cart count shows in header
 
-**Step 3: Review & Submit**
-- Check all items and quantities
-- Use + and - to adjust quantities
-- Verify table number and waiter name are correct
-- Tap **Send Order**
+**Step 3: Review**
+- Adjust quantities (+ / - buttons)
+- Add item notes if needed
+- Add order notes (e.g., "Extra napkins")
+- Check the total
 
-**After Submission**
-- You'll see a success screen with order reference
-- Tap **New Order** to start another
+**Step 4: Submit**
+- Tap "Send to Kitchen" button
+- Wait for confirmation
+- Show customer their order reference
 
-#### What You CANNOT Do
-- Edit orders after submission
-- View past orders
-- Split bills
-- Process payments
-- Create delivery or pickup orders (dine-in only)
-- Change customer name (always "Table X")
+#### How to Assign Tables
+
+- Done automatically during Step 1 (table selection)
+- To change: go back to Step 1
+- Multiple orders can be sent to the same table
+
+#### What Happens After Submission
+
+- Order appears in Kitchen Display System (NEW ORDERS column)
+- Kitchen staff accept and prepare the order
+- Waiter can see status on receipt/tracking page
+- Order cannot be edited after submission
+
+#### Limitations
+
+- ❌ Cannot edit an order after it's sent
+- ❌ Cannot cancel an order (ask manager)
+- ❌ Cannot take payments
+- ❌ Cannot create pickup or delivery orders
+- ❌ Only dine-in orders supported
 
 ### 10.4 MANAGER MANUAL
 
 #### How to Supervise Operations
-1. **Dashboard** (`/admin/dashboard`) — overview of site stats and waiter order counts
-2. **Orders** (`/admin/orders`) — full order management
-3. **Kitchen** (`/admin/kitchen`) — watch kitchen progress
+
+1. **View Dashboard** (`/admin/dashboard`): See all stats at a glance
+2. **Check Orders** (`/admin/orders`): Monitor all orders, payments, table assignments
+3. **Check Kitchen** (`/admin/kitchen`): See what kitchen is working on (you have same access)
 
 #### How to Approve Payments
-1. Go to **Orders** in sidebar
-2. Find delivery orders with "🟠 Pending Payment" badge
-3. Click **Confirm Payment**
-4. System records who confirmed and when
+
+1. Navigate to **Admin → Orders**
+2. Find the order with unpaid status
+3. Select the order
+4. Click "Confirm Payment" to mark as paid
+5. This releases delivery orders for kitchen processing
 
 #### How to Cancel Orders
-1. Go to **Orders** in sidebar
+
+1. Navigate to **Admin → Orders** (kitchen cannot cancel)
 2. Find the order
-3. Click the **Cancel** button (last action button)
-4. Order moves to cancelled status
-5. Cannot be undone
+3. **Cancellation is via API** — use PATCH with `status: 'cancelled'`
+4. The order moves to cancelled state; kitchen is notified
+5. Note: Kitchen CANNOT cancel orders; this is admin-only
 
 #### How to Edit Orders
-- **Items:** Cannot be edited after creation
-- **Customer name/phone:** Can be edited via PATCH API (no UI button)
-- **Status:** Can be changed forward through workflow
-- **Payment status:** Can be changed (pending → paid → refunded)
 
-#### Staff Management
-1. **Waiters** (`/admin/waiters`):
-   - Add new waiters
-   - Rename waiters
-   - Toggle on/off duty
-   - Delete waiters (historical orders preserved)
-2. **No user accounts** exist — only passwords in environment variables
+- **Name/phone/type/address:** Use PATCH via API (limited fields)
+- **Items:** Cannot be changed after creation (for audit integrity)
+- **Payment status:** Can be updated (pending → paid → refunded)
+- **Waiter/table assignment:** Can be updated after creation
 
----
+**Non-editable:** Items list, total price, order reference, timestamps
 
-## 11. Known Bugs
+#### How to Manage Staff (Waiters)
 
-| # | Bug | Location | Impact | Workaround |
-|---|-----|----------|--------|------------|
-| 1 | **CMS data lost on Vercel deploy** | All CMS pages (menu, events, promotions, settings, images) | ❌ Critical — all CMS content disappears after redeploy | Re-enter data manually after each deploy |
-| 2 | **Images stored as base64 in SQLite** | Menu items, gallery | ⚠️ High — bloats database, lost on deploy | Use external image URLs |
-| 3 | **Receipt page exposes all order data with no auth** | `/receipt/[ref]` | 🔴 Critical — anyone with order ref can see full order details | Keep order refs secret (not fixable without code change) |
-| 4 | **Dev mode bypasses all admin auth** | Middleware | 🔴 Critical — local dev exposes admin to anyone | Only run dev on trusted networks |
-| 5 | **Empty passwords accepted** | Auth system | 🟠 High — if env vars not set, empty string = valid password | Always set ADMIN_PASSWORD and KITCHEN_PASSWORD |
-| 6 | **Kitchen auth is client-side only** | `/admin/kitchen` | 🟠 High — determined user could bypass | Limited impact since kitchen only sees orders |
-| 7 | **Waiter page uses kitchen password** | `/waiter` | 🟡 Medium — waiters and kitchen share same password | Set both env vars to same value for now |
-| 8 | **Rate limiting resets per instance** | Rate limiter | 🟡 Medium — on Vercel, each cold start resets counters | Acceptable for current scale |
-| 9 | **No refund UI** | Admin orders | 🟢 Low — can only mark paid, not refunded | Direct database update required |
-| 10 | **No bulk order operations** | Admin orders | 🟢 Low — must process orders one by one | Acceptable for current scale |
+1. Navigate to **Admin → Waiters** (`/admin/waiters`)
+2. **Add waiter:** Type name → click "+ Add" or press Enter
+3. **Toggle on duty:** Click green/red circle
+4. **Edit name:** Click pencil icon → type new name → press Enter or click away
+5. **Remove waiter:** Click trash icon → confirm in the modal
+6. **Deletion preserves history:** Past orders still show the waiter's name
 
 ---
 
-## 12. Recommended Improvements
+## 11. KNOWN BUGS
 
-### Immediate (Before Production Launch)
+| # | Bug | Severity | Status |
+|---|-----|----------|--------|
+| 1 | **Bar menu data lost on refresh** — All 84 drinks + any modifications stored in React state only. No persistence. | **High** | Unfixed |
+| 2 | **CMS upload folder not validated** — `/api/cms/upload` accepts any `folder` string (defaults to 'misc'), unlike `/api/upload/gallery` which validates against a whitelist. Path traversal possible if folder contains `../`. | **Medium** | Unfixed |
+| 3 | **Inquiries table still in SQLite** — Admin Inquiries page reads from `/api/supabase/contact` (contact_messages) but `cmsService.getInquiries()` reads from SQLite. Inquiries API route reads from cms-supabase library. Data inconsistency possible. | **Medium** | Known |
+| 4 | **Vercel image uploads ephemeral** — Gallery file uploads to `public/gallery/` and CMS uploads to `public/uploads/` are stored on the server's filesystem, which is read-only on Vercel serverless functions. Files will be lost on redeploy or scale-to-zero. | **High** | Known |
+| 5 | **Rate limit resets on server restart** — In-memory Map-based rate limiting doesn't persist across instances. On Vercel (multi-instance), rate limit is per-instance, not global. | **Low** | Known |
+| 6 | **No pagination on orders list** — `GET /api/supabase/orders` returns ALL orders. Will become slow/unusable with 10k+ records. | **Medium** | Unfixed |
+| 7 | **No pagination on bookings/contact lists** — Same issue. | **Low** | Unfixed |
+| 8 | **No form validation on site-settings** — 100+ fields, no required-field validation, no field-type validation. Empty strings saved without warning. | **Low** | Unfixed |
+| 9 | **order_events grows unbounded** — No retention/cleanup policy. Will accumulate infinitely. | **Low** | Unfixed |
+| 10 | **Waiter order POST is unauthenticated** — `POST /api/supabase/orders` has no server-side waiter verification. The `waiter_name` field is user-supplied, not validated against an authenticated session. | **Medium** | Known |
+| 11 | **No login rate limiting** — `POST /api/admin/auth` has no rate limiting. Brute-force attack possible on admin/kitchen/waiter passwords. | **Critical** | Unfixed |
+| 12 | **Kitchen page polls without auth check** — After initial auth, the polling loop does not re-verify auth. If cookie is manually cleared, polling continues until a 401 response. | **Low** | Unfixed |
 
-1. **Migrate CMS to Supabase** — Move all SQLite CMS tables (menu, events, promotions, etc.) to Supabase tables. This is the single biggest issue — without this, the CMS is non-functional on Vercel.
-2. **Use Supabase Storage for images** — Replace filesystem image uploads with Supabase Storage (or Cloudflare R2/S3).
-3. **Add auth to receipt page** — At minimum, require a short-lived token or order-specific PIN to view receipt.
+---
 
-### Short Term (Next Sprint)
+## 12. RECOMMENDED IMPROVEMENTS
 
-4. **Add rate limiting to login endpoint** — Prevent brute-force password guessing.
-5. **Separate waiter password** — Use the already-declared `WAITER_PASSWORD` env var instead of sharing kitchen password.
-6. **Add server-side auth to kitchen page** — Add middleware protection for `/admin/kitchen`.
-7. **Add refund UI** — Button to mark payment as refunded.
+### Critical (0-1 month)
 
-### Medium Term
+1. **Add login rate limiting** — Brute-force protection on `/api/admin/auth`. 5 attempts per IP per minute with incremental backoff.
+2. **Fix bar menu persistence** — Migrate bar menu data to either CMS (`menu_items` with a 'drinks' category) or Supabase storage.
+3. **Migrate inquiries + page_content** — Move remaining SQLite tables to Supabase or confirm no code references them.
 
-8. **Add order filtering/search** to admin orders page (by status, date, type, waiter).
-9. **Add calendar view** for bookings.
-10. **Add date range filtering** for analytics.
-11. **Add batch status updates** (e.g., mark multiple orders ready at once).
-12. **Add audit log viewer** in admin (view `order_events` table).
+### High (1-3 months)
 
-### Long Term
+4. **Implement audit logging** — Log every order status change, payment action, and login attempt to `order_events` (for orders) and a new `audit_log` table (for non-order actions).
+5. **Add pagination to orders API** — Limit to 50 per page, add cursor/offset support with `page` parameter.
+6. **Move image uploads to Supabase Storage** or Cloudflare R2/S3. All file upload routes should write to object storage, not local filesystem.
 
-13. **Add proper user accounts** with Supabase Auth instead of password-gated cookies.
-14. **Add notification system** (email/SMS) for order status changes.
-15. **Add table management** (visual table map, merge/split tables).
-16. **Add inventory tracking** linked to menu items.
-17. **Add staff shift management** and scheduling.
-18. **Add customer accounts** with order history.
+### Medium (3-6 months)
+
+7. **Create authenticated waiter order endpoint** — Add `/api/waiters/orders` that validates the waiter cookie and rejects orders with mismatched waiter names.
+8. **Replace in-memory rate limiting** — Use Vercel KV (Redis) or Supabase for distributed rate limiting across instances.
+9. **Add CMS upload folder whitelist** — Same pattern as `upload/gallery`.
+10. **Add form validation to site-settings** — Required field indicators, field-type validation, preview modals.
+
+### Low (6-12 months)
+
+11. **Add order_events retention policy** — Archive events older than 90 days.
+12. **Add real-time order tracking** — Use Supabase Realtime or WebSockets for live tracking page updates.
+13. **Add receipt email/SMS** — Send order confirmation and receipt links via email or WhatsApp.
+14. **Add payment gateway integration** — Yoco, PayFast, or similar for online payments.
+15. **Implement shift-based staff logins** — Replace shared passwords with individual accounts.
 
 ---
 

@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   if (authError) return authError
 
   try {
-    const highlight = getLastWeekHighlight();
+    const highlight = await getLastWeekHighlight();
     return NextResponse.json(highlight);
   } catch (error) {
     console.error('Error reading last week highlight:', error);
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const highlight = await request.json();
-    saveLastWeekHighlight(highlight);
+    await saveLastWeekHighlight(highlight);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error saving last week highlight:', error);

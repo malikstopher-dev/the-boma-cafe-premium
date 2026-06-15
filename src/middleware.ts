@@ -49,7 +49,7 @@ function roleScope(role: string): string {
 
 const PROTECTED_API_PREFIXES = ['/api/admin/', '/api/cms/', '/api/waiters/', '/api/gallery/', '/api/upload/']
 
-const PUBLIC_API_EXCEPTIONS = ['/api/cms/public', '/api/waiters/active']
+const PUBLIC_API_EXCEPTIONS = ['/api/cms/public', '/api/waiters/active', '/api/menu/public', '/api/track-order', '/api/receipt/verify']
 
 function isProtectedApiPath(pathname: string): boolean {
   return PROTECTED_API_PREFIXES.some(prefix => pathname.startsWith(prefix))

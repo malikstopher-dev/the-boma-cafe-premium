@@ -7,8 +7,8 @@ export async function GET(request: NextRequest) {
   if (authError) return authError
 
   try {
-    const categories = getCategories();
-    const menuItems = getMenuItems();
+    const categories = await getCategories();
+    const menuItems = await getMenuItems();
     return NextResponse.json({ categories, menuItems });
   } catch (error) {
     console.error('Error reading menu:', error);
@@ -24,12 +24,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     if (body.id && body.name !== undefined) {
-      const category = saveCategory(body);
+      const category = await saveCategory(body);
       return NextResponse.json({ success: true, data: category });
     }
     
     if (body.categoryId !== undefined) {
-      const item = saveMenuItem(body);
+      const item = await saveMenuItem(body);
       return NextResponse.json({ success: true, data: item });
     }
     
@@ -48,11 +48,11 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     
     if (body.categoryId || (body.id && body.name !== undefined)) {
-      const category = saveCategory(body);
+      const category = await saveCategory(body);
       return NextResponse.json({ success: true, data: category });
     }
     
-    const item = saveMenuItem(body);
+    const item = await saveMenuItem(body);
     return NextResponse.json({ success: true, data: item });
   } catch (error) {
     console.error('Error saving menu:', error);
@@ -70,12 +70,12 @@ export async function DELETE(request: NextRequest) {
     const itemId = searchParams.get('itemId');
     
     if (id) {
-      deleteCategory(id);
+      await deleteCategory(id);
       return NextResponse.json({ success: true });
     }
     
     if (itemId) {
-      deleteMenuItem(itemId);
+      await deleteMenuItem(itemId);
       return NextResponse.json({ success: true });
     }
     

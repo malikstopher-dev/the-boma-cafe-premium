@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   if (authError) return authError
 
   try {
-    const announcement = getAnnouncement();
+    const announcement = await getAnnouncement();
     return NextResponse.json(announcement);
   } catch (error) {
     console.error('Error reading announcement:', error);
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const announcement = await request.json();
-    const success = saveAnnouncement(announcement);
+    const success = await saveAnnouncement(announcement);
     
     if (success) {
       return NextResponse.json({ success: true });

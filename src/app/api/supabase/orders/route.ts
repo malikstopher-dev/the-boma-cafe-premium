@@ -55,10 +55,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(data)
   }
 
+  const limit = Math.min(parseInt(searchParams.get('limit') || '100', 10), 500)
+  const offset = Math.max(parseInt(searchParams.get('offset') || '0', 10), 0)
+
   const { data, error } = await getAdminClient()
     .from('orders')
-    .select('*')
+    .select('*', { count: 'exact' })
     .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)

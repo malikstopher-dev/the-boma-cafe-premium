@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   if (authError) return authError
 
   try {
-    const promotions = getPromotions();
+    const promotions = await getPromotions();
     return NextResponse.json(promotions);
   } catch (error) {
     console.error('Error reading promotions:', error);
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const promotion = await request.json();
-    const saved = savePromotion(promotion);
+    const saved = await savePromotion(promotion);
     return NextResponse.json({ success: true, data: saved });
   } catch (error) {
     console.error('Error saving promotion:', error);
@@ -35,7 +35,7 @@ export async function PUT(request: NextRequest) {
 
   try {
     const promotion = await request.json();
-    const saved = savePromotion(promotion);
+    const saved = await savePromotion(promotion);
     return NextResponse.json({ success: true, data: saved });
   } catch (error) {
     console.error('Error saving promotion:', error);
@@ -50,7 +50,9 @@ export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
     if (body.promotions && Array.isArray(body.promotions)) {
-      body.promotions.forEach((promo: any) => savePromotion(promo));
+      for (const promo of body.promotions) {
+        await savePromotion(promo);
+      }
       return NextResponse.json({ success: true });
     }
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
@@ -69,7 +71,7 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get('id');
     
     if (id) {
-      deletePromotion(id);
+      await deletePromotion(id);
       return NextResponse.json({ success: true });
     }
     

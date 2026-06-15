@@ -7,14 +7,10 @@ export { getSession }
 
 /**
  * Resolves the authenticated role for a request.
- * Fast path: reads x-user-role header set by middleware.
- * Fallback: validates cookies directly for requests that bypass middleware.
+ * Validates cookies directly via SHA-256 hash comparison.
+ * Does NOT trust x-user-role header (client-spoofable).
  */
 export async function getRequestRole(request: NextRequest): Promise<Role | null> {
-  const header = request.headers.get('x-user-role') as Role | null
-  if (header === 'admin' || header === 'kitchen' || header === 'waiter') {
-    return header
-  }
   const session = await getSession()
   return session?.role ?? null
 }

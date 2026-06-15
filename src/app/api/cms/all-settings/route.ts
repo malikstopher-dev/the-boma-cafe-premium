@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   if (authError) return authError
 
   try {
-    const settings = getAllSettings();
+    const settings = await getAllSettings();
     return NextResponse.json(settings);
   } catch (error) {
     console.error('Error reading settings:', error);
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    const success = setMultipleSettings(body);
+    const success = await setMultipleSettings(body);
     
     if (success) {
       return NextResponse.json({ success: true, message: 'Settings saved successfully' });
@@ -47,7 +47,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Key is required' }, { status: 400 });
     }
     
-    const success = setSetting(key, value);
+    const success = await setSetting(key, value);
     
     if (success) {
       return NextResponse.json({ success: true });

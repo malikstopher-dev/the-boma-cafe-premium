@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   if (authError) return authError
 
   try {
-    const inquiries = getInquiries();
+    const inquiries = await getInquiries();
     return NextResponse.json(inquiries);
   } catch (error) {
     console.error('Error reading inquiries:', error);
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     if (body.action === 'markRead') {
       const id = body.id;
       if (id) {
-        markInquiryRead(id);
+        await markInquiryRead(id);
         return NextResponse.json({ success: true });
       }
     }
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true });
     }
     
-    const inquiry = saveInquiry(body);
+    const inquiry = await saveInquiry(body);
     return NextResponse.json({ success: true, inquiry });
   } catch (error) {
     console.error('Error saving inquiry:', error);
@@ -51,7 +51,7 @@ export async function PATCH(request: NextRequest) {
     const id = searchParams.get('id');
     
     if (id) {
-      markInquiryRead(id);
+      await markInquiryRead(id);
       return NextResponse.json({ success: true });
     }
     

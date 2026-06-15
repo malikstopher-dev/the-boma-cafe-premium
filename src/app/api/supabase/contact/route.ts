@@ -7,10 +7,15 @@ export async function GET(request: NextRequest) {
   const authError = await requireAdminOrKitchen(request)
   if (authError) return authError
 
+  const { searchParams } = new URL(request.url)
+  const limit = Math.min(parseInt(searchParams.get('limit') || '100', 10), 500)
+  const offset = Math.max(parseInt(searchParams.get('offset') || '0', 10), 0)
+
   const { data, error } = await getAdminClient()
     .from('contact_messages')
-    .select('*')
+    .select('*', { count: 'exact' })
     .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })

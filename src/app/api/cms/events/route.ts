@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   if (authError) return authError
 
   try {
-    const events = getEvents();
+    const events = await getEvents();
     return NextResponse.json(events);
   } catch (error) {
     console.error('Error reading events:', error);
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const event = await request.json();
-    const saved = saveEvent(event);
+    const saved = await saveEvent(event);
     return NextResponse.json({ success: true, data: saved });
   } catch (error) {
     console.error('Error saving event:', error);
@@ -35,7 +35,7 @@ export async function PUT(request: NextRequest) {
 
   try {
     const event = await request.json();
-    const saved = saveEvent(event);
+    const saved = await saveEvent(event);
     return NextResponse.json({ success: true, data: saved });
   } catch (error) {
     console.error('Error saving event:', error);
@@ -50,7 +50,9 @@ export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
     if (body.events && Array.isArray(body.events)) {
-      body.events.forEach((event: any) => saveEvent(event));
+      for (const event of body.events) {
+        await saveEvent(event);
+      }
       return NextResponse.json({ success: true });
     }
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
@@ -69,7 +71,7 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get('id');
     
     if (id) {
-      deleteEvent(id);
+      await deleteEvent(id);
       return NextResponse.json({ success: true });
     }
     
