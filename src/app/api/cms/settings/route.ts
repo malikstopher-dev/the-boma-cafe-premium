@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readData, writeData } from '@/lib/cms/store';
-import { defaultSettings } from '@/lib/cms/defaults';
-import { SiteSettings } from '@/lib/cms/types';
+import { getAllSettings, setMultipleSettings } from '@/lib/cms-supabase';
 import { requireAnyRole } from '@/lib/auth';
 
 export async function GET() {
@@ -9,7 +7,7 @@ export async function GET() {
   if (authError) return authError
 
   try {
-    const settings = readData<SiteSettings>('settings', defaultSettings);
+    const settings = await getAllSettings();
     return NextResponse.json(settings);
   } catch (error) {
     console.error('Error reading settings:', error);
@@ -23,13 +21,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const settings = await request.json();
-    const success = writeData<SiteSettings>('settings', settings);
-    
-    if (success) {
-      return NextResponse.json({ success: true, message: 'Settings saved successfully' });
-    } else {
-      return NextResponse.json({ error: 'Failed to save settings' }, { status: 500 });
-    }
+    await setMultipleSettings(settings);
+    return NextResponse.json({ success: true, message: 'Settings saved successfully' });
   } catch (error) {
     console.error('Error saving settings:', error);
     return NextResponse.json({ error: 'Failed to save settings' }, { status: 500 });

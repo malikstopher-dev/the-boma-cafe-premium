@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAnnouncement, saveAnnouncement } from '@/lib/db';
+import { getAnnouncement, saveAnnouncement } from '@/lib/cms-supabase';
 import { requireAnyRole } from '@/lib/auth';
 
 export async function GET() {

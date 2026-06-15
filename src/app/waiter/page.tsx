@@ -52,7 +52,7 @@ function PasswordGate({ onSuccess }: { onSuccess: () => void }) {
       const res = await fetch('/api/admin/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password, role: 'kitchen' }),
+        body: JSON.stringify({ password, role: 'waiter' }),
       })
       if (res.ok) {
         onSuccess()
@@ -72,7 +72,7 @@ function PasswordGate({ onSuccess }: { onSuccess: () => void }) {
           <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', margin: '0.5rem 0 0' }}>Waiter Login</h1>
         </div>
         <input ref={ref} type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-          placeholder="Kitchen password"
+          placeholder="Waiter password"
           style={{ width: '100%', padding: '0.875rem', borderRadius: '10px', border: '2px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '1rem', textAlign: 'center', boxSizing: 'border-box' }}
           required
         />

@@ -1,9 +1,12 @@
 import { getAdminClient } from '@/lib/supabase'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import { getSession } from '@/lib/auth'
+import { cookies } from 'next/headers'
 
 interface Props {
   params: Promise<{ ref: string }>
+  searchParams: Promise<{ verified?: string }>
 }
 
 export const metadata: Metadata = {
@@ -17,7 +20,7 @@ function ReceiptContent({ data }: { data: any }) {
     items = Array.isArray(parsed) ? parsed : (parsed?.items || [])
   } catch {}
 
-  const tn = data.table_number || (() => { try { return JSON.parse(data.items_json)?.metadata?.tableNumber } catch { return undefined } })()
+  const tn = data.table_number
 
   return (
     <div style={{
@@ -49,7 +52,7 @@ function ReceiptContent({ data }: { data: any }) {
         <br />
         {data.order_type.toUpperCase()}
         {tn ? ` — Table ${tn}` : ''}
-        {data.delivery_address ? ` — ${data.delivery_address}` : ''}
+        {(data as any).delivery_address && !(data as any)._is_customer_view ? ` — ${(data as any).delivery_address}` : ''}
       </p>
 
       <hr style={{ border: 'none', borderTop: '1px dashed #000' }} />
@@ -111,16 +114,81 @@ function ReceiptContent({ data }: { data: any }) {
   )
 }
 
-export default async function ReceiptPage({ params }: Props) {
-  const { ref } = await params
+function VerifyForm({ ref, error }: { ref: string; error?: string }) {
+  return (
+    <div style={{
+      fontFamily: "'Inter', -apple-system, sans-serif",
+      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: '#0a0a14', padding: '1rem',
+    }}>
+      <form method="POST" action={`/api/receipt/verify`} style={{
+        background: '#16162a', borderRadius: '20px', padding: '2rem', width: '100%', maxWidth: '360px',
+      }}>
+        <input type="hidden" name="ref" value={ref} />
+        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+          <div style={{ fontSize: '2rem' }}>🧾</div>
+          <h1 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff', margin: '0.5rem 0 0' }}>View Receipt</h1>
+          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+            Enter phone number to access receipt for {ref}
+          </p>
+        </div>
+        <input
+          type="tel" name="phone" placeholder="Phone number on order" required
+          style={{
+            width: '100%', padding: '0.875rem', borderRadius: '10px', fontSize: '1rem',
+            border: '2px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff',
+            textAlign: 'center', boxSizing: 'border-box', outline: 'none',
+          }}
+        />
+        {error && (
+          <div style={{ marginTop: '0.5rem', color: '#ef4444', fontSize: '0.85rem', textAlign: 'center' }}>{error}</div>
+        )}
+        <button type="submit" style={{
+          width: '100%', marginTop: '1rem', padding: '0.875rem', border: 'none', borderRadius: '10px',
+          background: '#f59e0b', color: '#000', fontSize: '1rem', fontWeight: 700, cursor: 'pointer',
+        }}>
+          View Receipt
+        </button>
+        <p style={{ marginTop: '1rem', textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem' }}>
+          Admin users can access receipts directly from the dashboard
+        </p>
+      </form>
+    </div>
+  )
+}
 
-  const { data, error } = await getAdminClient()
+export default async function ReceiptPage({ params, searchParams }: Props) {
+  const { ref } = await params
+  const sp = await searchParams
+
+  // Check admin/kitchen session
+  const session = await getSession()
+  const isAuthed = session?.role === 'admin' || session?.role === 'kitchen'
+
+  // If phone-verified via query param, allow limited access
+  const isVerified = sp.verified === 'true'
+
+  if (!isAuthed && !isVerified) {
+    return <VerifyForm ref={ref} />
+  }
+
+  const supabase = getAdminClient()
+
+  const selectCols = isAuthed
+    ? '*'
+    : 'order_ref, customer_name, order_type, table_number, items_json, total, created_at'
+
+  const { data, error } = await supabase
     .from('orders')
-    .select('*')
+    .select(selectCols)
     .eq('order_ref', ref)
     .maybeSingle()
 
   if (error || !data) notFound()
 
-  return <ReceiptContent data={data} />
+  if (!isAuthed) {
+    (data as any)._is_customer_view = true
+  }
+
+  return <ReceiptContent data={(data as any)} />
 }

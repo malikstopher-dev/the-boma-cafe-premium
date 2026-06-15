@@ -854,24 +854,6 @@ export default function KitchenDisplay() {
                         >
                           {updating === order.id ? '...' : 'Mark Ready'}
                         </button>
-                        <button
-                          onClick={() => updateStatus(order.id, 'cancelled')}
-                          disabled={updating === order.id}
-                          style={{
-                            padding: '0.875rem',
-                            border: '2px solid rgba(239,68,68,0.3)',
-                            borderRadius: '10px',
-                            background: 'transparent',
-                            color: '#ef4444',
-                            fontSize: '0.9rem',
-                            fontWeight: 600,
-                            cursor: updating === order.id ? 'not-allowed' : 'pointer',
-                            opacity: updating === order.id ? 0.5 : 1,
-                            touchAction: 'manipulation',
-                          }}
-                        >
-                          Cancel
-                        </button>
                       </div>
                     )}
                     {order.status === 'ready' && (

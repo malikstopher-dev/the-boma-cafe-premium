@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPromotions, savePromotion, deletePromotion } from '@/lib/db';
+import { getPromotions, savePromotion, deletePromotion } from '@/lib/cms-supabase';
 import { requireAnyRole } from '@/lib/auth';
 
 export async function GET() {

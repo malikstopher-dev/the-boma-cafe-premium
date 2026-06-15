@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getGallery, saveGalleryItem, deleteGalleryItem, getGalleryBoards } from '@/lib/db';
+import { getGallery, saveGalleryItem, deleteGalleryItem, getGalleryBoards } from '@/lib/cms-supabase';
 import { requireAnyRole } from '@/lib/auth';
 
 export async function GET() {

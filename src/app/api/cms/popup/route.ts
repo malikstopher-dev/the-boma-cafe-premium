@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPopup, savePopup } from '@/lib/db';
+import { getPopup, savePopup } from '@/lib/cms-supabase';
 import { requireAnyRole } from '@/lib/auth';
 
 export async function GET() {
@@ -21,32 +21,12 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    
-    // Map camelCase fields to snake_case for database
-    const popup = {
-      type: body.type || 'promotion',
-      title: body.title || '',
-      description: body.description || '',
-      image: body.image || '',
-      cta_text: body.ctaText || '',
-      cta_link: body.ctaLink || '',
-      is_enabled: body.isEnabled ? 1 : 0,
-      show_once_per_session: body.showOncePerSession ? 1 : 0,
-      start_date: body.startDate || null,
-      end_date: body.endDate || null,
-      start_time: body.startTime || '09:30',
-      end_time: body.endTime || '12:30',
-      active_days: body.activeDays ? JSON.stringify(body.activeDays) : JSON.stringify([6, 0]),
-      adult_price: body.adultPrice || 'R89',
-      kids_price: body.kidsPrice || 'R45'
-    };
-    
-    const success = savePopup(popup);
+    const success = await savePopup(body);
     
     if (success) {
       return NextResponse.json({ success: true });
     } else {
-      console.error('savePopup returned false for data:', popup);
+      console.error('savePopup returned false for data:', body);
       return NextResponse.json({ error: 'Failed to save popup to database' }, { status: 500 });
     }
   } catch (error: any) {

@@ -22,7 +22,6 @@ export async function GET(request: NextRequest) {
   const orderRef = searchParams.get('order_ref')
   const waiterStats = searchParams.get('waiter_stats')
 
-  if (orderRef) {
   if (waiterStats === 'true') {
     const { data, error } = await getAdminClient()
       .from('orders')
@@ -44,7 +43,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result)
   }
 
-  const { data, error } = await getAdminClient()
+  if (orderRef) {
+    const { data, error } = await getAdminClient()
       .from('orders')
       .select('order_ref, customer_name, total, status, created_at')
       .eq('order_ref', orderRef)
@@ -109,6 +109,8 @@ export async function PATCH(request: NextRequest) {
   const authError = await requireAnyRole(['admin', 'kitchen'])
   if (authError) return authError
 
+  const session = await getSession()
+
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
@@ -116,6 +118,22 @@ export async function PATCH(request: NextRequest) {
 
     if (!id) {
       return NextResponse.json({ error: 'Order ID required' }, { status: 400 })
+    }
+
+    // Kitchen CANNOT cancel orders, mark paid, or change customer details
+    if (session?.role === 'kitchen') {
+      if (body.status === 'cancelled') {
+        return NextResponse.json({ error: 'Kitchen cannot cancel orders' }, { status: 403 })
+      }
+      if (body.payment_status) {
+        return NextResponse.json({ error: 'Kitchen cannot modify payment status' }, { status: 403 })
+      }
+      const kitchenOnlyFields = ['customer_name', 'phone', 'order_type', 'delivery_address', 'waiter_name', 'table_number']
+      for (const field of kitchenOnlyFields) {
+        if (field in body) {
+          return NextResponse.json({ error: 'Kitchen cannot modify order details' }, { status: 403 })
+        }
+      }
     }
 
     const updateBody: Record<string, any> = {}
@@ -239,7 +257,7 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const authError = await requireAnyRole(['admin', 'kitchen'])
+  const authError = await requireAnyRole(['admin'])
   if (authError) return authError
 
   const { searchParams } = new URL(request.url)

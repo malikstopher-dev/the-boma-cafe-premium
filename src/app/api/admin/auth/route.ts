@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 
 const ADMIN_COOKIE = 'boma_admin_auth';
 const KITCHEN_COOKIE = 'boma_kitchen_auth';
+const WAITER_COOKIE = 'boma_waiter_auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,7 +16,27 @@ export async function POST(request: NextRequest) {
       const cookieStore = await cookies();
       cookieStore.set(ADMIN_COOKIE, '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 0, path: '/' });
       cookieStore.set(KITCHEN_COOKIE, '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 0, path: '/' });
+      cookieStore.set(WAITER_COOKIE, '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 0, path: '/' });
       return NextResponse.json({ success: true });
+    }
+
+    if (role === 'waiter') {
+      const waiterPassword = process.env.WAITER_PASSWORD;
+      if (!waiterPassword) {
+        return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+      }
+      if (password !== waiterPassword) {
+        return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
+      }
+      const cookieStore = await cookies();
+      cookieStore.set(WAITER_COOKIE, expectedCookieValue('waiter'), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 60 * 60 * 24,
+      });
+      return NextResponse.json({ success: true, role: 'waiter' });
     }
 
     if (role === 'kitchen') {
@@ -79,6 +100,14 @@ export async function GET() {
         authenticated: true,
         role: 'kitchen',
         user: { id: '2', username: 'kitchen', email: '' }
+      });
+    }
+
+    if (session?.role === 'waiter') {
+      return NextResponse.json({
+        authenticated: true,
+        role: 'waiter',
+        user: { id: '3', username: 'waiter', email: '' }
       });
     }
 

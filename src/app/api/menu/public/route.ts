@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getCategories, getMenuItems } from '@/lib/db';
+import { getCategories, getMenuItems } from '@/lib/cms-supabase';
 
 export async function GET() {
   try {
-    const allCategories = getCategories();
-    const allItems = getMenuItems();
+    const allCategories = await getCategories();
+    const allItems = await getMenuItems();
 
     const categories = allCategories.filter((c: any) => c.isActive);
     const menuItems = allItems.filter((m: any) => m.isAvailable);

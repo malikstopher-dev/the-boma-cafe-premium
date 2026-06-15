@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getLastWeekHighlight, saveLastWeekHighlight } from '@/lib/db';
+import { getLastWeekHighlight, saveLastWeekHighlight } from '@/lib/cms-supabase';
 import { requireAnyRole } from '@/lib/auth';
 
 export async function GET() {

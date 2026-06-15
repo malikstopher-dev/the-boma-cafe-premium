@@ -204,11 +204,18 @@ export async function createOrder(input: {
   const items_json = JSON.stringify({ items: enriched, metadata: {} })
   const order_ref = await generateOrderRef()
 
+  const ORDER_TYPE_NORMALIZATIONS: Record<string, string> = {
+    'dine-in': 'dine-in', 'dinein': 'dine-in', 'dine in': 'dine-in', 'dine_in': 'dine-in', 'dine': 'dine-in',
+    'pickup': 'pickup', 'pick-up': 'pickup', 'pick up': 'pickup', 'takeaway': 'pickup', 'collection': 'pickup',
+    'delivery': 'delivery', 'deliver': 'delivery',
+  }
+  const normalizedType = ORDER_TYPE_NORMALIZATIONS[String(input.order_type || '').trim().toLowerCase()] || input.order_type
+
   // ── Build insert payload (ONLY known columns, NO raw passthrough) ──
   const insertPayload: Record<string, unknown> = {
     customer_name: input.customer_name.trim(),
     phone: input.phone.trim(),
-    order_type: input.order_type,
+    order_type: normalizedType,
     requested_time: input.requested_time || 'ASAP',
     items_json,
     total,

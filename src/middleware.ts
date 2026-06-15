@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 const ADMIN_COOKIE = 'boma_admin_auth'
+const KITCHEN_COOKIE = 'boma_kitchen_auth'
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || ''
+const KITCHEN_PASSWORD = process.env.KITCHEN_PASSWORD || ''
 
 async function hashCookieValue(role: string, secret: string): Promise<string> {
   const data = new TextEncoder().encode(`${role}:${secret}`)
@@ -16,14 +18,26 @@ export async function middleware(request: NextRequest) {
 
   if (!pathname.startsWith('/admin/')) return NextResponse.next()
 
-  // Allow login page (unauthenticated) and kitchen (has its own password gate)
-  if (pathname === '/admin/login' || pathname === '/admin/kitchen') {
+  // Allow login page (unauthenticated)
+  if (pathname === '/admin/login') return NextResponse.next()
+
+  // Protect /admin/kitchen with kitchen (or admin) cookie
+  if (pathname === '/admin/kitchen') {
+    const kitchenExpected = await hashCookieValue('kitchen', KITCHEN_PASSWORD)
+    const adminExpected = await hashCookieValue('admin', ADMIN_PASSWORD)
+    const kitchenCookie = request.cookies.get(KITCHEN_COOKIE)
+    const adminCookie = request.cookies.get(ADMIN_COOKIE)
+
+    const isKitchen = kitchenCookie?.value === kitchenExpected
+    const isAdmin = adminCookie?.value === adminExpected
+
+    if (!isKitchen && !isAdmin) {
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
     return NextResponse.next()
   }
 
-  // DEVELOPMENT ONLY: skip auth check so local dev works without env vars
-  if (process.env.NODE_ENV === 'development') return NextResponse.next()
-
+  // All other /admin/* routes require admin cookie
   const expected = await hashCookieValue('admin', ADMIN_PASSWORD)
   const adminCookie = request.cookies.get(ADMIN_COOKIE)
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getInquiries, saveInquiry, markInquiryRead } from '@/lib/db';
+import { getInquiries, saveInquiry, markInquiryRead } from '@/lib/cms-supabase';
 import { requireAnyRole } from '@/lib/auth';
 
 export async function GET() {

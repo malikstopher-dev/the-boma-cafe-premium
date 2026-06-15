@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllSettings, setMultipleSettings, getSetting, setSetting } from '@/lib/db';
+import { getAllSettings, setMultipleSettings, getSetting, setSetting } from '@/lib/cms-supabase';
 import { requireAnyRole } from '@/lib/auth';
 
 export async function GET() {

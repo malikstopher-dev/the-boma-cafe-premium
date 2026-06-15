@@ -140,6 +140,7 @@ function OrderCard({
         <span>{order.order_type === 'pickup' ? '📦 Pickup' : order.order_type === 'delivery' ? '🚚 Delivery' : '🍽️ Dine-in'}</span>
         <span>⏱ {timeSince(order.created_at)}</span>
         {tn && <span>🪑 Table {tn}</span>}
+        {order.waiter_name && <span style={{ color: '#dc2626', fontWeight: 600 }}>🍽️ {order.waiter_name}</span>}
         <span style={{ color: 'rgba(255,255,255,0.3)' }}>📋 {itemCount} item{itemCount !== 1 ? 's' : ''}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -276,6 +277,7 @@ function CheckoutPanel({
           <span>🕐 {formatTime(order.created_at)}</span>
           <span>📋 {order.order_type}</span>
         {tn && <span style={{ color: '#dc2626', fontWeight: 700 }}>🪑 Table {tn}</span>}
+        {order.waiter_name && <span style={{ color: '#dc2626', fontWeight: 600 }}>🍽️ {order.waiter_name}</span>}
         </div>
 
         {!tn && (
@@ -461,7 +463,7 @@ export default function OrdersPOS() {
       await fetch(`/api/supabase/orders?id=${orderId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items_json: newItemsJson }),
+        body: JSON.stringify({ items_json: newItemsJson, table_number: String(tableNumber) }),
       })
       loadOrders()
     } catch (e) {

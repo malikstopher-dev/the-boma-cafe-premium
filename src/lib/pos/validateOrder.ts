@@ -3,12 +3,39 @@ import { ALLOWED_ORDER_FIELDS } from './types'
 
 const VALID_ORDER_TYPES: OrderType[] = ['pickup', 'delivery', 'dine-in']
 
+const ORDER_TYPE_NORMALIZATIONS: Record<string, string> = {
+  'dine-in': 'dine-in',
+  'dinein': 'dine-in',
+  'dine in': 'dine-in',
+  'dine_in': 'dine-in',
+  'dine': 'dine-in',
+  'pickup': 'pickup',
+  'pick-up': 'pickup',
+  'pick up': 'pickup',
+  'takeaway': 'pickup',
+  'take-away': 'pickup',
+  'take away': 'pickup',
+  'collection': 'pickup',
+  'delivery': 'delivery',
+  'deliver': 'delivery',
+}
+
+function normalizeOrderType(raw: unknown): string {
+  if (typeof raw !== 'string') return ''
+  const normalized = raw.trim().toLowerCase().replace(/\s+/g, ' ')
+  return ORDER_TYPE_NORMALIZATIONS[normalized] || normalized
+}
+
 export function sanitizeOrderInput(input: Record<string, unknown>): Record<string, unknown> {
   const clean: Record<string, unknown> = {}
   for (const key of Object.keys(input)) {
     if (ALLOWED_ORDER_FIELDS.has(key)) {
       clean[key] = input[key]
     }
+  }
+  // Normalize order_type to valid value
+  if (clean.order_type) {
+    clean.order_type = normalizeOrderType(clean.order_type)
   }
   return clean
 }
