@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, phone, email, message } = body
+    const { name, phone, email, subject, message } = body
 
     if (!name || !email || !message) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     const { data, error } = await getAdminClient()
       .from('contact_messages')
-      .insert([{ name, phone, email, message }])
+      .insert([{ name, phone, email, subject: subject || null, message }])
       .select()
       .single()
 

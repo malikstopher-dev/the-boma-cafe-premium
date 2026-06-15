@@ -7,6 +7,7 @@ interface ContactMessage {
   name: string
   phone: string | null
   email: string
+  subject: string | null
   message: string
   created_at: string
 }
@@ -96,6 +97,16 @@ export default function AdminContactMessages() {
                 <div>
                   <h3 style={{ fontSize: '1.1rem', color: 'var(--dark-brown)', marginBottom: '0.25rem' }}>{msg.name}</h3>
                   <p style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>{msg.email} {msg.phone && `• ${msg.phone}`}</p>
+                  {msg.subject && (
+                    <span style={{
+                      display: 'inline-block', marginTop: '0.35rem',
+                      padding: '0.15rem 0.5rem', borderRadius: '6px',
+                      background: 'rgba(139,92,246,0.1)', color: '#7c3aed',
+                      fontSize: '0.8rem', fontWeight: 600,
+                    }}>
+                      {msg.subject}
+                    </span>
+                  )}
                 </div>
                 <button onClick={() => deleteMessage(msg.id)} style={{ padding: '0.5rem 1rem', background: '#fee2e2', border: 'none', borderRadius: '8px', cursor: 'pointer', color: '#dc2626', fontSize: '0.85rem' }}>Delete</button>
               </div>

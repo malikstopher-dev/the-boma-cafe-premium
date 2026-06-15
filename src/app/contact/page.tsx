@@ -52,6 +52,7 @@ export default function ContactPage() {
           name: formData.name.trim(),
           email: formData.email.trim(),
           phone: formData.phone.trim() || null,
+          subject: formData.subject.trim() || null,
           message: formData.message.trim(),
         }),
       });

@@ -20,7 +20,7 @@ const menuItems = [
   { label: 'Gallery', icon: '🖼️', href: '/admin/gallery' },
   { label: 'Popup', icon: '🔔', href: '/admin/popup' },
   { label: 'Announcement', icon: '📢', href: '/admin/announcement' },
-  { label: 'Inquiries', icon: '✉️', href: '/admin/inquiries' },
+  { label: 'Contact Messages', icon: '✉️', href: '/admin/contact-messages' },
   { label: 'Orders', icon: '📋', href: '/admin/orders' },
   { label: 'Kitchen', icon: '👨‍🍳', href: '/admin/kitchen' },
   { label: 'Waiters', icon: '👤', href: '/admin/waiters' },
