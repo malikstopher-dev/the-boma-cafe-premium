@@ -159,6 +159,7 @@ export async function createOrder(input: {
   idempotency_key?: string
   table_number?: string
   delivery_address?: string
+  waiter_name?: string
 }): Promise<CreateOrderResult> {
   const idempotencyKey = input.idempotency_key || generateIdempotencyKey()
 
@@ -222,6 +223,10 @@ export async function createOrder(input: {
 
   if (input.delivery_address) {
     insertPayload.delivery_address = input.delivery_address.trim()
+  }
+
+  if (input.waiter_name) {
+    insertPayload.waiter_name = input.waiter_name.trim()
   }
 
   // ── Insert with retry (handles schema cache delays) ────────

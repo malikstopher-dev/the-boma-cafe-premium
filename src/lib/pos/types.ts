@@ -34,11 +34,12 @@ export interface CreateOrderInput {
   idempotency_key?: string
   table_number?: string
   delivery_address?: string
+  waiter_name?: string
 }
 
 export const ALLOWED_ORDER_FIELDS = new Set([
   'customer_name', 'phone', 'order_type', 'requested_time', 'items',
-  'idempotency_key', 'table_number', 'delivery_address',
+  'idempotency_key', 'table_number', 'delivery_address', 'waiter_name',
 ])
 
 export interface ValidationError {
@@ -65,4 +66,5 @@ export interface OrderRecord {
   table_number?: string
   delivery_address?: string
   idempotency_key?: string
+  waiter_name?: string
 }

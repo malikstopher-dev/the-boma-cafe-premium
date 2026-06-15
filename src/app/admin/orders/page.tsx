@@ -274,7 +274,7 @@ function CheckoutPanel({
         <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', marginBottom: '1rem' }}>
           <span>🕐 {formatTime(order.created_at)}</span>
           <span>📋 {order.order_type}</span>
-          {tn && <span>🪑 Table {tn}</span>}
+        {tn && <span style={{ color: '#dc2626', fontWeight: 700 }}>🪑 Table {tn}</span>}
         </div>
 
         {!tn && (

@@ -26,6 +26,9 @@ interface TrackResult {
   total: number
   status: string
   payment_status: string
+  order_type: string
+  waiter_name: string | null
+  table_number: number | null
   status_label: string
   created_at: string
 }
@@ -248,6 +251,18 @@ export default function TrackOrderPage() {
 
             {/* Details */}
             <div style={{ borderTop: '1px solid var(--beige-dark)', paddingTop: '1rem' }}>
+              {result.waiter_name && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                  <span style={{ color: 'var(--text-light)' }}>Waiter</span>
+                  <span style={{ color: '#dc2626', fontWeight: 600 }}>{result.waiter_name}</span>
+                </div>
+              )}
+              {result.table_number && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                  <span style={{ color: 'var(--text-light)' }}>Table</span>
+                  <span style={{ color: '#dc2626', fontWeight: 700 }}>Table {result.table_number}</span>
+                </div>
+              )}
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
                 <span style={{ color: 'var(--text-light)' }}>Customer</span>
                 <span style={{ color: 'var(--dark-brown)', fontWeight: 500 }}>{result.customer_name}</span>

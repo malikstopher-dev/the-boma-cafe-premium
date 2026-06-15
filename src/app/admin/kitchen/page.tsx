@@ -14,6 +14,8 @@ interface Order {
   total: number
   status: string
   payment_status: string
+  waiter_name: string | null
+  table_number: number | null
   created_at: string
 }
 
@@ -686,6 +688,16 @@ export default function KitchenDisplay() {
                       {order.customer_name && (
                         <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>
                           👤 {order.customer_name}
+                        </span>
+                      )}
+                      {order.waiter_name && (
+                        <span style={{ fontSize: '0.85rem', color: '#dc2626', fontWeight: 600 }}>
+                          🍽️ {order.waiter_name}
+                        </span>
+                      )}
+                      {order.table_number && (
+                        <span style={{ fontSize: '0.85rem', color: '#dc2626', fontWeight: 700 }}>
+                          🪑 Table {order.table_number}
                         </span>
                       )}
                     </div>

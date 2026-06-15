@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await getAdminClient()
     .from('orders')
-    .select('order_ref, customer_name, total, status, payment_status, created_at')
+    .select('order_ref, customer_name, total, status, payment_status, order_type, waiter_name, table_number, created_at')
     .eq('order_ref', ref)
     .maybeSingle()
 
@@ -47,6 +47,9 @@ export async function GET(request: NextRequest) {
     total: data.total,
     status: data.status,
     payment_status: data.payment_status,
+    order_type: data.order_type,
+    waiter_name: data.waiter_name,
+    table_number: data.table_number,
     status_label: STATUS_LABELS[data.status] || data.status,
     created_at: data.created_at,
   })

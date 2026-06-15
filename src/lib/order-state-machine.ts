@@ -53,7 +53,7 @@ export function getTransitionLabel(currentStatus: OrderStatus, action: AllowedAc
 
 /** Order types that require payment confirmation before processing */
 export function requiresPaymentConfirmation(orderType: string): boolean {
-  return orderType !== 'dine-in'
+  return orderType === 'delivery'
 }
 
 /** Status transitions that require payment confirmation */

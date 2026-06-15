@@ -11,6 +11,7 @@ const ALLOWED_PATCH_FIELDS = new Set([
   'customer_name', 'phone', 'order_type', 'requested_time', 'status',
   'items_json', 'table_number', 'delivery_address',
   'payment_status', 'payment_confirmed_at', 'payment_confirmed_by',
+  'waiter_name',
 ])
 
 export async function GET(request: NextRequest) {

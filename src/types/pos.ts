@@ -46,6 +46,8 @@ export interface SupabaseOrder {
   payment_status: string
   payment_confirmed_at: string | null
   payment_confirmed_by: string | null
+  waiter_name: string | null
+  table_number: string | null
   created_at: string
 }
 
@@ -78,6 +80,10 @@ export function buildItemsJson(items: OrderItem[], meta?: OrderMeta): string {
 }
 
 export function getOrderTableNumber(order: SupabaseOrder): number | undefined {
+  if (order.table_number) {
+    const n = parseInt(order.table_number)
+    if (!isNaN(n)) return n
+  }
   return parseOrderMeta(order.items_json).tableNumber
 }
 
