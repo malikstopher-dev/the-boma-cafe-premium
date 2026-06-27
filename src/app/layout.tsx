@@ -50,6 +50,15 @@ const websiteSchema = {
   "@type": "WebSite",
   "name": BUSINESS_INFO.name,
   "url": BUSINESS_INFO.website,
+  "author": {
+    "@type": "Person",
+    "name": "Stopher Malik"
+  },
+  "creator": {
+    "@type": "Organization",
+    "name": "SMK Web Design",
+    "url": "https://stopher-malik.co.za"
+  },
   "potentialAction": {
     "@type": "SearchAction",
     "target": {

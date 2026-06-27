@@ -23,6 +23,7 @@ export default function Footer({ settings, branding }: FooterProps) {
   const siteName = b.siteName || 'The Boma Cafe';
   const currentYear = new Date().getFullYear();
   const footerCredit = `© ${currentYear} The Boma Café. Website by `;
+  const footerCreditEnd = ` & `;
 
   const fbUrl = b.facebook || SOCIAL_LINKS.facebook;
   const igUrl = b.instagram || SOCIAL_LINKS.instagram;
@@ -113,7 +114,7 @@ export default function Footer({ settings, branding }: FooterProps) {
 
           <div className={styles.bottom}>
             <div className={styles.divider}></div>
-            <p className={styles.copyright}>{footerCredit}<a href="https://stopher-malik.co.za" target="_blank" rel="noopener noreferrer" className={styles.poweredLink}>Stopher Malik</a></p>
+            <p className={styles.copyright}>{footerCredit}<a href="https://stopher-malik.co.za" target="_blank" rel="noopener noreferrer" className={styles.poweredLink}>Stopher Malik</a>{footerCreditEnd}<a href="https://smk.stopher-malik.co.za" target="_blank" rel="noopener noreferrer" className={styles.poweredLink}>SMK Web Design</a></p>
           </div>
         </div>
 
@@ -153,7 +154,7 @@ export default function Footer({ settings, branding }: FooterProps) {
 
           <div className={styles.mobileDivider}></div>
 
-          <p className={styles.mobileCopyright}>{footerCredit}<a href="https://stopher-malik.co.za" target="_blank" rel="noopener noreferrer" className={styles.mobileFooterLink}>Stopher Malik</a></p>
+          <p className={styles.mobileCopyright}>{footerCredit}<a href="https://stopher-malik.co.za" target="_blank" rel="noopener noreferrer" className={styles.mobileFooterLink}>Stopher Malik</a>{footerCreditEnd}<a href="https://smk.stopher-malik.co.za" target="_blank" rel="noopener noreferrer" className={styles.mobileFooterLink}>SMK Web Design</a></p>
         </div>
       </div>
     </footer>
