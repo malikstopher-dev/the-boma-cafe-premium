@@ -1,0 +1,352 @@
+.main {
+  padding-top: 80px;
+  min-height: 100vh;
+  min-height: 100svh;
+  background: var(--cream);
+  position: relative;
+}
+
+.main::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(201, 169, 98, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(194, 106, 45, 0.04) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.container {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 5% 4rem;
+}
+
+/* Search Section */
+.searchSection {
+  position: sticky;
+  top: 80px;
+  z-index: 50;
+  background: rgba(245, 239, 230, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 1rem 5%;
+  border-bottom: 1px solid rgba(107, 94, 74, 0.08);
+}
+
+.searchInner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.75rem 1rem 0.75rem 2.75rem;
+  border: 1px solid rgba(107, 94, 74, 0.12);
+  border-radius: var(--radius-full);
+  font-size: 0.95rem;
+  background: var(--white);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  font-family: var(--font-body);
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(194, 106, 45, 0.1);
+}
+
+.searchIcon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-light);
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+
+.searchWrapper {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.resultCount {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  white-space: nowrap;
+  padding: 0 0.5rem;
+}
+
+/* Filter Pills */
+.filterRow {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 0.25rem 0;
+  flex: 1;
+}
+
+.filterRow::-webkit-scrollbar {
+  display: none;
+}
+
+.filterPill {
+  padding: 0.45rem 1rem;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(107, 94, 74, 0.15);
+  background: var(--white);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+  font-family: var(--font-body);
+  flex-shrink: 0;
+}
+
+.filterPill:hover {
+  border-color: var(--primary);
+  background: rgba(194, 106, 45, 0.05);
+}
+
+.filterPillActive {
+  background: linear-gradient(135deg, var(--primary), #a85524);
+  color: var(--white);
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(194, 106, 45, 0.25);
+}
+
+/* Category Section */
+.categorySection {
+  margin-top: 3rem;
+  scroll-margin-top: 140px;
+}
+
+.categoryHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.categoryTitle {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  color: var(--brown-heading);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0;
+  position: relative;
+}
+
+.categoryLine {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(107, 94, 74, 0.2), transparent);
+}
+
+.categoryCount {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  font-weight: 400;
+  font-family: var(--font-body);
+  margin-left: 0.5rem;
+}
+
+/* Items Grid */
+.itemsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 0.75rem;
+}
+
+/* Item Row */
+.itemRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--white);
+  border: 1px solid rgba(107, 94, 74, 0.06);
+  border-radius: var(--radius-md);
+  transition: all 0.3s ease;
+  cursor: default;
+  gap: 0.75rem;
+}
+
+.itemRow:hover {
+  border-color: rgba(194, 106, 45, 0.15);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 16px rgba(26, 15, 10, 0.06);
+  transform: translateY(-1px);
+}
+
+.itemName {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--brown-primary);
+  font-family: var(--font-body);
+  letter-spacing: 0.01em;
+  flex-shrink: 0;
+}
+
+.itemDot {
+  flex: 1;
+  height: 1px;
+  border-bottom: 1px dotted rgba(107, 94, 74, 0.15);
+  min-width: 20px;
+  margin: 0 0.5rem;
+}
+
+.prices {
+  display: flex;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.priceTag {
+  display: flex;
+  gap: 0.35rem;
+  align-items: baseline;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.priceLabel {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-light);
+  font-weight: 500;
+}
+
+.priceValue {
+  font-weight: 700;
+  color: var(--primary);
+  font-size: 0.9rem;
+}
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-light);
+}
+
+.emptyIcon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.emptyTitle {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  color: var(--brown-heading);
+  margin-bottom: 0.5rem;
+}
+
+.emptyText {
+  font-size: 0.9rem;
+  color: var(--text-light);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .itemsGrid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .searchSection {
+    top: 60px;
+    padding: 0.75rem 4%;
+  }
+
+  .searchInner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .searchWrapper {
+    min-width: unset;
+  }
+
+  .filterRow {
+    padding: 0.25rem 0;
+  }
+
+  .filterPill {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.85rem;
+  }
+
+  .resultCount {
+    text-align: center;
+  }
+
+  .itemsGrid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .itemRow {
+    padding: 0.65rem 0.85rem;
+  }
+
+  .itemName {
+    font-size: 0.85rem;
+  }
+
+  .prices {
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .priceTag {
+    font-size: 0.8rem;
+  }
+
+  .categorySection {
+    margin-top: 2rem;
+  }
+
+  .categoryTitle {
+    font-size: 1.35rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 4% 3rem;
+  }
+
+  .itemName {
+    font-size: 0.8rem;
+  }
+
+  .priceValue {
+    font-size: 0.8rem;
+  }
+
+  .priceLabel {
+    font-size: 0.6rem;
+  }
+}
