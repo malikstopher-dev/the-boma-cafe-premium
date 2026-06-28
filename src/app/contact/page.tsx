@@ -85,14 +85,16 @@ export default function ContactPage() {
     <>
       <Header />
       <main style={{ paddingTop: 0 }}>
-        <div style={{ paddingTop: 80 }}>
+        <div style={{ marginTop: '-80px' }}>
           <PremiumHero
           imageUrl="/hero/hero-contact.jpg"
           badge="Contact Us"
           title="Get in Touch"
           subtitle="We'd love to hear from you. Send us a message or visit us"
-        />
+          />
+        </div>
 
+        <div>
         {/* Contact Info & Form - Premium Design */}
         </div>
         

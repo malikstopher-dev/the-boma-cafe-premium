@@ -321,12 +321,14 @@ export default function EventsPage() {
     <>
       <Header />
       <main style={{ paddingTop: '80px' }}>
-        <PremiumHero
-          imageUrl="/hero/hero-events.jpg"
-          badge="Celebrate"
-          title="Events & Venue Hire"
-          subtitle="Live music, private celebrations, firepit evenings, and unforgettable gatherings in Sandton."
-        />
+        <div style={{ marginTop: '-80px' }}>
+          <PremiumHero
+            imageUrl="/hero/hero-events.jpg"
+            badge="Celebrate"
+            title="Events & Venue Hire"
+            subtitle="Live music, private celebrations, firepit evenings, and unforgettable gatherings in Sandton."
+          />
+        </div>
         
         {/* Featured Event Cards */}
         <section style={{ background: 'var(--cream)', padding: 'var(--space-3xl) 5%' }}>

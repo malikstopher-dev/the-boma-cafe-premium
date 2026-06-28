@@ -180,6 +180,7 @@ export default function BarMenuClient() {
           loop
           minHeight="420px"
           lazy={false}
+          className={styles.heroFull}
         >
           <a href="/contact" className="btn btn-primary" style={{ padding: '0.875rem 2rem' }}>
             Book a Table

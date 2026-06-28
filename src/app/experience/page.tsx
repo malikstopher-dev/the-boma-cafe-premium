@@ -118,7 +118,7 @@ export default function ExperiencePage() {
     <>
       <Header />
       <main style={{ paddingTop: 0 }}>
-        <div style={{ paddingTop: 80 }}>
+        <div style={{ marginTop: '-80px' }}>
           <PremiumHero
             imageUrl="/hero/hero-experience.png"
             badge={expSettings?.heroBadge || 'Discover'}

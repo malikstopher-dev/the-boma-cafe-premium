@@ -6,6 +6,10 @@
   position: relative;
 }
 
+.heroFull {
+  margin-top: -80px;
+}
+
 .main::before {
   content: '';
   position: fixed;
@@ -273,6 +277,10 @@
 }
 
 @media (max-width: 768px) {
+  .heroFull {
+    margin-top: -70px;
+  }
+
   .searchSection {
     top: 60px;
     padding: 0.75rem 4%;

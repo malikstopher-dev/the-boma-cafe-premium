@@ -97,7 +97,7 @@ export default function GalleryPage() {
     <>
       <Header />
       <main>
-        <div style={{ paddingTop: 80 }}>
+        <div style={{ marginTop: '-80px' }}>
           <PremiumHero
             imageUrl="/hero/hero-gallery.jpg"
             badge="Our Gallery"
