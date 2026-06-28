@@ -67,6 +67,7 @@ export default function Hero({ title, subtitle }: HeroProps) {
       <div className={styles.media}>
         <video
           ref={videoRef}
+          key={String(isMobile)}
           className={`${styles.video} ${videoReady ? styles.videoReady : ''}`}
           autoPlay
           muted

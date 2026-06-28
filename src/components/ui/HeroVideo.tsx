@@ -80,6 +80,7 @@ export default function HeroVideo({
         {visible && (
           <video
             ref={videoRef}
+            key={String(isMobile)}
             style={{
               position: 'absolute',
               inset: 0,
