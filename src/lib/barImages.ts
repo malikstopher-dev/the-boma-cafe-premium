@@ -269,3 +269,202 @@ export function getBarImage(drinkName: string, category: string, adminImage?: st
 export function getCategoryImage(category: string): string {
   return BAR_FALLBACK;
 }
+
+// ─── bar-menu-images folder mapping ───────────────────────────────────────────
+// Images organized by category folder in /public/bar-menu-images/
+
+const categoryToFolder: Record<string, string> = {
+  'Signature Cocktails': 'signature-cocktails',
+  'Classic Cocktails': 'classic-cocktails',
+  'Cocktails': 'extra-cocktails',
+  'Non-Alcoholic Cocktails': 'non-alcoholic-cocktails',
+  'Freezos': 'freezos',
+  'Milkshakes': 'milkshakes',
+  'Whisky': 'whiskies',
+  'Brandy': 'brandies',
+  'Gin': 'gins',
+  'Vodka': 'vodka',
+  'Rum': 'rum',
+  'Shots': 'shots',
+  'Shooters': 'shooters',
+  'Beers': 'beers-ciders',
+  'Ciders & RTDs': 'beers-ciders',
+  'Sauvignon Blanc': 'whites',
+  'Chardonnay': 'whites',
+  'Chenin Blanc': 'whites',
+  'Rosé': 'rose',
+  'Cap Classique': 'sparkling',
+  'Merlot': 'reds',
+  'Pinotage': 'reds',
+  'Cabernet Sauvignon': 'reds',
+  'Shiraz': 'reds',
+  'Red Blends': 'reds',
+  'Other Varietals': 'reds',
+  'Special Board': 'special-combos',
+};
+
+const barMenuItemMap: Record<string, string> = {
+  // ── Signature Cocktails ─────────────────────────────────────────────────────
+  'Boma Sunset': '01-boma-sunset.jpg',
+  'Safari Sour': '02-safari-sour.jpg',
+  'Thatched Toddy': '03-thatched-toddy.jpg',
+  'Garden Spritz': '04-garden-spritz.jpg',
+  // ── Classic Cocktails ───────────────────────────────────────────────────────
+  'Classic Mojito': '05-classic-mojito.jpg',
+  'Classic Martini': '06-classic-martini.jpg',
+  'Margarita': '07-margarita.jpg',
+  'Whiskey Sour': '08-whiskey-sour.jpg',
+  'Old Fashioned': '09-old-fashioned.jpg',
+  // ── Cocktails (Extra Cocktails) ─────────────────────────────────────────────
+  'Caipirinha': 'caipirinha.jpg',
+  'Pina Colada': 'pina-colada.jpg',
+  'Long Island Iced Tea': 'long-island-iced-tea.jpg',
+  'Cosmopolitan': 'cosmopolitan.jpg',
+  'Sex on the Beach': 'sex-on-the-beach.jpg',
+  'Strawberry Daiquiri': 'strawberry-daiquiri.jpg',
+  'Yuzu Whiskey Sours': 'yuzu-whiskey-sour.jpg',
+  // ── Non-Alcoholic Cocktails ─────────────────────────────────────────────────
+  'Berry Citrus Twist': 'berry-citrus-twist.jpg',
+  'Cosmo Crush': 'cosmo-crush.jpg',
+  'No-Jito': 'no-jito.jpg',
+  'Virgin Pina Colada': 'virgin-pina-colada.jpg',
+  'Virgin Strawberry Daiquiri': 'virgin-strawberry-daiquiri.jpg',
+  'Cherry Blossom Martini': 'cherry-blossom-martini.jpg',
+  'Virgin Mojito': 'virgin-mojito.jpg',
+  'Shirley Temple': 'shirley-temple.jpg',
+  // ── Freezos ─────────────────────────────────────────────────────────────────
+  'Coffee Freezo': 'coffee-freezo.jpg',
+  'Spiced Chai Freezo': 'spiced-chai-freezo.jpg',
+  'Decadent Chocolate Freezo': 'decadent-chocolate-freezo.jpg',
+  'White Chocolate Freezo': 'white-chocolate-freezo.jpg',
+  'Mango Freezo': 'mango-freezo.jpg',
+  'Chocolate Freezo': 'chocolate-freezo.jpg',
+  // ── Milkshakes ──────────────────────────────────────────────────────────────
+  'Chocolate Shake': 'chocolate-shake.jpg',
+  'Strawberry Shake': 'strawberry-shake.jpg',
+  'Bubblegum Shake': 'bubblegum-shake.jpg',
+  'Oreo Shake': 'oreo-shake.jpg',
+  'Strawberry Milkshake': 'strawberry-milkshake.jpg',
+  'Chocolate Milkshake': 'chocolate-milkshake.jpg',
+  // ── Whisky ──────────────────────────────────────────────────────────────────
+  'Jameson': 'jameson.jpg',
+  'Jameson Select': 'jameson-select.jpg',
+  'Monkey Shoulder': 'monkey-shoulder.jpg',
+  'Bells': 'bells.jpg',
+  'Johnnie Walker Black': 'johnnie-walker-black.jpg',
+  'Jack Daniels': 'jack-daniels.jpg',
+  'J&B Whisky': 'jb-rare.jpg',
+  'Singleton 12 Years': 'singleton-12.jpg',
+  // ── Brandy ──────────────────────────────────────────────────────────────────
+  'Klipdrift': 'klipdrift.jpg',
+  'Richelieu': 'richelieu.jpg',
+  'KWV 10 Years': 'kwv-10.jpg',
+  'KWV 3 Years': 'kwv-3.jpg',
+  'KWV 5 Years': 'kwv-5.jpg',
+  'Klipdrift Premium': 'klipdrift-premium.jpg',
+  'Hennessy VS': 'hennessy-vs.jpg',
+  'Hennessy VSOP': 'hennessy-vsop.jpg',
+  // ── Gin ─────────────────────────────────────────────────────────────────────
+  'Gordons Gin': 'gordons.jpg',
+  'Bombay': 'bombay-sapphire.jpg',
+  'Finery Gin': 'finery.jpg',
+  'Inverroche Amber': 'inverroche-amber.jpg',
+  'Beefeater Orange': 'beefeater-orange.jpg',
+  'Beefeater Original': 'beefeater-original.jpg',
+  'Beefeater Strawberry': 'beefeater-strawberry.jpg',
+  // ── Rum ─────────────────────────────────────────────────────────────────────
+  'Captain Morgan Black': 'captain-morgan-black.jpg',
+  'Captain Morgan Spiced Gold': 'captain-morgan-spiced.jpg',
+  'Red Heart': 'red-heart.jpg',
+  // ── Vodka ───────────────────────────────────────────────────────────────────
+  'Smirnoff 1818': 'smirnoff-1818.jpg',
+  'Skyy Vodka': 'skyy-vodka.jpg',
+  'Absolut Vodka': 'absolut-vodka.jpg',
+  // ── Beers ───────────────────────────────────────────────────────────────────
+  'Castle Lite': 'castle-lite.jpg',
+  'Castle Lager': 'castle-lager.jpg',
+  'Heineken': 'heineken.jpg',
+  'Corona': 'corona.jpg',
+  'Amstel Lager': 'amstel-lager.jpg',
+  'Black Label': 'black-label.jpg',
+  'Windhoek Lager': 'windhoek-lager.jpg',
+  'Windhoek Draught': 'windhoek-draught.jpg',
+  'Castle Milk Stout': 'castle-milk-stout.jpg',
+  'Guinness Draught': 'guinness-draught.jpg',
+  "Miller's Draft Bottle": 'millers-draft.jpg',
+  // ── Ciders & RTDs ───────────────────────────────────────────────────────────
+  'Hunters Dry': 'hunters-dry.jpg',
+  'Hunters Gold': 'hunters-gold.jpg',
+  'Savanna Dry': 'savanna-dry.jpg',
+  'Savanna Lite': 'savanna-lite.jpg',
+  'Belgravia Gin & Tonic': 'belgravia-gin-tonic.jpg',
+  'Bernini Classic': 'bernini-classic.jpg',
+  'Bernini Blush': 'bernini-blush.jpg',
+  'Breezer Blueberry': 'breezer-blueberry.jpg',
+  'Brutal Fruit Ruby Apple': 'brutal-fruit-ruby-apple.jpg',
+  // ── Shots ───────────────────────────────────────────────────────────────────
+  'Jägermeister (750ml)': 'jagermeister.jpg',
+  'Jägermeister (1L)': 'jagermeister.jpg',
+  'Olmeca Gold': 'olmeca-gold.jpg',
+  'Olmeca Silver': 'olmeca-silver.jpg',
+  'Don Julio Reposado': 'don-julio-reposado.jpg',
+  'Cactus Jack': 'cactus-jack.jpg',
+  'Espolon': 'espolon.jpg',
+  'Strawberry Lips': 'strawberry-lips.jpg',
+  'Don Julio Silver': 'don-julio-silver.jpg',
+  'Jack Fire': 'jack-fire.jpg',
+  'Patrón': 'patron-silver.jpg',
+  'Los Lacos Reposado': 'los-lacos-reposado.jpg',
+  'Amarula': 'amarula.jpg',
+  'Kahlua': 'kahlua.jpg',
+  // ── Shooters ────────────────────────────────────────────────────────────────
+  'Blowjob': 'blowjob.jpg',
+  'Jäger Bomb': 'jager-bomb.jpg',
+  'Springbok': 'springbok.jpg',
+  'Sowetan Toilet': 'sowetan-toilet.jpg',
+  'Suitcase': 'suitcase.jpg',
+  'Liquid Cocaine': 'liquid-cocaine.jpg',
+  // ── Wines ───────────────────────────────────────────────────────────────────
+  'Spier': 'spier-sauvignon-blanc.jpg',
+  'Van Loveren': 'van-loveren-sauvignon-blanc.jpg',
+  'Meerlust': 'meerlust-rubicon.jpg',
+  'Spier Rosé': 'rose.jpg',
+  'Krone Night Nectar': 'krone-night-nectar.jpg',
+  'Krone Night Nectar Rosé': 'krone-night-nectar.jpg',
+  'Krone Borealis Brut': 'krone-night-nectar.jpg',
+  'Graham Beck Brut Rosé': 'graham-beck-brut-rose.jpg',
+  "Moët & Chandon": 'moet-chandon.jpg',
+  'Steenberg Chardonnay Brut': 'steenberg-chardonnay-brut.jpg',
+  'Guardian Peak': 'guardian-peak-merlot.jpg',
+  'Waterford': 'waterford-cabernet.jpg',
+  'Fat Bastard': 'fat-bastard-cabernet.jpg',
+  'Rust en Vrede': 'rust-en-vrede-cabernet.jpg',
+  'Cederberg': 'cederberg-shiraz.jpg',
+  'Meerlust Rubicon': 'meerlust-rubicon.jpg',
+  'Alto Rouge': 'alto-rouge.jpg',
+  'Boschendal Nicolas': 'boschendal-nicolas.jpg',
+  'Pepperwind Syrah': 'shiraz.jpg',
+};
+
+export function getBarMenuItemImage(itemName: string, categoryName: string): string | null {
+  // Check for exact match in the map first
+  if (barMenuItemMap[itemName]) {
+    const folder = categoryToFolder[categoryName];
+    if (folder) {
+      return `/bar-menu-images/${folder}/${barMenuItemMap[itemName]}`;
+    }
+  }
+
+  // Fallback: try slug-based lookup
+  const slug = itemName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+
+  const folder = categoryToFolder[categoryName];
+  if (folder) {
+    return `/bar-menu-images/${folder}/${slug}.jpg`;
+  }
+
+  return null;
+}

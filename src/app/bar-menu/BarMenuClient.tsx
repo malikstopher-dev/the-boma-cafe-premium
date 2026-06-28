@@ -7,7 +7,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import OptimizedHero from '@/components/ui/OptimizedHero';
 import { barCategories, BarItem } from './barMenuData';
-import { getBarImage, BAR_FALLBACK } from '@/lib/barImages';
+import { getBarMenuItemImage } from '@/lib/barImages';
 import styles from './BarMenu.module.css';
 
 const ALL_FILTER = 'All';
@@ -68,8 +68,8 @@ function PriceTag({ label, value }: { label: string; value: number }) {
 }
 
 const MenuItem = memo(function MenuItem({ item, categoryName }: { item: BarItem; categoryName: string }) {
-  const itemImage = getBarImage(item.name, categoryName);
-  const showImage = itemImage !== BAR_FALLBACK;
+  const itemImage = getBarMenuItemImage(item.name, categoryName);
+  const showImage = !!itemImage;
 
   return (
     <motion.div
