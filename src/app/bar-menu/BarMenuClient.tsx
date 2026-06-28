@@ -2,10 +2,12 @@
 
 import { useState, useMemo, useCallback, memo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import OptimizedHero from '@/components/ui/OptimizedHero';
 import { barCategories, BarItem } from './barMenuData';
+import { getBarImage, BAR_FALLBACK } from '@/lib/barImages';
 import styles from './BarMenu.module.css';
 
 const ALL_FILTER = 'All';
@@ -65,28 +67,42 @@ function PriceTag({ label, value }: { label: string; value: number }) {
   );
 }
 
-const MenuItem = memo(function MenuItem({ item }: { item: BarItem }) {
+const MenuItem = memo(function MenuItem({ item, categoryName }: { item: BarItem; categoryName: string }) {
+  const itemImage = getBarImage(item.name, categoryName);
+  const showImage = itemImage !== BAR_FALLBACK;
+
   return (
     <motion.div
       variants={itemVariants}
-      className={styles.itemRow}
+      className={styles.itemCard}
       layout
-      role="listitem"
     >
-      <span className={styles.itemName}>{item.name}</span>
-      <span className={styles.itemDot} aria-hidden="true" />
-      <span className={styles.prices}>
-        {item.price ? (
-          <span className={styles.priceValue}>{item.price}</span>
-        ) : (
-          <>
-            {item.bottle && <PriceTag label="Bottle" value={item.bottle} />}
-            {item.glass && <PriceTag label="Glass" value={item.glass} />}
-            {item.single && <PriceTag label="Single" value={item.single} />}
-            {item.shot && <PriceTag label="Shot" value={item.shot} />}
-          </>
-        )}
-      </span>
+      {showImage && (
+        <div className={styles.itemImageWrapper}>
+          <Image
+            src={itemImage}
+            alt={item.name}
+            fill
+            sizes="(max-width: 768px) 50vw, 300px"
+            className={styles.itemCardImage}
+          />
+        </div>
+      )}
+      <div className={styles.itemCardContent}>
+        <h3 className={styles.itemCardName}>{item.name}</h3>
+        <div className={styles.prices}>
+          {item.price ? (
+            <span className={styles.priceValue}>{item.price}</span>
+          ) : (
+            <>
+              {item.bottle && <PriceTag label="Bottle" value={item.bottle} />}
+              {item.glass && <PriceTag label="Glass" value={item.glass} />}
+              {item.single && <PriceTag label="Single" value={item.single} />}
+              {item.shot && <PriceTag label="Shot" value={item.shot} />}
+            </>
+          )}
+        </div>
+      </div>
     </motion.div>
   );
 });
@@ -115,11 +131,9 @@ function CategorySection({ category }: { category: { id: string; name: string; i
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        role="list"
-        aria-label={`${category.name} items`}
       >
         {category.items.map((item) => (
-          <MenuItem key={item.id} item={item} />
+          <MenuItem key={item.id} item={item} categoryName={category.name} />
         ))}
       </motion.div>
     </motion.section>

@@ -1,7 +1,7 @@
 // Bar Menu Image Resolver
 // Maps drink names to bar images in priority order
 
-const BAR_FALLBACK = '/bar-menu/Milkshake.jpg';
+export const BAR_FALLBACK = '/bar-menu/Milkshake.jpg';
 
 const drinkSlugMap: Record<string, string> = {
   // Signature Cocktails
