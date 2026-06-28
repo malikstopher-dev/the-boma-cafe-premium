@@ -325,7 +325,7 @@ export default function ExperiencePage() {
                 </div>
               ))}
             </div>
-            <Link href="/events" className="btn btn-primary" style={{ padding: '1rem 2.5rem' }}>
+            <Link href="/bar-menu" className="btn btn-primary" style={{ padding: '1rem 2.5rem' }}>
               View Events & Venue Hire
             </Link>
           </div>

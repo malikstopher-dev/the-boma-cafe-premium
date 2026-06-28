@@ -1,5 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async redirects() {
+    return [
+      {
+        source: '/events',
+        destination: '/bar-menu',
+        permanent: true,
+      },
+    ]
+  },
   reactStrictMode: true,
   images: {
     remotePatterns: [

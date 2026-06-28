@@ -34,8 +34,8 @@ const promotionsData = [
     description: 'Enjoy soulful performances every weekend. Great food, great music, great vibes.',
     validFrom: '2026-04-01',
     validUntil: '2026-12-31',
-    ctaText: 'View Events',
-    ctaLink: '/events',
+    ctaText: 'Bar Menu',
+    ctaLink: '/bar-menu',
     imageIndex: 1
   },
   {
@@ -55,7 +55,7 @@ const promotionsData = [
     validFrom: '2026-04-01',
     validUntil: '2026-12-31',
     ctaText: 'Learn More',
-    ctaLink: '/events',
+    ctaLink: '/bar-menu',
     imageIndex: 3
   },
   {

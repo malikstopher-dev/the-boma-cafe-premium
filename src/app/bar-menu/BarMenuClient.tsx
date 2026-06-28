@@ -180,27 +180,42 @@ export default function BarMenuClient() {
           loop
           lazy={false}
           className={styles.heroFull}
+          mobileContentPadding="35vh 5% 0"
         >
-          <a href="/contact" className="btn btn-primary" style={{ padding: '0.875rem 2rem' }}>
-            Book a Table
-          </a>
+          <div className={styles.desktopCtas}>
+            <a href="/contact" className="btn btn-primary" style={{ padding: '0.875rem 2rem' }}>
+              Book a Table
+            </a>
+            <a
+              href="https://wa.me/27729961190"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                padding: '0.875rem 2rem',
+                background: '#25D366',
+                color: 'white',
+                borderRadius: '8px',
+                fontWeight: 600,
+                textDecoration: 'none',
+                display: 'inline-block',
+              }}
+            >
+              WhatsApp Booking
+            </a>
+          </div>
+        </HeroVideo>
+
+        <div className={styles.mobileCtas}>
+          <a href="/contact" className={styles.mobileCta}>Book a Table</a>
           <a
             href="https://wa.me/27729961190"
             target="_blank"
             rel="noopener noreferrer"
-            style={{
-              padding: '0.875rem 2rem',
-              background: '#25D366',
-              color: 'white',
-              borderRadius: '8px',
-              fontWeight: 600,
-              textDecoration: 'none',
-              display: 'inline-block',
-            }}
+            className={styles.mobileCtaPrimary}
           >
             WhatsApp Booking
           </a>
-        </HeroVideo>
+        </div>
 
         <div className={styles.searchSection} role="search" aria-label="Search bar menu">
           <div className={styles.searchInner}>

@@ -71,8 +71,8 @@ const defaultSiteSettings: SiteSettings = {
   promoBar: {
     isEnabled: true,
     message: '🎉 Join us for Live Music every Friday & Saturday evening!',
-    buttonText: 'View Events',
-    buttonLink: '/events'
+    buttonText: 'Bar Menu',
+    buttonLink: '/bar-menu'
   },
   branding: {
     siteName: 'The Boma Cafe',
