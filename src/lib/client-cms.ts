@@ -114,7 +114,7 @@ const defaultAllSettings: AllSiteSettings = {
     phone2: '071 592 1190',
     email: 'info@thebomacafe.co.za',
     whatsapp: 'https://wa.me/27715921190',
-    openingHours: 'Mon-Sun: 8:00 AM - 10:00 PM',
+    openingHours: '08:00 AM – Late, Every Day',
     mapEmbedUrl: ''
   },
   promoBar: {

@@ -57,54 +57,62 @@ export default function Hero({ title, subtitle }: HeroProps) {
 
   const slide = slides[currentSlide];
 
+  const renderContent = () => (
+    <div className={`${styles.content} ${isMobile ? styles.mobileContent : ''} ${isLoaded ? styles.visible : ''}`}>
+      <p className={styles.subtitle}>{slide.subtitle}</p>
+
+      {title ? (
+        <h1 className={styles.title}>{title}</h1>
+      ) : (
+        <h1 className={styles.title}>{slide.title}</h1>
+      )}
+
+      <p className={styles.tagline}>{slide.tagline}</p>
+
+      <div className={styles.cta}>
+        <Link href={slide.ctaLink} className="btn btn-primary">
+          {slide.cta}
+        </Link>
+        <Link href="/menu" className="btn btn-ghost">
+          View Menu
+        </Link>
+      </div>
+    </div>
+  );
+
   return (
     <section className={styles.hero} style={isMobile ? { marginTop: '-60px' } : undefined}>
-      <OptimizedHero
-        poster="/videos/hero-poster.jpg"
-        videoSrc="/videos/boma-hero.mp4"
-        mobileVideoSrc="/videos/mobile-hero.mp4"
-      >
-        <div className={`${styles.content} ${isLoaded ? styles.visible : ''}`}>
-          <p className={styles.subtitle}>{slide.subtitle}</p>
+      <div style={{ position: 'relative' }}>
+        <OptimizedHero
+          poster="/videos/hero-poster.jpg"
+          videoSrc="/videos/boma-hero.mp4"
+          mobileVideoSrc="/videos/mobile-hero.mp4"
+        >
+          {!isMobile && renderContent()}
+        </OptimizedHero>
 
-          {title ? (
-            <h1 className={styles.title}>{title}</h1>
-          ) : (
-            <h1 className={styles.title}>{slide.title}</h1>
-          )}
+        <div className={styles.nav}>
+          {slides.map((_, index) => (
+            <button
+              key={index}
+              className={`${styles.dot} ${index === currentSlide ? styles.activeDot : ''}`}
+              onClick={() => setCurrentSlide(index)}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
+        </div>
 
-          <p className={styles.tagline}>{slide.tagline}</p>
-
-          <div className={styles.cta}>
-            <Link href={slide.ctaLink} className="btn btn-primary">
-              {slide.cta}
-            </Link>
-            <Link href="/menu" className="btn btn-ghost">
-              View Menu
-            </Link>
+        <div className={styles.scroll}>
+          <span>Scroll</span>
+          <div className={styles.scrollIcon}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 5v14M5 12l7 7 7-7" />
+            </svg>
           </div>
         </div>
-      </OptimizedHero>
-
-      <div className={styles.nav}>
-        {slides.map((_, index) => (
-          <button
-            key={index}
-            className={`${styles.dot} ${index === currentSlide ? styles.activeDot : ''}`}
-            onClick={() => setCurrentSlide(index)}
-            aria-label={`Go to slide ${index + 1}`}
-          />
-        ))}
       </div>
 
-      <div className={styles.scroll}>
-        <span>Scroll</span>
-        <div className={styles.scrollIcon}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 5v14M5 12l7 7 7-7" />
-          </svg>
-        </div>
-      </div>
+      {isMobile && renderContent()}
 
       <div className={styles.mobileCtas}>
         <Link href="/about" className={styles.mobileCta}>Discover</Link>

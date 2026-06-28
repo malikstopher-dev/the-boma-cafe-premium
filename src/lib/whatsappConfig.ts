@@ -23,13 +23,7 @@ export const BUSINESS_INFO = {
     lng: 28.059,
   },
   openingHours: [
-    { day: 'Monday', hours: '10:00 - 22:00' },
-    { day: 'Tuesday', hours: '10:00 - 22:00' },
-    { day: 'Wednesday', hours: '10:00 - 22:00' },
-    { day: 'Thursday', hours: '10:00 - 22:00' },
-    { day: 'Friday', hours: '10:00 - 22:00' },
-    { day: 'Saturday', hours: '10:00 - 22:00' },
-    { day: 'Sunday', hours: '10:00 - 22:00' },
+    { day: 'Every Day', hours: '08:00 AM – Late' },
   ],
   social: {
     facebook: 'https://www.facebook.com/thebomacafe/',

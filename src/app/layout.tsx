@@ -28,7 +28,7 @@ const localBusinessSchema = {
     "latitude": BUSINESS_INFO.coordinates.lat,
     "longitude": BUSINESS_INFO.coordinates.lng
   },
-  "openingHours": "Mo-Su 10:00-22:00",
+  "openingHours": "Mo-Su 08:00-23:59",
   "servesCuisine": ["South African", "Wood-Fired Pizza", "Braai", "Burgers", "Curries"],
   "priceRange": "R50–R250",
   "hasMap": "https://maps.google.com/?q=127+Wroxham+Road+Paulshof+Sandton",

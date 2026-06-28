@@ -212,7 +212,7 @@ function initializeDefaults(database: Database.Database) {
       phone2: '071 592 1190',
       email: 'info@thebomacafe.co.za',
       address: 'Sandton, Johannesburg, South Africa',
-      openingHours: 'Mon-Sun: 8:00 AM - 10:00 PM',
+      openingHours: '08:00 AM – Late, Every Day',
       mapEmbedUrl: '',
       whatsapp: 'https://wa.me/27715921190',
       facebook: 'https://www.facebook.com/people/The-Boma-Cafe/61552775920918/',

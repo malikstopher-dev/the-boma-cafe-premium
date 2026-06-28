@@ -101,7 +101,7 @@ export default function Footer({ settings, branding }: FooterProps) {
                 </div>
                 <div className={styles.contactItem}>
                   <span className={styles.icon}>🕐</span>
-                  <span className={styles.contactText}>Open daily: 9:00 AM – Late</span>
+                  <span className={styles.contactText}>Open daily: 08:00 AM – Late</span>
                 </div>
                 <a href={`https://wa.me/${BUSINESS_INFO.phoneRaw}`} target="_blank" rel="noopener noreferrer" className={styles.contactItem}>
                   <WhatsAppIcon size={18} color="#25D366" />

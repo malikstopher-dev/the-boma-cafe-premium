@@ -12,7 +12,7 @@ export const defaultSettings: any = {
   contactEmail: 'info@thebomacafe.co.za',
   contactAddress: 'Sandton, Johannesburg, South Africa',
   contactMapLink: 'https://maps.app.goo.gl/Xca93TRsznn9GN8K7',
-  openingHours: 'Mon-Sun: 8:00 AM - 10:00 PM',
+  openingHours: '08:00 AM – Late, Every Day',
   socialLinks: {
     facebook: 'https://facebook.com/thebomacafe',
     instagram: 'https://instagram.com/thebomacafe',

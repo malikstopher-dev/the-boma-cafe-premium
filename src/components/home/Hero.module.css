@@ -193,6 +193,14 @@
   }
 }
 
+/* Mobile Content Below Hero */
+.mobileContent {
+  background: #1a0f0a;
+  max-width: 100%;
+  padding: 2rem 5%;
+  width: 100%;
+}
+
 /* Mobile CTAs */
 .mobileCtas {
   display: none;
@@ -201,13 +209,7 @@
 @media (max-width: 768px) {
   .mobileCtas {
     display: flex;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 30;
     gap: 0;
-    padding: 0;
   }
 
   .mobileCta,
@@ -225,17 +227,13 @@
   }
 
   .mobileCta {
-    background: rgba(26, 15, 10, 0.75);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    background: rgba(26, 15, 10, 0.85);
     color: rgba(255, 255, 255, 0.85);
     border-right: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .mobileCtaPrimary {
-    background: rgba(212, 163, 115, 0.85);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    background: rgba(212, 163, 115, 0.9);
     color: #1a0f0a;
   }
 

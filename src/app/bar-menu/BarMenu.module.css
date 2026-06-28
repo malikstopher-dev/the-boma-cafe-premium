@@ -359,6 +359,12 @@
   }
 }
 
+.mobileHeroContent {
+  background: #1a0f0a;
+  text-align: center;
+  padding: 2rem 5%;
+}
+
 .mobileCtaSection {
   display: flex;
   flex-direction: column;

@@ -16,15 +16,9 @@ export const businessInfo = {
     lat: -26.035,
     lng: 28.059,
   },
-  openingHours: 'Mon-Sun 10:00 - 22:00',
+  openingHours: '08:00 AM – Late, Every Day',
   openingHoursArray: [
-    { day: 'Monday', hours: '10:00 - 22:00' },
-    { day: 'Tuesday', hours: '10:00 - 22:00' },
-    { day: 'Wednesday', hours: '10:00 - 22:00' },
-    { day: 'Thursday', hours: '10:00 - 22:00' },
-    { day: 'Friday', hours: '10:00 - 22:00' },
-    { day: 'Saturday', hours: '10:00 - 22:00' },
-    { day: 'Sunday', hours: '10:00 - 22:00' },
+    { day: 'Every Day', hours: '08:00 AM – Late' },
   ],
   social: {
     facebook: 'https://www.facebook.com/thebomacafe/',
