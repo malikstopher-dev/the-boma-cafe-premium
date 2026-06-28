@@ -29,6 +29,7 @@ export default function HeroVideo({
 }: HeroVideoProps) {
   const [videoReady, setVideoReady] = useState(false);
   const [visible, setVisible] = useState(!lazy);
+  const [isMobile, setIsMobile] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -50,6 +51,14 @@ export default function HeroVideo({
     return () => observer.disconnect();
   }, [lazy]);
 
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 768px)');
+    const handleChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    setIsMobile(mql.matches);
+    mql.addEventListener('change', handleChange);
+    return () => mql.removeEventListener('change', handleChange);
+  }, []);
+
   const handleCanPlay = useCallback(() => {
     setVideoReady(true);
   }, []);
@@ -57,6 +66,7 @@ export default function HeroVideo({
   return (
     <section ref={sectionRef} className={className} style={{
       position: 'relative',
+      height: isMobile ? '100svh' : undefined,
       minHeight: minHeight === '100vh' ? '100svh' : minHeight,
       overflow: 'hidden',
       display: 'flex',
@@ -92,7 +102,7 @@ export default function HeroVideo({
         <div style={{
           position: 'absolute',
           inset: 0,
-          background: 'linear-gradient(180deg, rgba(26, 15, 10, 0.15) 0%, rgba(26, 15, 10, 0.05) 50%, rgba(26, 15, 10, 0.2) 100%)',
+          background: 'linear-gradient(180deg, transparent 0%, rgba(26, 15, 10, 0.02) 50%, rgba(26, 15, 10, 0.1) 100%)',
         }} />
       </div>
 
