@@ -35,7 +35,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.7,
     },
     {
-      url: `${baseUrl}/bar-menu`,
+      url: `${baseUrl}/events`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.8,

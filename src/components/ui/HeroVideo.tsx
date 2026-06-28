@@ -14,7 +14,6 @@ interface HeroVideoProps {
   lazy?: boolean;
   children?: React.ReactNode;
   className?: string;
-  mobileContentPadding?: string;
 }
 
 export default function HeroVideo({
@@ -29,7 +28,6 @@ export default function HeroVideo({
   lazy = true,
   children,
   className,
-  mobileContentPadding,
 }: HeroVideoProps) {
   const [videoReady, setVideoReady] = useState(false);
   const [visible, setVisible] = useState(!lazy);
@@ -119,7 +117,7 @@ export default function HeroVideo({
           textAlign: 'center',
           color: 'var(--white)',
           maxWidth: '900px',
-          padding: isMobile && mobileContentPadding ? mobileContentPadding : '0 5%',
+          padding: '0 5%',
           opacity: videoReady ? 1 : 0,
           transform: videoReady ? 'translateY(0)' : 'translateY(30px)',
           transition: 'opacity 0.8s ease, transform 0.8s ease',

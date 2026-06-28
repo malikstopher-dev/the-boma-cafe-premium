@@ -29,7 +29,7 @@ const slides = [
     title: 'An Experience',
     tagline: 'Where nature meets the warmth of home',
     cta: 'View Events',
-    ctaLink: '/bar-menu'
+    ctaLink: '/events'
   }
 ];
 
@@ -128,7 +128,7 @@ export default function Hero({ title, subtitle }: HeroProps) {
         <Link href="/about" className={styles.mobileCta}>Discover</Link>
         <Link href="/menu" className={styles.mobileCta}>View Menu</Link>
         <Link href="/contact" className={styles.mobileCtaPrimary}>Book a Table</Link>
-        <Link href="/bar-menu" className={styles.mobileCta}>Bar Menu</Link>
+        <Link href="/events" className={styles.mobileCta}>View Events</Link>
       </div>
     </section>
   );

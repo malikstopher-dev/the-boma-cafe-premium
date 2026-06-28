@@ -29,14 +29,6 @@
   padding: 0 5% 4rem;
 }
 
-.desktopCtas {
-  display: block;
-}
-
-.mobileCtas {
-  display: none;
-}
-
 /* Search Section */
 .searchSection {
   position: sticky;
@@ -288,48 +280,6 @@
 @media (max-width: 768px) {
   .heroFull {
     margin-top: -70px;
-  }
-
-  .desktopCtas {
-    display: none;
-  }
-
-  .mobileCtas {
-    display: flex;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 30;
-    gap: 0;
-  }
-
-  .mobileCta,
-  .mobileCtaPrimary {
-    flex: 1;
-    padding: 0.75rem 0.25rem;
-    text-align: center;
-    font-size: clamp(0.6rem, 2vw, 0.75rem);
-    font-weight: 600;
-    text-decoration: none;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-    transition: opacity 0.2s;
-    white-space: nowrap;
-  }
-
-  .mobileCta {
-    background: rgba(26, 15, 10, 0.75);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    color: rgba(255, 255, 255, 0.85);
-  }
-
-  .mobileCtaPrimary {
-    background: rgba(212, 163, 115, 0.85);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    color: #1a0f0a;
   }
 
   .searchSection {

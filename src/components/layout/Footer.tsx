@@ -70,7 +70,7 @@ export default function Footer({ settings, branding }: FooterProps) {
                   { label: 'About', href: '/about' },
                   { label: 'Menu', href: '/menu' },
                   { label: 'Experience', href: '/experience' },
-                  { label: 'Bar Menu', href: '/bar-menu' },
+                  { label: 'Events & Venue Hire', href: '/events' },
                   { label: 'Gallery', href: '/gallery' },
                   { label: 'Contact', href: '/contact' },
                 ].filter((link): link is { label: string; href: string } => !!(link && link.href)).map(link => (
