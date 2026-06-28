@@ -219,6 +219,7 @@
   display: flex;
   gap: 0.75rem;
   flex-shrink: 0;
+  flex-wrap: wrap;
   align-items: center;
 }
 
@@ -324,7 +325,6 @@
 
   .prices {
     gap: 0.5rem;
-    flex-wrap: wrap;
     justify-content: flex-end;
   }
 

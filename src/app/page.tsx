@@ -9,7 +9,6 @@ import Footer from '@/components/layout/Footer';
 import Hero from '@/components/home/Hero';
 import AnnouncementBar from '@/components/ui/AnnouncementBar';
 import { cmsService } from '@/lib/client-cms';
-import PopupModal from '@/components/ui/PopupModal';
 import WeekendBuffetPopup from '@/components/ui/WeekendBuffetPopup';
 import Slideshow from '@/components/ui/Slideshow';
 import FadeInSection from '@/components/ui/FadeInSection';
@@ -132,7 +131,6 @@ export default function Home() {
         />
       )}
       <Header />
-      <PopupModal popup={popup} />
       <WeekendBuffetPopup popup={popup} />
       
       <main>
