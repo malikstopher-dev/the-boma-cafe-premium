@@ -124,11 +124,8 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Order ID required' }, { status: 400 })
     }
 
-    // Kitchen CANNOT cancel orders, mark paid, or change customer details
+    // Kitchen restrictions (admin bypasses all)
     if (role === 'kitchen') {
-      if (body.status === 'cancelled') {
-        return NextResponse.json({ error: 'Kitchen cannot cancel orders' }, { status: 403 })
-      }
       if (body.payment_status) {
         return NextResponse.json({ error: 'Kitchen cannot modify payment status' }, { status: 403 })
       }

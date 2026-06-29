@@ -1028,6 +1028,24 @@ export default function KitchenDisplay() {
                         )}
                       </div>
                     )}
+
+                    {/* Cancel — available on pending/confirmed/preparing/packing */}
+                    {['pending', 'confirmed', 'preparing', 'packing'].includes(order.status) && (
+                      <button
+                        onClick={() => updateStatus(order.id, 'cancelled')}
+                        disabled={updating === order.id}
+                        style={{
+                          width: '100%', marginTop: '0.5rem', padding: '0.4rem',
+                          border: '1px solid rgba(239,68,68,0.25)',
+                          borderRadius: '8px', background: 'transparent',
+                          color: 'rgba(239,68,68,0.6)', fontSize: '0.75rem',
+                          fontWeight: 600, cursor: updating === order.id ? 'not-allowed' : 'pointer',
+                          opacity: updating === order.id ? 0.4 : 1,
+                        }}
+                      >
+                        ✕ Cancel Order
+                      </button>
+                    )}
                   </div>
                 )
               })}

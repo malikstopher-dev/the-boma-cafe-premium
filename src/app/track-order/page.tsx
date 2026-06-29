@@ -62,6 +62,7 @@ export default function TrackOrderPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [cancelling, setCancelling] = useState(false)
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const activeRef = useRef('')
 
@@ -117,6 +118,32 @@ export default function TrackOrderPage() {
       setError('Unable to look up order. Please try again.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const canCancel = result && ['pending', 'confirmed'].includes(result.status) && result.payment_status !== 'paid'
+
+  const handleCancel = async () => {
+    if (!result || !canCancel) return
+    if (!window.confirm('Are you sure you want to cancel this order?')) return
+    setCancelling(true)
+    try {
+      const res = await fetch('/api/track-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ref: result.order_ref }),
+      })
+      if (res.ok) {
+        setResult({ ...result, status: 'cancelled', status_label: 'Cancelled' })
+        stopPolling()
+      } else {
+        const errData = await res.json().catch(() => ({}))
+        setError(errData?.error || 'Failed to cancel order')
+      }
+    } catch {
+      setError('Network error — please try again')
+    } finally {
+      setCancelling(false)
     }
   }
 
@@ -422,6 +449,34 @@ export default function TrackOrderPage() {
                   <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#57534e' }}>
                     {elapsedMinutes(result.created_at)} min ago
                   </span>
+                </div>
+              )}
+
+              {/* Cancel Order (customer) */}
+              {canCancel && !cancelling && (
+                <button
+                  onClick={handleCancel}
+                  style={{
+                    width: '100%', marginBottom: '1rem', padding: '0.75rem',
+                    borderRadius: '12px', border: '2px solid #fecaca',
+                    background: '#fef2f2', color: '#dc2626',
+                    fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer',
+                    transition: 'background 0.2s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#fee2e2'}
+                  onMouseLeave={e => e.currentTarget.style.background = '#fef2f2'}
+                >
+                  ✕ Cancel Order
+                </button>
+              )}
+              {canCancel && cancelling && (
+                <div style={{
+                  width: '100%', marginBottom: '1rem', padding: '0.75rem',
+                  borderRadius: '12px', border: '2px solid #fecaca',
+                  background: '#fef2f2', color: '#dc2626',
+                  fontSize: '0.9rem', fontWeight: 700, textAlign: 'center',
+                }}>
+                  Cancelling...
                 </div>
               )}
 
