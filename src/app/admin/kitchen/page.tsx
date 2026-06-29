@@ -198,6 +198,8 @@ export default function KitchenDisplay() {
   const [connectionError, setConnectionError] = useState(false)
   const [authExpired, setAuthExpired] = useState(false)
   const [prepTimeInputs, setPrepTimeInputs] = useState<Record<string, string>>({})
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prevIdsRef = useRef<Set<string>>(new Set())
   const readyTimesRef = useRef<Map<string, number>>(new Map())
 
@@ -317,6 +319,12 @@ export default function KitchenDisplay() {
     return () => clearInterval(cleanup)
   }, [authed])
 
+  const showError = (msg: string) => {
+    setErrorMessage(msg)
+    if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
+    errorTimerRef.current = setTimeout(() => setErrorMessage(null), 5000)
+  }
+
   const updateStatus = async (id: string, status: string, prepTimeMinutes?: number) => {
     setUpdating(id)
     try {
@@ -334,9 +342,11 @@ export default function KitchenDisplay() {
       } else {
         const errData = await res.json().catch(() => ({}))
         console.error('Failed to update order:', res.status, errData)
+        showError(errData?.error || `Failed to update order (${res.status})`)
       }
     } catch (e) {
       console.error('Failed to update order status:', e)
+      showError('Network error — please try again')
     } finally {
       setUpdating(null)
     }
@@ -538,6 +548,12 @@ export default function KitchenDisplay() {
       {authExpired && (
         <div style={{ padding: '0.5rem 1.5rem', background: 'rgba(239,68,68,0.15)', borderBottom: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5', fontSize: '0.85rem', textAlign: 'center', flexShrink: 0 }}>
           ⚠ Session expired — please log out and log in again
+        </div>
+      )}
+
+      {errorMessage && (
+        <div style={{ padding: '0.5rem 1.5rem', background: 'rgba(239,68,68,0.12)', borderBottom: '1px solid rgba(239,68,68,0.25)', color: '#fca5a5', fontSize: '0.85rem', textAlign: 'center', flexShrink: 0 }}>
+          {errorMessage}
         </div>
       )}
 

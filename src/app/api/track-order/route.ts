@@ -12,6 +12,9 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: 'Cancelled',
 }
 
+const CORE_COLS = 'order_ref, customer_name, total, status, payment_status, order_type, created_at'
+const OPTIONAL_COLS = 'waiter_name, table_number, preparation_time_minutes, items_json'
+
 export async function GET(request: NextRequest) {
   const ip = request.headers.get('x-forwarded-for') || 'unknown'
   if (!checkRateLimit(`track:${ip}`)) {
@@ -25,22 +28,33 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Order reference required' }, { status: 400 })
   }
 
-  const { data, error } = await getAdminClient()
+  // Try with optional columns first; if any column is missing, fall back to core only
+  let data: Record<string, any> | null = null
+  let { data: fullResult, error } = await getAdminClient()
     .from('orders')
-    .select('order_ref, customer_name, total, status, payment_status, order_type, waiter_name, table_number, created_at, preparation_time_minutes')
+    .select(`${CORE_COLS}, ${OPTIONAL_COLS}`)
     .eq('order_ref', ref)
     .maybeSingle()
 
+  if (error && error.message?.includes('does not exist')) {
+    const fallback = await getAdminClient()
+      .from('orders')
+      .select(CORE_COLS)
+      .eq('order_ref', ref)
+      .maybeSingle()
+    fullResult = fallback.data as any
+    error = fallback.error as any
+  }
+
   if (error) {
-    if (error.message && error.message.includes('column') && error.message.includes('does not exist')) {
-      return NextResponse.json({ error: 'Order tracking is being set up. Please check back later.' }, { status: 503 })
-    }
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  if (!data) {
+  if (!fullResult) {
     return NextResponse.json({ error: 'Order not found' }, { status: 404 })
   }
+
+  data = fullResult
 
   return NextResponse.json({
     order_ref: data.order_ref,
@@ -49,9 +63,10 @@ export async function GET(request: NextRequest) {
     status: data.status,
     payment_status: data.payment_status,
     order_type: data.order_type,
-    waiter_name: data.waiter_name,
-    table_number: data.table_number,
-    preparation_time_minutes: data.preparation_time_minutes,
+    waiter_name: data.waiter_name ?? null,
+    table_number: data.table_number ?? null,
+    preparation_time_minutes: data.preparation_time_minutes ?? null,
+    items_json: data.items_json ?? null,
     status_label: STATUS_LABELS[data.status] || data.status,
     created_at: data.created_at,
   })
