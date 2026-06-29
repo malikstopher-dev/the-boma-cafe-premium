@@ -171,14 +171,16 @@ export default function ExperiencePage() {
     <>
       <Header />
       <main style={{ paddingTop: 0 }}>
-        <OptimizedHero
-          poster="/hero/hero-experience.png"
-          videoSrc="/videos/experience-hero.mp4"
-          mobileVideoSrc="/videos/experience-mobile.mp4"
-          contentAlign={isMobile ? 'center' : 'bottom'}
-        >
-          {!isMobile && heroContent}
-        </OptimizedHero>
+        <div style={isMobile ? { marginTop: '-60px' } : undefined}>
+          <OptimizedHero
+            poster="/hero/hero-experience.png"
+            videoSrc="/videos/experience-hero.mp4"
+            mobileVideoSrc="/videos/experience-mobile.mp4"
+            contentAlign={isMobile ? 'center' : 'bottom'}
+          >
+            {!isMobile && heroContent}
+          </OptimizedHero>
+        </div>
 
         {isMobile && (
           <div style={{
