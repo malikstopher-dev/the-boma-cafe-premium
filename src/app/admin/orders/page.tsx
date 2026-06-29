@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { SupabaseOrder, TableInfo, parseOrderItems, getOrderTableNumber, PaymentMethod } from '@/types/pos'
 import BackButton from '@/components/admin/BackButton'
 import { STATUS_LABELS, STATUS_COLORS, requiresPaymentConfirmation } from '@/lib/order-state-machine'
+import { posService } from '@/lib/pos-service'
 
 const POLL_INTERVAL = 4000
 const TOTAL_TABLES = 20
@@ -86,6 +87,7 @@ function OrderCard({
   onClick,
   onAssignTable,
   onConfirmPayment,
+  onAcceptNoPayment,
   tables,
 }: {
   order: SupabaseOrder
@@ -93,6 +95,7 @@ function OrderCard({
   onClick: () => void
   onAssignTable: (orderId: string, table: number) => void
   onConfirmPayment: (orderId: string) => void
+  onAcceptNoPayment: (orderId: string) => void
   tables: TableInfo[]
 }) {
   const items = parseOrderItems(order.items_json)
@@ -147,16 +150,28 @@ function OrderCard({
         <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#10b981' }}>R{order.total.toFixed(2)}</span>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           {requiresPaymentConfirmation(order.order_type) && order.payment_status === 'pending' && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onConfirmPayment(order.id) }}
-              style={{
-                padding: '0.3rem 0.6rem', borderRadius: '8px', border: 'none',
-                background: '#10b981', color: '#000', fontSize: '0.75rem', fontWeight: 700,
-                cursor: 'pointer', whiteSpace: 'nowrap',
-              }}
-            >
-              Confirm Payment
-            </button>
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); onConfirmPayment(order.id) }}
+                style={{
+                  padding: '0.3rem 0.6rem', borderRadius: '8px', border: 'none',
+                  background: '#10b981', color: '#000', fontSize: '0.75rem', fontWeight: 700,
+                  cursor: 'pointer', whiteSpace: 'nowrap',
+                }}
+              >
+                Confirm Payment
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); onAcceptNoPayment(order.id) }}
+                style={{
+                  padding: '0.3rem 0.6rem', borderRadius: '8px', border: '1px solid #f59e0b',
+                  background: 'transparent', color: '#f59e0b', fontSize: '0.7rem', fontWeight: 600,
+                  cursor: 'pointer', whiteSpace: 'nowrap',
+                }}
+              >
+                Accept (Skip Payment)
+              </button>
+            </>
           )}
           {!tn && order.status === 'pending' && availableTables.length > 0 && (
           <select
@@ -211,10 +226,14 @@ function CheckoutPanel({
     if (!order || paying) return
     setPaying(true)
     try {
+      const body: Record<string, any> = { status: 'completed', payment_method: method }
+      if (requiresPaymentConfirmation(order.order_type) && order.payment_status !== 'paid') {
+        body.payment_status = 'paid'
+      }
       const res = await fetch(`/api/supabase/orders?id=${order.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'completed' }),
+        body: JSON.stringify(body),
       })
       if (res.ok) {
         onPay(order.id, method)
@@ -493,6 +512,24 @@ export default function OrdersPOS() {
     }
   }
 
+  const handleAcceptNoPayment = async (orderId: string) => {
+    try {
+      const res = await fetch(`/api/supabase/orders?id=${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payment_status: 'paid', status: 'confirmed' }),
+      })
+      if (res.ok) {
+        loadOrders()
+      } else {
+        const data = await res.json()
+        console.error('Accept without payment failed:', data.error)
+      }
+    } catch (e) {
+      console.error('Failed to accept without payment:', e)
+    }
+  }
+
   const selectedForCheckout = selectedOrder && (selectedOrder.status === 'ready' || selectedOrder.status === 'completed')
 
   return (
@@ -592,6 +629,7 @@ export default function OrdersPOS() {
               onClick={() => setSelectedOrderId(selectedOrderId === order.id ? null : order.id)}
               onAssignTable={handleAssignTable}
               onConfirmPayment={handleConfirmPayment}
+              onAcceptNoPayment={handleAcceptNoPayment}
               tables={tables}
             />
           ))}

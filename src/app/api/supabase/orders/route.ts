@@ -11,7 +11,7 @@ const ALLOWED_PATCH_FIELDS = new Set([
   'customer_name', 'phone', 'order_type', 'requested_time', 'status',
   'items_json', 'table_number', 'delivery_address',
   'payment_status', 'payment_confirmed_at', 'payment_confirmed_by',
-  'waiter_name',
+  'waiter_name', 'payment_method',
 ])
 
 export async function GET(request: NextRequest) {
@@ -207,10 +207,12 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ error: 'Order already completed' }, { status: 400 })
       }
 
-      // ── Payment verification check ──────────────────────────────
+      // ── Payment verification check (skip if payment is being confirmed in this same request) ──
+      const paymentBeingConfirmed = updateBody.payment_status === 'paid'
       if (
         updateBody.status !== 'cancelled' &&
         currentPaymentStatus !== 'paid' &&
+        !paymentBeingConfirmed &&
         requiresPaymentConfirmation(currentOrderType ?? '') &&
         paymentRequiredForTransition(updateBody.status)
       ) {
