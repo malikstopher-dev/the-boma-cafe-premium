@@ -331,6 +331,9 @@ export default function KitchenDisplay() {
       })
       if (res.ok) {
         setOrders((prev) => prev.map((o) => o.id === id ? { ...o, status, preparation_time_minutes: prepTimeMinutes ?? o.preparation_time_minutes } : o))
+      } else {
+        const errData = await res.json().catch(() => ({}))
+        console.error('Failed to update order:', res.status, errData)
       }
     } catch (e) {
       console.error('Failed to update order status:', e)
@@ -406,7 +409,7 @@ export default function KitchenDisplay() {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [authed, focusedCol, focusedIdx, orders, updating])
+  }, [authed, focusedCol, focusedIdx, orders, updating, prepTimeInputs])
 
   const handleLogout = () => {
     setAuthed(false)
@@ -857,6 +860,57 @@ export default function KitchenDisplay() {
                           </button>
                         </div>
                       )
+                    )}
+                    {(order.status === 'confirmed' || order.status === 'preparing') && (
+                      <div style={{ marginBottom: '0.5rem' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          <input
+                            type="number"
+                            min="1"
+                            max="999"
+                            placeholder={order.status === 'confirmed' ? 'Prep time (min)' : 'Remaining (min)'}
+                            value={prepTimeInputs[order.id] || ''}
+                            onChange={(e) => {
+                              e.stopPropagation()
+                              setPrepTimeInputs(prev => ({ ...prev, [order.id]: e.target.value }))
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                const mins = prepTimeInputs[order.id] ? parseInt(prepTimeInputs[order.id]) : undefined
+                                if (mins) updateStatus(order.id, order.status, mins)
+                              }
+                            }}
+                            style={{
+                              flex: 1, padding: '0.4rem 0.5rem', borderRadius: '8px',
+                              border: '1px solid rgba(255,255,255,0.1)',
+                              background: 'rgba(255,255,255,0.08)',
+                              color: '#fff', fontSize: '0.8rem', fontWeight: 600,
+                              textAlign: 'center', outline: 'none',
+                            }}
+                          />
+                          {order.preparation_time_minutes && (
+                            <span style={{
+                              fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap',
+                            }}>
+                              Current: {order.preparation_time_minutes}m
+                            </span>
+                          )}
+                          <button
+                            onClick={() => {
+                              const mins = prepTimeInputs[order.id] ? parseInt(prepTimeInputs[order.id]) : undefined
+                              if (mins) updateStatus(order.id, order.status, mins)
+                            }}
+                            disabled={updating === order.id}
+                            style={{
+                              padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)',
+                              background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)',
+                              fontSize: '0.7rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
+                            }}
+                          >
+                            Set
+                          </button>
+                        </div>
+                      </div>
                     )}
                     {order.status === 'confirmed' && (
                       <button

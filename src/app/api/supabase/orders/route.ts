@@ -208,8 +208,10 @@ export async function PATCH(request: NextRequest) {
       }
 
       // ── Payment verification check (skip if payment is being confirmed in this same request) ──
+      // Only enforce when transitioning OUT of 'pending' — once past pending, payment was already handled
       const paymentBeingConfirmed = updateBody.payment_status === 'paid'
       if (
+        currentStatus === 'pending' &&
         updateBody.status !== 'cancelled' &&
         currentPaymentStatus !== 'paid' &&
         !paymentBeingConfirmed &&
