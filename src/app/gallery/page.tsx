@@ -6,7 +6,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { cmsService } from '@/lib/client-cms';
 import GalleryBoards from '@/components/gallery/GalleryBoards';
-import PremiumHero from '@/components/ui/PremiumHero';
+import OptimizedHero from '@/components/ui/OptimizedHero';
 import { getReservationLink } from '@/data/businessInfo';
 import styles from './Gallery.module.css';
 
@@ -29,6 +29,15 @@ export default function GalleryPage() {
   const [lightboxIndex, setLightboxIndex] = useState<number>(0);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [topGalleryIndex, setTopGalleryIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 768px)');
+    setIsMobile(mql.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
@@ -97,14 +106,100 @@ export default function GalleryPage() {
     <>
       <Header />
       <main>
-        <div style={{ marginTop: '-80px' }}>
-          <PremiumHero
-            imageUrl="/hero/hero-gallery.jpg"
-            badge="Our Gallery"
-            title="Gallery"
-            subtitle="Food, fire, people, music and open-air moments at The Boma Café."
-          />
+        <div style={isMobile ? { marginTop: '-60px' } : undefined}>
+          <OptimizedHero
+            poster="/hero/hero-gallery.jpg"
+            videoSrc="/videos/about-hero.mp4"
+            mobileVideoSrc="/videos/about-mobile.mp4"
+            contentAlign={isMobile ? 'center' : 'bottom'}
+          >
+            {!isMobile && (
+              <>
+                <div style={{
+                  display: 'inline-block',
+                  background: 'linear-gradient(135deg, var(--warm) 0%, var(--warm-light) 100%)',
+                  padding: '0.4rem 1.25rem',
+                  borderRadius: 'var(--radius-full)',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  color: 'var(--dark-brown)',
+                  marginBottom: '1rem',
+                  letterSpacing: '1.5px',
+                  textTransform: 'uppercase',
+                  boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
+                }}>
+                  Our Gallery
+                </div>
+                <h1 style={{
+                  fontSize: 'clamp(2.25rem, 5vw, 3.75rem)',
+                  color: 'var(--white)',
+                  marginBottom: '1rem',
+                  fontFamily: 'var(--font-display)',
+                  fontWeight: 700,
+                  lineHeight: 1.15,
+                  textShadow: '0 3px 25px rgba(0,0,0,0.35)',
+                  letterSpacing: '-0.5px',
+                }}>
+                  Gallery
+                </h1>
+                <p style={{
+                  color: 'rgba(253, 248, 243, 0.92)',
+                  fontSize: 'clamp(1rem, 2vw, 1.2rem)',
+                  maxWidth: '650px',
+                  margin: '0 auto',
+                  lineHeight: 1.65,
+                  textShadow: '0 2px 15px rgba(0,0,0,0.25)',
+                }}>
+                  Food, fire, people, music and open-air moments at The Boma Café.
+                </p>
+              </>
+            )}
+          </OptimizedHero>
         </div>
+
+        {isMobile && (
+          <div style={{
+            background: '#1a0f0a',
+            padding: '2rem 5% 3rem',
+            textAlign: 'center',
+          }}>
+            <div style={{
+              display: 'inline-block',
+              background: 'linear-gradient(135deg, var(--warm) 0%, var(--warm-light) 100%)',
+              padding: '0.4rem 1.25rem',
+              borderRadius: 'var(--radius-full)',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              color: 'var(--dark-brown)',
+              marginBottom: '1rem',
+              letterSpacing: '1.5px',
+              textTransform: 'uppercase',
+              boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
+            }}>
+              Our Gallery
+            </div>
+            <h1 style={{
+              fontSize: 'clamp(2.25rem, 5vw, 3.75rem)',
+              color: 'var(--white)',
+              marginBottom: '1rem',
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              lineHeight: 1.15,
+              letterSpacing: '-0.5px',
+            }}>
+              Gallery
+            </h1>
+            <p style={{
+              color: 'rgba(253, 248, 243, 0.92)',
+              fontSize: 'clamp(1rem, 2vw, 1.2rem)',
+              maxWidth: '650px',
+              margin: '0 auto',
+              lineHeight: 1.65,
+            }}>
+              Food, fire, people, music and open-air moments at The Boma Café.
+            </p>
+          </div>
+        )}
 
         {/* Featured Moments Carousel */}
         <section style={{ background: 'var(--white)', padding: 'var(--space-2xl) 5%' }}>
