@@ -119,6 +119,7 @@ const drinkSlugMapOurBarMenu: Record<string, string> = {
   'coffee-freezo': '/menu/our-bar-menu/Coffee-Freezo.jpg',
   'fresh-juice': '/menu/our-bar-menu/Fresh-Juice.jpg',
   'steelworks': '/menu/our-bar-menu/Steelworks.jpg',
+  'van-loveren': '/bar-menu/vrl-van-loveren.jpg',
   'rock-shandy': '/menu/our-bar-menu/Rock-Shandy.jpg',
   'red-bull': '/menu/our-bar-menu/Red-Bull.jpg',
   'liquifruit': '/menu/our-bar-menu/liquifruit.jpg',
@@ -289,18 +290,21 @@ const categoryToFolder: Record<string, string> = {
   'Shooters': 'shooters',
   'Beers': 'beers-ciders',
   'Ciders & RTDs': 'beers-ciders',
-  'Sauvignon Blanc': 'whites',
-  'Chardonnay': 'whites',
-  'Chenin Blanc': 'whites',
-  'Rosé': 'rose',
-  'Cap Classique': 'sparkling',
-  'Merlot': 'reds',
-  'Pinotage': 'reds',
-  'Cabernet Sauvignon': 'reds',
-  'Shiraz': 'reds',
-  'Red Blends': 'reds',
-  'Other Varietals': 'reds',
+  'Sauvignon Blanc': 'wines/whites',
+  'Chardonnay': 'wines/whites',
+  'Chenin Blanc': 'wines/whites',
+  'Rosé': 'wines/rose',
+  'Cap Classique': 'wines/sparkling',
+  'Merlot': 'wines/reds',
+  'Pinotage': 'wines/reds',
+  'Cabernet Sauvignon': 'wines/reds',
+  'Shiraz': 'wines/reds',
+  'Red Blends': 'wines/reds',
+  'Other Varietals': 'wines/reds',
   'Special Board': 'special-combos',
+  'Roses Cordials': 'beers-ciders',
+  'Spirits & Liqueurs': 'beers-ciders',
+  'Soft Drinks & Mixers': 'beers-ciders',
 };
 
 const barMenuItemMap: Record<string, string> = {
@@ -323,6 +327,10 @@ const barMenuItemMap: Record<string, string> = {
   'Sex on the Beach': 'sex-on-the-beach.jpg',
   'Strawberry Daiquiri': 'strawberry-daiquiri.jpg',
   'Yuzu Whiskey Sours': 'yuzu-whiskey-sour.jpg',
+  'Mojito': 'mojito.jpg',
+  'Rosemary Yuzu G&T': 'rosemary-yuzu-g-t.jpg',
+  'Cherry Blossom Ginger G&T': 'cherry-blossom-ginger-g-t.jpg',
+  'Brown Butter Old Fashioned': 'brown-butter-old-fashioned.jpg',
   // ── Non-Alcoholic Cocktails ─────────────────────────────────────────────────
   'Berry Citrus Twist': 'berry-citrus-twist.jpg',
   'Cosmo Crush': 'cosmo-crush.jpg',
@@ -392,6 +400,7 @@ const barMenuItemMap: Record<string, string> = {
   'Castle Milk Stout': 'castle-milk-stout.jpg',
   'Guinness Draught': 'guinness-draught.jpg',
   "Miller's Draft Bottle": 'millers-draft.jpg',
+  'Hansa Pilsener': 'hansa-pilsener.jpg',
   // ── Ciders & RTDs ───────────────────────────────────────────────────────────
   'Hunters Dry': 'hunters-dry.jpg',
   'Hunters Gold': 'hunters-gold.jpg',
@@ -401,6 +410,8 @@ const barMenuItemMap: Record<string, string> = {
   'Bernini Classic': 'bernini-classic.jpg',
   'Bernini Blush': 'bernini-blush.jpg',
   'Breezer Blueberry': 'breezer-blueberry.jpg',
+  'Breezer Blackberry': 'breezer-blackberry.jpg',
+  'Belgravia Gin & Dark Cherry': 'belgravia-gin-dark-cherry.jpg',
   'Brutal Fruit Ruby Apple': 'brutal-fruit-ruby-apple.jpg',
   // ── Shots ───────────────────────────────────────────────────────────────────
   'Jägermeister (750ml)': 'jagermeister.jpg',
@@ -425,9 +436,7 @@ const barMenuItemMap: Record<string, string> = {
   'Suitcase': 'suitcase.jpg',
   'Liquid Cocaine': 'liquid-cocaine.jpg',
   // ── Wines ───────────────────────────────────────────────────────────────────
-  'Spier': 'spier-sauvignon-blanc.jpg',
-  'Van Loveren': 'van-loveren-sauvignon-blanc.jpg',
-  'Meerlust': 'meerlust-rubicon.jpg',
+  'Spier (Sauvignon Blanc)': 'spier-sauvignon-blanc.jpg',
   'Spier Rosé': 'rose.jpg',
   'Krone Night Nectar': 'krone-night-nectar.jpg',
   'Krone Night Nectar Rosé': 'krone-night-nectar.jpg',
@@ -447,7 +456,7 @@ const barMenuItemMap: Record<string, string> = {
 };
 
 export function getBarMenuItemImage(itemName: string, categoryName: string): string | null {
-  // Check for exact match in the map first
+  // Priority 1: Exact match in barMenuItemMap → bar-menu-images folder
   if (barMenuItemMap[itemName]) {
     const folder = categoryToFolder[categoryName];
     if (folder) {
@@ -455,15 +464,19 @@ export function getBarMenuItemImage(itemName: string, categoryName: string): str
     }
   }
 
-  // Fallback: try slug-based lookup
   const slug = itemName
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
 
-  const folder = categoryToFolder[categoryName];
-  if (folder) {
-    return `/bar-menu-images/${folder}/${slug}.jpg`;
+  // Priority 2: Check old drinkSlugMapOurBarMenu for /bar-menu/ or /menu/our-bar-menu/ paths
+  if (drinkSlugMapOurBarMenu[slug]) {
+    return drinkSlugMapOurBarMenu[slug];
+  }
+
+  // Priority 3: Check old drinkSlugMap for /cocktails-and-drinks/ paths
+  if (drinkSlugMap[slug]) {
+    return drinkSlugMap[slug];
   }
 
   return null;
