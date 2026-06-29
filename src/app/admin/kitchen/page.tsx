@@ -199,7 +199,9 @@ export default function KitchenDisplay() {
   const [authExpired, setAuthExpired] = useState(false)
   const [prepTimeInputs, setPrepTimeInputs] = useState<Record<string, string>>({})
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [cardErrors, setCardErrors] = useState<Record<string, string>>({})
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const cardErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prevIdsRef = useRef<Set<string>>(new Set())
   const readyTimesRef = useRef<Map<string, number>>(new Map())
 
@@ -319,6 +321,12 @@ export default function KitchenDisplay() {
     return () => clearInterval(cleanup)
   }, [authed])
 
+  const showCardError = (orderId: string, msg: string) => {
+    setCardErrors(prev => ({ ...prev, [orderId]: msg }))
+    if (cardErrorTimerRef.current) clearTimeout(cardErrorTimerRef.current)
+    cardErrorTimerRef.current = setTimeout(() => setCardErrors({}), 6000)
+  }
+
   const showError = (msg: string) => {
     setErrorMessage(msg)
     if (errorTimerRef.current) clearTimeout(errorTimerRef.current)
@@ -332,21 +340,25 @@ export default function KitchenDisplay() {
       if (prepTimeMinutes !== undefined) {
         body.preparation_time_minutes = prepTimeMinutes
       }
+      console.log('updateStatus sending:', { id, status, prepTimeMinutes })
       const res = await fetch(`/api/supabase/orders?id=${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
       if (res.ok) {
+        setCardErrors(prev => { const n = { ...prev }; delete n[id]; return n })
         setOrders((prev) => prev.map((o) => o.id === id ? { ...o, status, preparation_time_minutes: prepTimeMinutes ?? o.preparation_time_minutes } : o))
       } else {
         const errData = await res.json().catch(() => ({}))
         console.error('Failed to update order:', res.status, errData)
         showError(errData?.error || `Failed to update order (${res.status})`)
+        showCardError(id, errData?.error || `Error ${res.status}`)
       }
     } catch (e) {
       console.error('Failed to update order status:', e)
       showError('Network error — please try again')
+      showCardError(id, 'Network error')
     } finally {
       setUpdating(null)
     }
@@ -812,6 +824,18 @@ export default function KitchenDisplay() {
                         <div style={{ fontSize: '1rem', color: '#fca5a5', marginTop: '0.35rem', lineHeight: 1.4 }}>
                           {metadata.orderNotes}
                         </div>
+                      </div>
+                    )}
+
+                    {/* Card-level error */}
+                    {cardErrors[order.id] && (
+                      <div style={{
+                        padding: '0.4rem 0.6rem', marginBottom: '0.5rem',
+                        borderRadius: '8px', background: 'rgba(239,68,68,0.15)',
+                        border: '1px solid rgba(239,68,68,0.3)',
+                        color: '#fca5a5', fontSize: '0.8rem', fontWeight: 600, textAlign: 'center',
+                      }}>
+                        ⚠ {cardErrors[order.id]}
                       </div>
                     )}
 
