@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback, memo, useEffect } from 'react';
+import { useState, useMemo, useCallback, memo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import Header from '@/components/layout/Header';
@@ -67,7 +67,7 @@ function PriceTag({ label, value }: { label: string; value: number }) {
   );
 }
 
-const MenuItem = memo(function MenuItem({ item, categoryName }: { item: BarItem; categoryName: string }) {
+const MenuItem = memo(function MenuItem({ item, categoryName, onSelect }: { item: BarItem; categoryName: string; onSelect: (item: BarItem, cat: string) => void }) {
   const itemImage = getBarMenuItemImage(item.name, categoryName);
   const showImage = !!itemImage;
 
@@ -76,6 +76,10 @@ const MenuItem = memo(function MenuItem({ item, categoryName }: { item: BarItem;
       variants={itemVariants}
       className={styles.itemCard}
       layout
+      onClick={() => onSelect(item, categoryName)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelect(item, categoryName); }}
     >
       {showImage && (
         <div className={styles.itemImageWrapper}>
@@ -107,7 +111,7 @@ const MenuItem = memo(function MenuItem({ item, categoryName }: { item: BarItem;
   );
 });
 
-function CategorySection({ category }: { category: { id: string; name: string; items: BarItem[] } }) {
+function CategorySection({ category, onSelectItem }: { category: { id: string; name: string; items: BarItem[] }; onSelectItem: (item: BarItem, cat: string) => void }) {
   return (
     <motion.section
       id={category.id}
@@ -133,10 +137,73 @@ function CategorySection({ category }: { category: { id: string; name: string; i
         animate="visible"
       >
         {category.items.map((item) => (
-          <MenuItem key={item.id} item={item} categoryName={category.name} />
+          <MenuItem key={item.id} item={item} categoryName={category.name} onSelect={onSelectItem} />
         ))}
       </motion.div>
     </motion.section>
+  );
+}
+
+function ItemModal({ item, categoryName, onClose }: { item: BarItem; categoryName: string; onClose: () => void }) {
+  const itemImage = getBarMenuItemImage(item.name, categoryName);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handler);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', handler);
+      document.body.style.overflow = '';
+    };
+  }, [onClose]);
+
+  return (
+    <motion.div
+      className={styles.overlay}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <motion.div
+        className={styles.modal}
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button className={styles.modalClose} onClick={onClose} aria-label="Close">
+          ✕
+        </button>
+        {itemImage && (
+          <div className={styles.modalImageWrapper}>
+            <Image
+              src={itemImage}
+              alt={item.name}
+              fill
+              sizes="420px"
+              className={styles.modalImage}
+            />
+          </div>
+        )}
+        <div className={styles.modalContent}>
+          <h3 className={styles.modalName}>{item.name}</h3>
+          <div className={styles.modalPrices}>
+            {item.price ? (
+              <span className={styles.modalPriceValue}>{item.price}</span>
+            ) : (
+              <>
+                {item.bottle && <span className={styles.modalPriceTag}><span className={styles.modalPriceLabel}>Bottle</span><span className={styles.modalPriceValue}>R{item.bottle}</span></span>}
+                {item.glass && <span className={styles.modalPriceTag}><span className={styles.modalPriceLabel}>Glass</span><span className={styles.modalPriceValue}>R{item.glass}</span></span>}
+                {item.single && <span className={styles.modalPriceTag}><span className={styles.modalPriceLabel}>Single</span><span className={styles.modalPriceValue}>R{item.single}</span></span>}
+                {item.shot && <span className={styles.modalPriceTag}><span className={styles.modalPriceLabel}>Shot</span><span className={styles.modalPriceValue}>R{item.shot}</span></span>}
+              </>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -144,6 +211,8 @@ export default function BarMenuClient() {
   const [activeFilter, setActiveFilter] = useState(ALL_FILTER);
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobile, setIsMobile] = useState(false);
+  const [modalItem, setModalItem] = useState<{ item: BarItem; categoryName: string } | null>(null);
+  const filterRowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const mql = window.matchMedia('(max-width: 768px)');
@@ -151,6 +220,12 @@ export default function BarMenuClient() {
     const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
     mql.addEventListener('change', handler);
     return () => mql.removeEventListener('change', handler);
+  }, []);
+
+  const scrollFilter = useCallback((dir: 'left' | 'right') => {
+    if (!filterRowRef.current) return;
+    const amount = 300;
+    filterRowRef.current.scrollBy({ left: dir === 'left' ? -amount : amount, behavior: 'smooth' });
   }, []);
 
   const filteredCategories = useMemo(() => {
@@ -188,6 +263,14 @@ export default function BarMenuClient() {
   const handleFilterChange = useCallback((filter: string) => {
     setActiveFilter(filter);
     setSearchQuery('');
+  }, []);
+
+  const handleItemSelect = useCallback((item: BarItem, categoryName: string) => {
+    setModalItem({ item, categoryName });
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setModalItem(null);
   }, []);
 
   return (
@@ -326,22 +409,26 @@ export default function BarMenuClient() {
                 aria-label="Search bar menu items"
               />
             </div>
-            <div className={styles.filterRow} role="tablist" aria-label="Filter by category">
-              {filterGroups.map((group) => {
-                const label = typeof group === 'string' ? group : group.label;
-                const isActive = activeFilter === label;
-                return (
-                  <button
-                    key={label}
-                    role="tab"
-                    aria-selected={isActive}
-                    className={`${styles.filterPill} ${isActive ? styles.filterPillActive : ''}`}
-                    onClick={() => handleFilterChange(label)}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
+            <div className={styles.filterRowWrapper}>
+              <button className={styles.scrollBtn} onClick={() => scrollFilter('left')} aria-label="Scroll left">‹</button>
+              <div className={styles.filterRow} ref={filterRowRef} role="tablist" aria-label="Filter by category">
+                {filterGroups.map((group) => {
+                  const label = typeof group === 'string' ? group : group.label;
+                  const isActive = activeFilter === label;
+                  return (
+                    <button
+                      key={label}
+                      role="tab"
+                      aria-selected={isActive}
+                      className={`${styles.filterPill} ${isActive ? styles.filterPillActive : ''}`}
+                      onClick={() => handleFilterChange(label)}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <button className={styles.scrollBtn} onClick={() => scrollFilter('right')} aria-label="Scroll right">›</button>
             </div>
             <span className={styles.resultCount} role="status">
               {totalItems} item{totalItems !== 1 ? 's' : ''}
@@ -354,7 +441,7 @@ export default function BarMenuClient() {
             {filteredCategories.length > 0 ? (
               <motion.div key={activeFilter + searchQuery} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
                 {filteredCategories.map((category) => (
-                  <CategorySection key={category.id} category={category} />
+                  <CategorySection key={category.id} category={category} onSelectItem={handleItemSelect} />
                 ))}
               </motion.div>
             ) : (
@@ -375,6 +462,18 @@ export default function BarMenuClient() {
           </AnimatePresence>
         </div>
       </main>
+
+      <AnimatePresence>
+        {modalItem && (
+          <ItemModal
+            key={modalItem.item.id}
+            item={modalItem.item}
+            categoryName={modalItem.categoryName}
+            onClose={handleCloseModal}
+          />
+        )}
+      </AnimatePresence>
+
       <Footer />
     </>
   );

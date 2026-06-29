@@ -92,6 +92,14 @@
 }
 
 /* Filter Pills */
+.filterRowWrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  position: relative;
+}
+
 .filterRow {
   display: flex;
   gap: 0.5rem;
@@ -100,10 +108,45 @@
   -ms-overflow-style: none;
   padding: 0.25rem 0;
   flex: 1;
+  scroll-behavior: smooth;
 }
 
 .filterRow::-webkit-scrollbar {
   display: none;
+}
+
+.scrollBtn {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  z-index: 2;
+  box-shadow: 0 2px 12px rgba(194, 106, 45, 0.35);
+  background: linear-gradient(135deg, #ff6b35, #ff2d55, #ff3b30);
+  color: white;
+}
+
+.scrollBtn:hover {
+  transform: scale(1.15);
+  box-shadow: 0 4px 20px rgba(255, 45, 85, 0.5);
+}
+
+.scrollBtn:active {
+  transform: scale(0.95);
+}
+
+@media (max-width: 768px) {
+  .scrollBtn {
+    display: none;
+  }
 }
 
 .filterPill {
@@ -253,6 +296,118 @@
   font-weight: 700;
   color: var(--primary);
   font-size: 0.9rem;
+}
+
+/* Item Modal */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal {
+  background: var(--white);
+  border-radius: var(--radius-xl);
+  max-width: 420px;
+  width: 100%;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.modalClose {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  color: white;
+  font-size: 1.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: background 0.2s;
+}
+
+.modalClose:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.modalImageWrapper {
+  position: relative;
+  width: 100%;
+  height: 260px;
+  background: linear-gradient(135deg, #f7efe7, #efe2d6);
+}
+
+.modalImage {
+  object-fit: cover;
+}
+
+.modalContent {
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.modalName {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--brown-primary);
+  margin: 0 0 0.75rem;
+}
+
+.modalPrices {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.modalPriceTag {
+  display: flex;
+  gap: 0.35rem;
+  align-items: baseline;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.modalPriceLabel {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-light);
+  font-weight: 500;
+}
+
+.modalPriceValue {
+  font-weight: 700;
+  color: var(--primary);
+  font-size: 1rem;
+}
+
+@media (max-width: 768px) {
+  .modalImageWrapper {
+    height: 200px;
+  }
+
+  .modalContent {
+    padding: 1rem 1.25rem 1.25rem;
+  }
+
+  .modalName {
+    font-size: 1.1rem;
+  }
 }
 
 /* Empty State */
