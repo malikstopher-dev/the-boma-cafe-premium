@@ -1,20 +1,16 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
-import dynamic from 'next/dynamic';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Hero from '@/components/home/Hero';
 import AnnouncementBar from '@/components/ui/AnnouncementBar';
-import { cmsService } from '@/lib/client-cms';
 import WeekendBuffetPopup from '@/components/ui/WeekendBuffetPopup';
-import Slideshow from '@/components/ui/Slideshow';
 import FadeInSection from '@/components/ui/FadeInSection';
 import UpcomingEventsSection from '@/components/sections/UpcomingEventsSection';
 import AboutSection from '@/components/sections/AboutSection';
-import FounderSection from '@/components/sections/FounderSection';
 import { getReservationLink, getEventEnquiryLink } from '@/data/businessInfo';
 import { useBookingModal } from '@/lib/booking';
 import styles from './page.module.css';

@@ -44,7 +44,7 @@ export default function LazyHeroVideo({ src, poster, loop = true }: LazyHeroVide
           muted
           loop={loop}
           playsInline
-          preload="metadata"
+          preload="none"
           poster={poster}
           className="hero-video"
         >
