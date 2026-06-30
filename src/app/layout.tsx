@@ -138,16 +138,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="min-h-screen">
-        <div className="ambient-ember-layer" aria-hidden="true">
-          <div className="ambient-ember" />
-          <div className="ambient-ember" />
-          <div className="ambient-ember" />
-          <div className="ambient-ember" />
-          <div className="ambient-ember" />
-          <div className="ambient-ember" />
-          <div className="ambient-ember" />
-          <div className="ambient-ember" />
-        </div>
+        <canvas id="particle-canvas" aria-hidden="true" style="position:fixed;inset:0;pointer-events:none;z-index:1;opacity:0.9;" />
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            (function(){var c=document.getElementById('particle-canvas');if(!c)return;var ctx=c.getContext('2d');var p=[];var s=[];
+            function resize(){c.width=window.innerWidth;c.height=window.innerHeight}
+            window.addEventListener('resize',resize);resize();
+            function E(){this.reset(true)}
+            E.prototype.reset=function(i){this.x=Math.random()*c.width;this.y=i?Math.random()*c.height:c.height+Math.random()*40;this.size=Math.random()*4+1.5;this.speedY=-(Math.random()*1+0.3);this.speedX=(Math.random()-0.5)*0.6;this.opacity=Math.random()*0.6+0.2;this.life=Math.random()*0.5+0.4;this.decay=Math.random()*0.003+0.001;var cl=['255,200,80','255,160,40','255,120,20','255,80,10'];this.color=cl[Math.floor(Math.random()*cl.length)];this.pulse=Math.random()*Math.PI*2};
+            E.prototype.update=function(){this.pulse+=0.02;this.x+=this.speedX+Math.sin(this.pulse)*0.3;this.y+=this.speedY;this.speedY*=0.998;this.life-=this.decay;this.size=this.size*(0.9+0.1*Math.sin(this.pulse));if(this.y<-30||this.life<=0)this.reset(false)};
+            E.prototype.draw=function(){ctx.beginPath();ctx.arc(this.x,this.y,Math.max(this.size*this.life,0.5),0,Math.PI*2);var g=ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,this.size*3);g.addColorStop(0,'rgba('+this.color+','+this.opacity*this.life+')');g.addColorStop(0.4,'rgba('+this.color+','+this.opacity*this.life*0.4+')');g.addColorStop(1,'rgba('+this.color+',0)');ctx.fillStyle=g;ctx.fill()};
+            for(var i=0;i<40;i++)p.push(new E());
+            function anim(){ctx.clearRect(0,0,c.width,c.height);for(var i=0;i<p.length;i++){p[i].update();p[i].draw()}requestAnimationFrame(anim)}
+            anim()})();
+          `
+        }} />
         <AuthProvider>
           <CartProvider>
             <BookingProvider>
