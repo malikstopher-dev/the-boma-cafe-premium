@@ -113,11 +113,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link 
           href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Poppins:wght@400;500;600&display=swap" 
           rel="stylesheet" 
-          media="print" onload="this.media='all'"
         />
-        <noscript>
-          <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
-        </noscript>
         <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossOrigin="anonymous" />
         <link 
           rel="stylesheet" 
@@ -125,11 +121,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" 
           crossOrigin="anonymous" 
           referrerPolicy="no-referrer"
-          media="print" onload="this.media='all'"
         />
-        <noscript>
-          <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerPolicy="no-referrer" />
-        </noscript>
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#1a0f0a" />
@@ -148,7 +140,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="min-h-screen">
-        <canvas id="particle-canvas" aria-hidden="true" style="position:fixed;inset:0;pointer-events:none;z-index:1;opacity:0.9;" />
+        <canvas id="particle-canvas" aria-hidden="true" style={{position:'fixed',inset:0,pointerEvents:'none',zIndex:1,opacity:0.9}} />
         <script dangerouslySetInnerHTML={{
           __html: `
             (function(){var c=document.getElementById('particle-canvas');if(!c)return;var ctx=c.getContext('2d');var p=[];var s=[];
