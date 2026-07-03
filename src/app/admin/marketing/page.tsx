@@ -6,6 +6,8 @@ import BackButton from '@/components/admin/BackButton'
 import { GENERATOR_TYPES, MarketingProject, Template, BrandAsset, generateId } from '@/lib/marketing/types'
 import { BUILT_IN_TEMPLATES } from '@/lib/marketing/templates'
 import { createDefaultDesign } from '@/lib/marketing/generators'
+import MediaPicker from '@/components/admin/MediaPicker'
+import { getAssetUrl } from '@/lib/storage'
 
 type Tab = 'generator' | 'projects' | 'templates' | 'assets'
 
@@ -464,24 +466,7 @@ export default function MarketingStudio() {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
             <h2 style={{ fontSize: '1.25rem', color: 'var(--dark-brown)' }}>Brand Asset Library</h2>
-            <button
-              onClick={() => {
-                const name = prompt('Asset name:')
-                if (!name) return
-                const type = prompt('Type (logo, font, color, icon, background, food_image, pattern, qr_preset, campaign_image):', 'logo')
-                if (!type) return
-                const url = prompt('URL (optional):') || ''
-                const value = prompt('Value (optional, e.g. hex color):') || ''
-                fetch('/api/cms/marketing', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ scope: 'asset', name, type, url, value }),
-                }).then(() => fetchAssets())
-              }}
-              className="btn btn-primary"
-            >
-              + Add Asset
-            </button>
+            <MediaPicker module="marketing" type="campaign_image" onChange={() => fetchAssets()} label="+ Add Asset" />
           </div>
 
           {assets.length === 0 ? (
@@ -508,13 +493,16 @@ export default function MarketingStudio() {
                     justifyContent: 'center',
                     position: 'relative',
                   }}>
-                    {asset.url ? (
-                      <img src={asset.url} alt={asset.name} style={{ maxWidth: '80%', maxHeight: '80%', objectFit: 'contain' }} />
-                    ) : asset.type === 'color' ? (
-                      <span style={{ color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.5)', fontWeight: 600 }}>{asset.value}</span>
-                    ) : (
-                      <span style={{ fontSize: '2rem', color: 'var(--text-light)' }}>{asset.type === 'font' ? 'Aa' : '📄'}</span>
-                    )}
+                    {(() => {
+                      const u = getAssetUrl(asset)
+                      return u ? (
+                        <img src={u} alt={asset.name} style={{ maxWidth: '80%', maxHeight: '80%', objectFit: 'contain' }} />
+                      ) : asset.type === 'color' ? (
+                        <span style={{ color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.5)', fontWeight: 600 }}>{asset.value}</span>
+                      ) : (
+                        <span style={{ fontSize: '2rem', color: 'var(--text-light)' }}>{asset.type === 'font' ? 'Aa' : '📄'}</span>
+                      )
+                    })()}
                     <span style={{
                       position: 'absolute',
                       top: '0.5rem',

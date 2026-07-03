@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import BackButton from '@/components/admin/BackButton';
 import { cmsService, generateId } from '@/lib/client-cms';
+import MediaPicker from '@/components/admin/MediaPicker';
 
 export default function AdminEvents() {
   const [events, setEvents] = useState<any[]>([]);
@@ -323,13 +324,16 @@ export default function AdminEvents() {
                 />
                 <div style={{ gridColumn: 'span 2' }}>
                   <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--dark-brown)', fontWeight: 500 }}>Cover Image URL</label>
-                  <input 
-                    type="text" 
-                    placeholder="/images/your-image.jpg" 
-                    value={formData.coverImage} 
-                    onChange={e => setFormData({...formData, coverImage: e.target.value})}
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--cream)' }} 
-                  />
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input 
+                      type="text" 
+                      placeholder="/images/your-image.jpg" 
+                      value={formData.coverImage} 
+                      onChange={e => setFormData({...formData, coverImage: e.target.value})}
+                      style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--cream)' }} 
+                    />
+                    <MediaPicker module="events" type="campaign_image" value={formData.coverImage} onChange={url => setFormData({...formData, coverImage: url})} />
+                  </div>
                   {formData.coverImage && (
                     <img src={formData.coverImage} alt="Preview" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', marginTop: '0.5rem' }} />
                   )}
@@ -343,6 +347,12 @@ export default function AdminEvents() {
                     onBlur={addGalleryImage}
                     style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--cream)', minHeight: '60px' }} 
                   />
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <MediaPicker module="events" type="campaign_image" onChange={url => {
+                      setGalleryInput(prev => prev ? prev + '\n' + url : url)
+                      setFormData({...formData, galleryImages: [...(formData.galleryImages || []), url]})
+                    }} label="📁 Add from Media Library" />
+                  </div>
                   {formData.galleryImages?.length > 0 && (
                     <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
                       {formData.galleryImages.map((img: string, idx: number) => (

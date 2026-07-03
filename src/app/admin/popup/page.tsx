@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import BackButton from '@/components/admin/BackButton';
 import { cmsService } from '@/lib/client-cms';
+import MediaPicker from '@/components/admin/MediaPicker';
 
 export default function AdminPopup() {
   const [formData, setFormData] = useState<{
@@ -205,7 +206,10 @@ export default function AdminPopup() {
           </div>
           <div style={{ gridColumn: 'span 2' }}>
             <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--dark-brown)', fontWeight: 500 }}>Image URL (optional)</label>
-            <input type="text" value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} placeholder="/images/buffet.jpg" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--cream)' }} />
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <input type="text" value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} placeholder="/images/buffet.jpg" style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--cream)' }} />
+              <MediaPicker module="promotions" type="campaign_image" value={formData.image} onChange={url => setFormData({...formData, image: url})} />
+            </div>
           </div>
         </div>
 

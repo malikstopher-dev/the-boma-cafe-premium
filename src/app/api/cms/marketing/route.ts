@@ -1,9 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient } from '@/lib/supabase'
 import { requireAdmin } from '@/lib/auth/requireRole'
+import { uploadFile, deleteFile, generateStoragePath, getAssetUrl, VALID_MODULES, ALLOWED_MIME_TYPES } from '@/lib/storage'
 
 async function supabase() {
   return getAdminClient()
+}
+
+function snakeToCamel(obj: any): any {
+  if (!obj || typeof obj !== 'object') return obj
+  if (Array.isArray(obj)) return obj.map(snakeToCamel)
+  const result: any = {}
+  for (const [key, value] of Object.entries(obj)) {
+    const camelKey = key.replace(/_([a-z])/g, (_, l) => l.toUpperCase())
+    result[camelKey] = value
+  }
+  return result
 }
 
 export async function GET(request: NextRequest) {
@@ -45,7 +57,9 @@ export async function GET(request: NextRequest) {
     if (scope === 'assets') {
       let query = client.from('marketing_brand_assets').select('*')
       const assetType = searchParams.get('assetType')
+      const module = searchParams.get('module')
       if (assetType) query = query.eq('type', assetType)
+      if (module) query = query.eq('module', module)
       const { data, error } = await query.order('name', { ascending: true })
       if (error) throw error
       return NextResponse.json(data || [])
@@ -55,7 +69,7 @@ export async function GET(request: NextRequest) {
     if (projectId) {
       const { data, error } = await client.from('marketing_projects').select('*').eq('id', projectId).single()
       if (error) throw error
-      return NextResponse.json(data)
+      return NextResponse.json(snakeToCamel(data))
     }
 
     // List projects
@@ -80,7 +94,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await query.order('updated_at', { ascending: false })
     if (error) throw error
-    return NextResponse.json(data || [])
+    return NextResponse.json((data || []).map(snakeToCamel))
   } catch (error) {
     console.error('Marketing GET error:', error)
     return NextResponse.json({ error: 'Failed to fetch marketing data' }, { status: 500 })
@@ -92,6 +106,63 @@ export async function POST(request: NextRequest) {
   if (authError) return authError
 
   try {
+    const contentType = request.headers.get('content-type') || ''
+
+    // File upload (multipart)
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData()
+      const file = formData.get('file') as File | null
+      const module = (formData.get('module') as string) || ''
+      const type = (formData.get('type') as string) || ''
+      const name = (formData.get('name') as string) || file?.name || 'Untitled'
+      const tags = (formData.get('tags') as string) || ''
+
+      if (!file) {
+        return NextResponse.json({ error: 'File is required' }, { status: 400 })
+      }
+
+      if (!VALID_MODULES.includes(module as any)) {
+        return NextResponse.json({ error: `Invalid module. Must be one of: ${VALID_MODULES.join(', ')}` }, { status: 400 })
+      }
+
+      if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+        return NextResponse.json({ error: `File type ${file.type} is not allowed` }, { status: 400 })
+      }
+
+      const storagePath = generateStoragePath(module, file.name)
+      const client = await supabase()
+      const now = new Date().toISOString()
+
+      await uploadFile(storagePath, file)
+
+      const parsedTags = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : []
+
+      const { data: asset, error } = await client.from('marketing_brand_assets').insert({
+        name,
+        type,
+        url: '',  // url column keeps backward compat; storage metadata in dedicated columns
+        bucket: 'boma-images',
+        storage_path: storagePath,
+        module,
+        tags: parsedTags,
+        category: module,
+        created_by: formData.get('createdBy') as string || '',
+        created_at: now,
+        updated_at: now,
+      }).select().single()
+
+      if (error) {
+        await deleteFile(storagePath).catch(() => {})
+        throw error
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: asset,
+        resolvedUrl: getAssetUrl(asset),
+      })
+    }
+
     const body = await request.json()
     const client = await supabase()
     const now = new Date().toISOString()
@@ -165,7 +236,7 @@ export async function POST(request: NextRequest) {
       description: 'Initial version',
     })
 
-    return NextResponse.json({ success: true, data: project })
+    return NextResponse.json({ success: true, data: snakeToCamel(project) })
   } catch (error) {
     console.error('Marketing POST error:', error)
     return NextResponse.json({ error: 'Failed to create marketing item' }, { status: 500 })
@@ -184,16 +255,20 @@ export async function PUT(request: NextRequest) {
 
     // Update brand asset
     if (scope === 'asset') {
-      const { error } = await client.from('marketing_brand_assets').update({
+      const updates: any = {
         name: body.name,
         type: body.type,
-        url: body.url || '',
         value: body.value || '',
         preview: body.preview || '',
         category: body.category || '',
         tags: body.tags || [],
         updated_at: now,
-      }).eq('id', body.id)
+      }
+      if (body.url !== undefined) updates.url = body.url
+      if (body.module !== undefined) updates.module = body.module
+      if (body.storage_path !== undefined) updates.storage_path = body.storage_path
+      if (body.bucket !== undefined) updates.bucket = body.bucket
+      const { error } = await client.from('marketing_brand_assets').update(updates).eq('id', body.id)
       if (error) throw error
       return NextResponse.json({ success: true })
     }
@@ -267,7 +342,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const { data: updated } = await client.from('marketing_projects').select('*').eq('id', body.id).single()
-    return NextResponse.json({ success: true, data: updated })
+    return NextResponse.json({ success: true, data: snakeToCamel(updated) })
   } catch (error) {
     console.error('Marketing PUT error:', error)
     return NextResponse.json({ error: 'Failed to update marketing item' }, { status: 500 })
@@ -291,7 +366,13 @@ export async function DELETE(request: NextRequest) {
     const client = await supabase()
 
     if (scope === 'asset') {
+      // Fetch before deleting to get storage_path
+      const { data: asset } = await client.from('marketing_brand_assets').select('storage_path').eq('id', id).single()
       await client.from('marketing_brand_assets').delete().eq('id', id)
+      // Clean up Supabase Storage if this was a stored asset
+      if (asset?.storage_path) {
+        await deleteFile(asset.storage_path).catch(() => {})
+      }
       return NextResponse.json({ success: true })
     }
 

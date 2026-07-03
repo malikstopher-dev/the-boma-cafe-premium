@@ -3,13 +3,14 @@
 import { useState, useEffect } from 'react';
 import BackButton from '@/components/admin/BackButton';
 import { cmsService, generateId } from '@/lib/client-cms';
+import MediaPicker from '@/components/admin/MediaPicker';
 
 export default function AdminPromotions() {
   const [promotions, setPromotions] = useState<any[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editPromo, setEditPromo] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [formData, setFormData] = useState({ title: '', description: '', validFrom: '', validUntil: '', ctaText: '', ctaLink: '', isFeatured: false, isActive: true, displayOnHomepage: false, displayAsPopup: false, displayOnMenu: false, displayOnPromotionsPage: true });
+  const [formData, setFormData] = useState({ title: '', description: '', validFrom: '', validUntil: '', ctaText: '', ctaLink: '', image: '', isFeatured: false, isActive: true, displayOnHomepage: false, displayAsPopup: false, displayOnMenu: false, displayOnPromotionsPage: true });
 
   useEffect(() => {
     const loadPromotions = async () => {
@@ -33,13 +34,13 @@ export default function AdminPromotions() {
         await cmsService.savePromotion(updated);
         setPromotions(promotions.map((p: any) => p.id === editPromo.id ? updated : p));
       } else {
-        const newPromo = { ...formData, id: generateId(), image: '', order: promotions.length + 1, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+        const newPromo = { ...formData, id: generateId(), order: promotions.length + 1, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
         const result = await cmsService.savePromotion(newPromo);
         setPromotions([...promotions, result.data]);
       }
       setIsEditing(false);
       setEditPromo(null);
-      setFormData({ title: '', description: '', validFrom: '', validUntil: '', ctaText: '', ctaLink: '', isFeatured: false, isActive: true, displayOnHomepage: false, displayAsPopup: false, displayOnMenu: false, displayOnPromotionsPage: true });
+      setFormData({ title: '', description: '', validFrom: '', validUntil: '', ctaText: '', ctaLink: '', image: '', isFeatured: false, isActive: true, displayOnHomepage: false, displayAsPopup: false, displayOnMenu: false, displayOnPromotionsPage: true });
     } catch (error) {
       console.error('Error saving promotion:', error);
     }
@@ -47,7 +48,7 @@ export default function AdminPromotions() {
 
   const handleEdit = (promo: any) => {
     setEditPromo(promo);
-    setFormData({ title: promo.title, description: promo.description, validFrom: promo.validFrom || '', validUntil: promo.validUntil || '', ctaText: promo.ctaText || '', ctaLink: promo.ctaLink || '', isFeatured: promo.isFeatured || false, isActive: promo.isActive !== false, displayOnHomepage: promo.displayOnHomepage || false, displayAsPopup: promo.displayAsPopup || false, displayOnMenu: promo.displayOnMenu || false, displayOnPromotionsPage: promo.displayOnPromotionsPage !== false });
+    setFormData({ title: promo.title, description: promo.description, validFrom: promo.validFrom || '', validUntil: promo.validUntil || '', ctaText: promo.ctaText || '', ctaLink: promo.ctaLink || '', image: promo.image || '', isFeatured: promo.isFeatured || false, isActive: promo.isActive !== false, displayOnHomepage: promo.displayOnHomepage || false, displayAsPopup: promo.displayAsPopup || false, displayOnMenu: promo.displayOnMenu || false, displayOnPromotionsPage: promo.displayOnPromotionsPage !== false });
     setIsEditing(true);
   };
 
@@ -83,7 +84,7 @@ export default function AdminPromotions() {
           <h1 style={{ fontSize: '2rem', color: 'var(--dark-brown)' }}>Promotions</h1>
           <p style={{ color: 'var(--text-light)' }}>{promotions.length} promotions</p>
         </div>
-        <button onClick={() => { setIsEditing(true); setEditPromo(null); const today = new Date().toISOString().split('T')[0]; setFormData({ title: '', description: '', validFrom: today, validUntil: '', ctaText: '', ctaLink: '', isFeatured: false, isActive: true, displayOnHomepage: false, displayAsPopup: false, displayOnMenu: false, displayOnPromotionsPage: true }); }} className="btn btn-primary">+ Add Promotion</button>
+        <button onClick={() => { setIsEditing(true); setEditPromo(null); const today = new Date().toISOString().split('T')[0]; setFormData({ title: '', description: '', validFrom: today, validUntil: '', ctaText: '', ctaLink: '', image: '', isFeatured: false, isActive: true, displayOnHomepage: false, displayAsPopup: false, displayOnMenu: false, displayOnPromotionsPage: true }); }} className="btn btn-primary">+ Add Promotion</button>
       </div>
 
       {isEditing && (
@@ -94,6 +95,10 @@ export default function AdminPromotions() {
             <textarea placeholder="Description" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} style={{ gridColumn: 'span 2', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--cream)', minHeight: '80px' }} />
             <input type="date" value={formData.validFrom} onChange={e => setFormData({...formData, validFrom: e.target.value})} required style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--cream)' }} />
             <input type="date" value={formData.validUntil} onChange={e => setFormData({...formData, validUntil: e.target.value})} required style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--cream)' }} />
+            <div style={{ gridColumn: 'span 2', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <input type="text" placeholder="Image URL (optional)" value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--cream)' }} />
+              <MediaPicker module="promotions" type="campaign_image" value={formData.image} onChange={url => setFormData({...formData, image: url})} />
+            </div>
             <input type="text" placeholder="CTA Text" value={formData.ctaText} onChange={e => setFormData({...formData, ctaText: e.target.value})} style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--cream)' }} />
             <input type="text" placeholder="CTA Link" value={formData.ctaLink} onChange={e => setFormData({...formData, ctaLink: e.target.value})} style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--cream)' }} />
             <div style={{ gridColumn: 'span 2', display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>

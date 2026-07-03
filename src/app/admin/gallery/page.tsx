@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import BackButton from '@/components/admin/BackButton';
 import { cmsService, generateId } from '@/lib/client-cms';
+import MediaPicker from '@/components/admin/MediaPicker';
 
 const categories = ['Events', 'Food', 'Venue', 'People', 'Promotions'];
 const categoryFolders: Record<string, string> = {
@@ -230,7 +231,10 @@ export default function AdminGallery() {
                   <option value="image">Image</option>
                   <option value="video">Video</option>
                 </select>
-                <input type="text" placeholder="Image/Video URL *" value={formData.url} onChange={e => setFormData({...formData, url: e.target.value})} required style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--cream)' }} />
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <input type="text" placeholder="Image/Video URL *" value={formData.url} onChange={e => setFormData({...formData, url: e.target.value})} required style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--cream)' }} />
+                  <MediaPicker module="gallery" type="food_image" value={formData.url} onChange={url => setFormData({...formData, url})} />
+                </div>
                 <input type="text" placeholder="Title (optional)" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--cream)' }} />
                 <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--cream)' }}>
                   {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}

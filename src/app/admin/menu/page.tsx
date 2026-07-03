@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import BackButton from '@/components/admin/BackButton';
 import { cmsService, generateId } from '@/lib/client-cms';
+import MediaPicker from '@/components/admin/MediaPicker';
 
 export default function AdminMenu() {
   const [menuItems, setMenuItems] = useState<any[]>([]);
@@ -63,6 +64,11 @@ export default function AdminMenu() {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  const handleMediaPick = (url: string) => {
+    setFormData({ ...formData, image: url });
+    setImagePreview(url);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -184,7 +190,18 @@ export default function AdminMenu() {
                     onChange={handleImageUpload}
                     style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--cream)', width: '100%' }}
                   />
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-light)', marginTop: '0.25rem' }}>Upload an image (recommended: 400x300px)</p>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-light)', marginTop: '0.25rem' }}>
+                    Upload an image (recommended: 400x300px) or use the Media Library:
+                  </p>
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <MediaPicker
+                      module="menu"
+                      type="food_image"
+                      value={formData.image}
+                      onChange={handleMediaPick}
+                      label="📁 Browse Media Library"
+                    />
+                  </div>
                 </div>
                 {imagePreview && (
                   <div style={{ position: 'relative', width: '120px', height: '90px', borderRadius: '8px', overflow: 'hidden' }}>

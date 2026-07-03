@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import BackButton from '@/components/admin/BackButton';
 import { cmsService } from '@/lib/client-cms';
+import MediaPicker from '@/components/admin/MediaPicker';
 
 export default function AdminSiteSettings() {
   const [activeTab, setActiveTab] = useState('homepage');
@@ -301,7 +302,10 @@ export default function AdminSiteSettings() {
             </div>
             <div>
               <label style={labelStyle}>Hero Background Image URL</label>
-              <input type="text" value={homepage.heroBackgroundImage} onChange={e => setHomepage({...homepage, heroBackgroundImage: e.target.value})} style={inputStyle} placeholder="/hero/slide1.jpg" />
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <input type="text" value={homepage.heroBackgroundImage} onChange={e => setHomepage({...homepage, heroBackgroundImage: e.target.value})} style={{ ...inputStyle, flex: 1 }} placeholder="/hero/slide1.jpg" />
+                <MediaPicker module="heroes" type="background" value={homepage.heroBackgroundImage} onChange={url => setHomepage({...homepage, heroBackgroundImage: url})} />
+              </div>
             </div>
             <div>
               <label style={labelStyle}>Welcome Title</label>
@@ -355,7 +359,10 @@ export default function AdminSiteSettings() {
             </div>
             <div>
               <label style={labelStyle}>Hero Image URL</label>
-              <input type="text" value={about.heroImage} onChange={e => setAbout({...about, heroImage: e.target.value})} style={inputStyle} />
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <input type="text" value={about.heroImage} onChange={e => setAbout({...about, heroImage: e.target.value})} style={{ ...inputStyle, flex: 1 }} />
+                <MediaPicker module="heroes" type="background" value={about.heroImage} onChange={url => setAbout({...about, heroImage: url})} />
+              </div>
             </div>
             <div>
               <label style={labelStyle}>Intro Title</label>
