@@ -9,8 +9,19 @@ async function seedDefaultData() {
   const client = await getAdminClient()
   const now = new Date().toISOString()
 
-  const { count: catCount } = await client.from('menu_categories').select('id', { count: 'exact', head: true })
-  if (catCount && catCount > 0) return // already seeded
+  // Check if tables exist
+  let catCount = 0
+  try {
+    const result = await client.from('menu_categories').select('id', { count: 'exact', head: true })
+    catCount = result.count || 0
+  } catch (err: any) {
+    if (err?.code === 'PGRST205') {
+      throw new Error('Menu tables do not exist. Run supabase/migrations/015_cms_tables.sql in the Supabase SQL editor first, then retry.')
+    }
+    throw err
+  }
+
+  if (catCount > 0) return // already seeded
 
   // Insert categories with generated UUIDs
   const catIds: Record<string, string> = {}
@@ -33,7 +44,7 @@ async function seedDefaultData() {
     const categoryId = catIds[item.category] || ''
     if (!categoryId) continue
     await client.from('menu_items').insert({
-      id: crypto.randomUUID(),
+      id: randomUUID(),
       category_id: categoryId,
       name: item.name,
       description: item.description || '',
