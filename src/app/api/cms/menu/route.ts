@@ -3,6 +3,7 @@ import { getCategories, saveCategory, deleteCategory, getMenuItems, saveMenuItem
 import { requireAdminOrKitchen } from '@/lib/auth/requireRole';
 import { getAdminClient } from '@/lib/supabase';
 import { defaultCategories, defaultMenuItems } from '@/data/defaultData';
+import { v4 as uuidv4 } from 'uuid';
 
 async function seedDefaultData() {
   const client = await getAdminClient()
@@ -14,7 +15,7 @@ async function seedDefaultData() {
   // Insert categories with generated UUIDs
   const catIds: Record<string, string> = {}
   for (const cat of defaultCategories) {
-    const id = crypto.randomUUID()
+    const id = uuidv4()
     catIds[cat.name] = id
     await client.from('menu_categories').insert({
       id,
@@ -60,9 +61,15 @@ export async function GET(request: NextRequest) {
     const categories = await getCategories();
     const menuItems = await getMenuItems();
     return NextResponse.json({ categories, menuItems });
-  } catch (error) {
-    console.error('Error reading menu:', error);
-    return NextResponse.json({ error: 'Failed to read menu' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Error reading menu:', error?.message || error, error?.stack || '');
+    return NextResponse.json({
+      error: 'Failed to read menu',
+      detail: error?.message || String(error),
+      ...(error?.code && { code: error.code }),
+      ...(error?.details && { supabaseDetails: error.details }),
+      ...(error?.hint && { hint: error.hint }),
+    }, { status: 500 });
   }
 }
 
