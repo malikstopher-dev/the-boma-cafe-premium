@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
         .eq('project_id', projectId)
         .order('version_number', { ascending: false })
       if (error) throw error
-      return NextResponse.json(data || [])
+      return NextResponse.json((data || []).map(snakeToCamel))
     }
 
     // Templates
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
       if (type) query = query.eq('type', type)
       const { data, error } = await query.order('created_at', { ascending: false })
       if (error) throw error
-      return NextResponse.json(data || [])
+      return NextResponse.json((data || []).map(snakeToCamel))
     }
 
     // Brand assets
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
       if (module) query = query.eq('module', module)
       const { data, error } = await query.order('name', { ascending: true })
       if (error) throw error
-      return NextResponse.json(data || [])
+      return NextResponse.json((data || []).map(snakeToCamel))
     }
 
     // Single project

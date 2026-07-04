@@ -36,6 +36,7 @@ export default function MediaPicker({ module, type, value, onChange, label }: Me
   const [assets, setAssets] = useState<BrandAsset[]>([])
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
   const [search, setSearch] = useState('')
   const [selectedAsset, setSelectedAsset] = useState<BrandAsset | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -60,6 +61,7 @@ export default function MediaPicker({ module, type, value, onChange, label }: Me
       fetchAssets()
       setSelectedAsset(null)
       setTab('browse')
+      setUploadError('')
     }
   }, [open])
 
@@ -70,6 +72,7 @@ export default function MediaPicker({ module, type, value, onChange, label }: Me
 
   const handleUpload = async (file: File) => {
     setUploading(true)
+    setUploadError('')
     try {
       const formData = new FormData()
       formData.append('file', file)
@@ -83,9 +86,13 @@ export default function MediaPicker({ module, type, value, onChange, label }: Me
       if (res.ok) {
         await fetchAssets()
         setTab('browse')
+      } else {
+        const err = await res.json().catch(() => ({ error: `Upload failed (${res.status})` }))
+        setUploadError(err.error || `Upload failed (${res.status})`)
       }
     } catch (e) {
       console.error('Upload failed:', e)
+      setUploadError('Upload failed: network error')
     }
     setUploading(false)
   }
@@ -402,6 +409,19 @@ export default function MediaPicker({ module, type, value, onChange, label }: Me
                       fontWeight: 600,
                     }}>
                       Uploading...
+                    </div>
+                  )}
+                  {uploadError && (
+                    <div style={{
+                      textAlign: 'center',
+                      padding: '1rem',
+                      color: '#dc2626',
+                      background: '#fee2e2',
+                      borderRadius: '8px',
+                      fontWeight: 500,
+                      fontSize: '0.85rem',
+                    }}>
+                      {uploadError}
                     </div>
                   )}
                 </div>

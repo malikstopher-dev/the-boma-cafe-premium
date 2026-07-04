@@ -43,12 +43,14 @@ export function generateStoragePath(module: string, filename: string): string {
 export function getAssetUrl(asset: {
   url?: string | null
   storage_path?: string | null
+  storagePath?: string | null
   bucket?: string | null
 }): string {
-  if (asset.storage_path) {
+  const storagePath = asset.storage_path || asset.storagePath
+  if (storagePath) {
     const bucket = asset.bucket || BUCKET
     const client = getUrlClient()
-    const { data } = client.storage.from(bucket).getPublicUrl(asset.storage_path)
+    const { data } = client.storage.from(bucket).getPublicUrl(storagePath)
     return data.publicUrl
   }
   return asset.url || ''
