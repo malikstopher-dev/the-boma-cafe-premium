@@ -10,15 +10,26 @@ export async function GET(request: NextRequest) {
     const categories = await getCategories();
     const menuItems = await getMenuItems();
     return NextResponse.json({ categories, menuItems });
-  } catch (error: any) {
-    console.error('Error reading menu:', error?.message || error, error?.stack || '');
-    return NextResponse.json({
-      error: 'Failed to read menu',
-      detail: error?.message || String(error),
-      ...(error?.code && { code: error.code }),
-      ...(error?.details && { supabaseDetails: error.details }),
-      ...(error?.hint && { hint: error.hint }),
-    }, { status: 500 });
+  } catch (error) {
+    console.error("MENU API ERROR");
+    console.error(error);
+
+    return NextResponse.json(
+      {
+        error: "Failed to read menu",
+        message:
+          error instanceof Error
+            ? error.message
+            : String(error),
+        stack:
+          process.env.NODE_ENV !== "production"
+            ? error instanceof Error
+              ? error.stack
+              : undefined
+            : undefined
+      },
+      { status: 500 }
+    );
   }
 }
 
