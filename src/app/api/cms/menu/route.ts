@@ -1,74 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCategories, saveCategory, deleteCategory, getMenuItems, saveMenuItem, deleteMenuItem } from '@/lib/cms-supabase';
 import { requireAdminOrKitchen } from '@/lib/auth/requireRole';
-import { getAdminClient } from '@/lib/supabase';
-import { defaultCategories, defaultMenuItems } from '@/data/defaultData';
-import { randomUUID } from 'crypto';
-
-async function seedDefaultData() {
-  const client = await getAdminClient()
-  const now = new Date().toISOString()
-
-  // Check if tables exist
-  let catCount = 0
-  try {
-    const result = await client.from('menu_categories').select('id', { count: 'exact', head: true })
-    catCount = result.count || 0
-  } catch (err: any) {
-    if (err?.code === 'PGRST205') {
-      throw new Error('Menu tables do not exist. Run supabase/migrations/015_cms_tables.sql in the Supabase SQL editor first, then retry.')
-    }
-    throw err
-  }
-
-  if (catCount > 0) return // already seeded
-
-  // Insert categories with generated UUIDs
-  const catIds: Record<string, string> = {}
-  for (const cat of defaultCategories) {
-    const id = randomUUID()
-    catIds[cat.name] = id
-    await client.from('menu_categories').insert({
-      id,
-      name: cat.name,
-      description: cat.description || '',
-      order_index: cat.order || 0,
-      is_active: cat.isActive !== false,
-      created_at: now,
-      updated_at: now,
-    })
-  }
-
-  // Insert menu items
-  for (const item of defaultMenuItems) {
-    const categoryId = catIds[item.category] || ''
-    if (!categoryId) continue
-    await client.from('menu_items').insert({
-      id: randomUUID(),
-      category_id: categoryId,
-      name: item.name,
-      description: item.description || '',
-      price: String(item.price ?? ''),
-      image: item.image || '',
-      sizes: item.variants ? JSON.stringify(item.variants.map((v: any) => ({ name: v.name, price: String(v.price) }))) : null,
-      add_ons: item.addOns ? JSON.stringify(item.addOns.map((a: any) => ({ name: a.name, price: String(a.price) }))) : null,
-      is_available: !item.isOutOfStock,
-      is_featured: item.isFeatured || false,
-      is_on_promo: item.isOnPromo || false,
-      promo_badge: item.promoBadge || '',
-      order_index: item.order || 0,
-      created_at: now,
-      updated_at: now,
-    })
-  }
-}
 
 export async function GET(request: NextRequest) {
   const authError = await requireAdminOrKitchen(request)
   if (authError) return authError
 
   try {
-    await seedDefaultData()
     const categories = await getCategories();
     const menuItems = await getMenuItems();
     return NextResponse.json({ categories, menuItems });
