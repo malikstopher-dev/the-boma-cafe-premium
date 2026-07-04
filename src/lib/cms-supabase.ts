@@ -78,8 +78,19 @@ export async function setSetting(key: string, value: any): Promise<boolean> {
 // --- Menu Categories ---
 
 export async function getCategories(): Promise<any[]> {
-  const { data, error } = await (await supabase()).from('menu_categories').select('*').order('order_index', { ascending: true })
-  if (error) throw error
+  console.log("cms-supabase.getCategories() — querying menu_categories")
+  const client = await supabase()
+  console.log("cms-supabase.getCategories() — got admin client")
+  const { data, error } = await client.from('menu_categories').select('*').order('order_index', { ascending: true })
+  console.log("cms-supabase.getCategories() — query done, error:", error, "data count:", data?.length)
+  if (error) {
+    console.error("cms-supabase.getCategories() — Supabase error:", error)
+    console.error("cms-supabase.getCategories() — error.code:", (error as any)?.code)
+    console.error("cms-supabase.getCategories() — error.message:", (error as any)?.message)
+    console.error("cms-supabase.getCategories() — error.details:", (error as any)?.details)
+    console.error("cms-supabase.getCategories() — error.hint:", (error as any)?.hint)
+    throw error
+  }
   return (data || []).map(c => ({
     ...snakeToCamel(c),
     id: c.id,
@@ -118,8 +129,19 @@ export async function deleteCategory(id: string): Promise<boolean> {
 // --- Menu Items ---
 
 export async function getMenuItems(): Promise<any[]> {
-  const { data, error } = await (await supabase()).from('menu_items').select('*').order('order_index', { ascending: true })
-  if (error) throw error
+  console.log("cms-supabase.getMenuItems() — querying menu_items")
+  const client = await supabase()
+  console.log("cms-supabase.getMenuItems() — got admin client")
+  const { data, error } = await client.from('menu_items').select('*').order('order_index', { ascending: true })
+  console.log("cms-supabase.getMenuItems() — query done, error:", error, "data count:", data?.length)
+  if (error) {
+    console.error("cms-supabase.getMenuItems() — Supabase error:", error)
+    console.error("cms-supabase.getMenuItems() — error.code:", (error as any)?.code)
+    console.error("cms-supabase.getMenuItems() — error.message:", (error as any)?.message)
+    console.error("cms-supabase.getMenuItems() — error.details:", (error as any)?.details)
+    console.error("cms-supabase.getMenuItems() — error.hint:", (error as any)?.hint)
+    throw error
+  }
   return (data || []).map(item => ({
     ...snakeToCamel(item),
     id: item.id,

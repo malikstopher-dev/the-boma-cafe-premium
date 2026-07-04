@@ -3,34 +3,20 @@ import { getCategories, saveCategory, deleteCategory, getMenuItems, saveMenuItem
 import { requireAdminOrKitchen } from '@/lib/auth/requireRole';
 
 export async function GET(request: NextRequest) {
+  console.log("GET /api/cms/menu called")
   const authError = await requireAdminOrKitchen(request)
+  console.log("authError:", authError)
   if (authError) return authError
 
-  try {
-    const categories = await getCategories();
-    const menuItems = await getMenuItems();
-    return NextResponse.json({ categories, menuItems });
-  } catch (error) {
-    console.error("MENU API ERROR");
-    console.error(error);
+  console.log("about to call getCategories()")
+  const categories = await getCategories();
+  console.log("getCategories() returned, count:", categories?.length)
 
-    return NextResponse.json(
-      {
-        error: "Failed to read menu",
-        message:
-          error instanceof Error
-            ? error.message
-            : String(error),
-        stack:
-          process.env.NODE_ENV !== "production"
-            ? error instanceof Error
-              ? error.stack
-              : undefined
-            : undefined
-      },
-      { status: 500 }
-    );
-  }
+  console.log("about to call getMenuItems()")
+  const menuItems = await getMenuItems();
+  console.log("getMenuItems() returned, count:", menuItems?.length)
+
+  return NextResponse.json({ categories, menuItems });
 }
 
 export async function POST(request: NextRequest) {
