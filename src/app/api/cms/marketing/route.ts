@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient } from '@/lib/supabase'
 import { requireAdmin } from '@/lib/auth/requireRole'
 import { uploadFile, deleteFile, generateStoragePath, getAssetUrl, VALID_MODULES, ALLOWED_MIME_TYPES } from '@/lib/storage'
-import { v4 as uuidv4 } from 'uuid'
+import { randomUUID } from 'crypto'
 
 async function supabase() {
   return getAdminClient()
@@ -208,7 +208,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create project (optionally from template)
-    const projectId = uuidv4()
+    const projectId = randomUUID()
 
     const { data: project, error: projectError } = await client.from('marketing_projects').insert({
       id: projectId,

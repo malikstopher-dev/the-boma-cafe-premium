@@ -3,7 +3,7 @@ import { getCategories, saveCategory, deleteCategory, getMenuItems, saveMenuItem
 import { requireAdminOrKitchen } from '@/lib/auth/requireRole';
 import { getAdminClient } from '@/lib/supabase';
 import { defaultCategories, defaultMenuItems } from '@/data/defaultData';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 async function seedDefaultData() {
   const client = await getAdminClient()
@@ -15,7 +15,7 @@ async function seedDefaultData() {
   // Insert categories with generated UUIDs
   const catIds: Record<string, string> = {}
   for (const cat of defaultCategories) {
-    const id = uuidv4()
+    const id = randomUUID()
     catIds[cat.name] = id
     await client.from('menu_categories').insert({
       id,

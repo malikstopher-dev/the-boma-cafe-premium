@@ -1,5 +1,5 @@
 import { getAdminClient } from './supabase'
-import { v4 as uuidv4 } from 'uuid'
+import { randomUUID } from 'crypto'
 
 const supabase = () => getAdminClient()
 
@@ -51,7 +51,7 @@ export async function setMultipleSettings(settings: Record<string, any>): Promis
     if (existing) {
       await client.from('site_settings').update(payload).eq('key', key)
     } else {
-      await client.from('site_settings').insert({ ...payload, id: uuidv4() })
+      await client.from('site_settings').insert({ ...payload, id: randomUUID() })
     }
   }
   return true
@@ -70,7 +70,7 @@ export async function setSetting(key: string, value: any): Promise<boolean> {
   if (existing) {
     await client.from('site_settings').update(payload).eq('key', key)
   } else {
-    await client.from('site_settings').insert({ ...payload, id: uuidv4() })
+    await client.from('site_settings').insert({ ...payload, id: randomUUID() })
   }
   return true
 }
@@ -102,7 +102,7 @@ export async function saveCategory(category: any): Promise<any> {
     await client.from('menu_categories').update(payload).eq('id', category.id)
     return category
   } else {
-    const id = uuidv4()
+    const id = randomUUID()
     await client.from('menu_categories').insert({ ...payload, id, created_at: now })
     return { ...category, id }
   }
@@ -156,7 +156,7 @@ export async function saveMenuItem(item: any): Promise<any> {
     await client.from('menu_items').update(payload).eq('id', item.id)
     return item
   } else {
-    const id = uuidv4()
+    const id = randomUUID()
     await client.from('menu_items').insert({ ...payload, id, created_at: now })
     return { ...item, id }
   }
@@ -209,7 +209,7 @@ export async function saveEvent(event: any): Promise<any> {
     await client.from('events').update(payload).eq('id', event.id)
     return event
   } else {
-    const id = uuidv4()
+    const id = randomUUID()
     await client.from('events').insert({ ...payload, id, created_at: now })
     return { ...event, id }
   }
@@ -255,7 +255,7 @@ export async function saveLastWeekHighlight(highlight: any): Promise<boolean> {
   if (existing) {
     await client.from('last_week_highlights').update(payload).eq('id', existing.id)
   } else {
-    await client.from('last_week_highlights').insert({ ...payload, id: uuidv4() })
+    await client.from('last_week_highlights').insert({ ...payload, id: randomUUID() })
   }
   return true
 }
@@ -294,7 +294,7 @@ export async function savePromotion(promotion: any): Promise<any> {
     await client.from('promotions').update(payload).eq('id', promotion.id)
     return promotion
   } else {
-    const id = uuidv4()
+    const id = randomUUID()
     await client.from('promotions').insert({ ...payload, id, created_at: now })
     return { ...promotion, id }
   }
@@ -333,7 +333,7 @@ export async function saveGalleryItem(item: any): Promise<any> {
     await client.from('gallery').update(payload).eq('id', item.id)
     return item
   } else {
-    const id = uuidv4()
+    const id = randomUUID()
     await client.from('gallery').insert({ ...payload, id, created_at: now })
     return { ...item, id }
   }
@@ -394,7 +394,7 @@ export async function savePopup(popup: any): Promise<boolean> {
   if (existing) {
     await client.from('popup').update(payload).eq('id', existing.id)
   } else {
-    await client.from('popup').insert({ ...payload, id: uuidv4() })
+    await client.from('popup').insert({ ...payload, id: randomUUID() })
   }
   return true
 }
@@ -425,7 +425,7 @@ export async function saveAnnouncement(announcement: any): Promise<boolean> {
   if (existing) {
     await client.from('announcement').update(payload).eq('id', existing.id)
   } else {
-    await client.from('announcement').insert({ ...payload, id: uuidv4() })
+    await client.from('announcement').insert({ ...payload, id: randomUUID() })
   }
   return true
 }
@@ -449,7 +449,7 @@ export async function getInquiries(): Promise<any[]> {
 
 export async function saveInquiry(inquiry: any): Promise<any> {
   const client = await supabase()
-  const id = uuidv4()
+  const id = randomUUID()
   const now = new Date().toISOString()
   await client.from('contact_messages').insert({
     id,

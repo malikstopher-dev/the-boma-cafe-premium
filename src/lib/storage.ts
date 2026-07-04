@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { v4 as uuidv4 } from 'uuid'
+import { randomUUID } from 'crypto'
 import { getAdminClient } from './supabase'
 
 export const BUCKET = 'boma-images'
@@ -36,7 +36,7 @@ export function sanitizeFilename(name: string): string {
 
 export function generateStoragePath(module: string, filename: string): string {
   const ext = filename.split('.').pop()?.toLowerCase() || 'jpg'
-  const uuid = uuidv4()
+  const uuid = randomUUID()
   const base = sanitizeFilename(filename.replace(`.${ext}`, ''))
   return `${module}/${uuid}-${base}.${ext}`
 }
