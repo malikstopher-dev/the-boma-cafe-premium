@@ -5,7 +5,6 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import FadeInSection from '@/components/ui/FadeInSection';
 import OptimizedHero from '@/components/ui/OptimizedHero';
-import { cmsService } from '@/lib/client-cms';
 import styles from './page.module.css';
 
 export default function AboutPage() {
@@ -21,7 +20,9 @@ export default function AboutPage() {
   }, []);
 
   useEffect(() => {
-    cmsService.getAllSettings().then(setAllSettings).catch(console.error);
+    fetch('/api/cms/public').then(r => r.json()).then(data => {
+      if (data?.settings) setAllSettings(data.settings);
+    }).catch(console.error);
   }, []);
 
   const aboutSettings = allSettings?.about;

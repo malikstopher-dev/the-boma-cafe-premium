@@ -7,7 +7,6 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useCart } from '@/lib/cart';
 import { MenuItem, MenuCategory } from '@/types';
-import { defaultCategories, defaultMenuItems } from '@/data/defaultData';
 import {
   hasSizes,
   hasAddOns,
@@ -204,8 +203,9 @@ export default function MenuPage() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
-  const [categories, setCategories] = useState<any[]>(defaultCategories);
-  const [menuItems, setMenuItems] = useState<any[]>(defaultMenuItems);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [cmsLoaded, setCmsLoaded] = useState(false);
   const [showUpsellModal, setShowUpsellModal] = useState(false);
   const [lastAddedItem, setLastAddedItem] = useState<MenuItem | null>(null);
   const [visibleCount, setVisibleCount] = useState(INITIAL_COUNT);
@@ -231,11 +231,41 @@ export default function MenuPage() {
     return () => mql.removeEventListener('change', handler);
   }, []);
 
-  // Use default data directly - skip CMS for now since field mapping issues exist
-  // The admin can still edit via admin panel which saves to CMS
+  useEffect(() => {
+    const loadFromCms = async () => {
+      try {
+        const res = await fetch('/api/menu/public');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (!data.categories || !data.menuItems) throw new Error('Invalid response');
+        const categoriesMap: Record<string, string> = {};
+        const mappedCategories = data.categories.map((c: any) => {
+          categoriesMap[c.id] = c.name;
+          return { ...c, isActive: c.isActive };
+        });
+        const mappedItems = data.menuItems.map((item: any) => {
+          const price = parseFloat(String(item.price || '0').replace(/[^0-9.]/g, '')) || 0;
+          return {
+            ...item,
+            category: categoriesMap[item.categoryId] || '',
+            price,
+            isOutOfStock: item.isAvailable === false,
+            variants: item.sizes || undefined,
+            addOns: item.addOns || undefined,
+          };
+        });
+        setCategories(mappedCategories);
+        setMenuItems(mappedItems);
+        setCmsLoaded(true);
+      } catch (error) {
+        console.error('Failed to load menu from CMS:', error);
+      }
+    };
+    loadFromCms();
+  }, []);
 
   const { sections } = useMemo(() => {
-    const cats = categories.filter((c: any) => c.isActive).sort((a: any, b: any) => a.order - b.order);
+    const cats = categories.filter((c: any) => c.isActive !== false).sort((a: any, b: any) => a.order - b.order);
     const secs = cats.map((cat: any) => {
       const items = menuItems
         .filter((item: any) => item.category === cat.name && item.isOutOfStock !== true)

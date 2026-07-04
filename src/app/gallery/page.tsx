@@ -1,23 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { cmsService } from '@/lib/client-cms';
 import GalleryBoards from '@/components/gallery/GalleryBoards';
 import OptimizedHero from '@/components/ui/OptimizedHero';
 import { getReservationLink } from '@/data/businessInfo';
 import styles from './Gallery.module.css';
-
-const topGalleryImages = [
-  { url: '/gallery/gallery/bomacafe2-large-1.jpg', alt: 'The Boma Cafe exterior' },
-  { url: '/gallery/gallery/boy.jpg', alt: 'Happy guest' },
-  { url: '/gallery/gallery/cute.webp', alt: 'Cute moment' },
-  { url: '/gallery/gallery/gallery-7-800x600.jpeg', alt: 'Gallery highlight' },
-  { url: '/gallery/gallery/happy.jpg', alt: 'Happy times' },
-  { url: '/gallery/gallery/mahendra.jpeg', alt: 'Mahendra' },
-];
 
 const categories = ['All', 'Events', 'Food', 'Venue', 'People', 'Promotions'];
 
@@ -28,7 +18,7 @@ export default function GalleryPage() {
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number>(0);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
-  const [topGalleryIndex, setTopGalleryIndex] = useState(0);
+  const [featuredIndex, setFeaturedIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -42,12 +32,9 @@ export default function GalleryPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [allSettings, gal] = await Promise.all([
-          cmsService.getAllSettings(),
-          cmsService.getGallery()
-        ]);
-        setSettings(allSettings);
-        setGallery(gal);
+        const publicData = await fetch('/api/cms/public').then(r => r.json());
+        setSettings(publicData.settings || {});
+        setGallery(publicData.gallery || []);
       } catch (error) {
         console.error('Error loading gallery data:', error);
       }
@@ -55,12 +42,19 @@ export default function GalleryPage() {
     loadData();
   }, []);
 
+  const featuredImages = useMemo(() => {
+    if (gallery.length === 0) return [];
+    const featured = gallery.filter((g: any) => g.isFeatured);
+    return featured.length > 0 ? featured : gallery.slice(0, 6);
+  }, [gallery]);
+
   useEffect(() => {
+    if (featuredImages.length === 0) return;
     const interval = setInterval(() => {
-      setTopGalleryIndex(prev => (prev + 1) % topGalleryImages.length);
+      setFeaturedIndex(prev => (prev + 1) % featuredImages.length);
     }, 4000);
     return () => clearInterval(interval);
-  }, []);
+  }, [featuredImages.length]);
 
   const filteredGallery = activeCategory === 'All' 
     ? gallery 
@@ -100,7 +94,8 @@ export default function GalleryPage() {
     }, 100);
   };
 
-  const reservationLink = getReservationLink();
+  const contactPhoneRaw = settings?.contact?.phone?.replace(/\s/g, '') || '';
+  const reservationLink = getReservationLink(contactPhoneRaw);
 
   return (
     <>
@@ -211,17 +206,23 @@ export default function GalleryPage() {
             overflow: 'hidden',
             position: 'relative',
             boxShadow: '0 20px 60px rgba(26, 15, 10, 0.15)'
-          }} onClick={() => openLightbox(topGalleryImages.map(i => i.url), topGalleryIndex)}>
+          }} onClick={() => featuredImages.length > 0 && openLightbox(featuredImages.map((i: any) => i.url), featuredIndex)}>
+            {featuredImages.length > 0 ? (
             <div 
               style={{
                 width: '100%',
                 height: '100%',
-                backgroundImage: `url(${topGalleryImages[topGalleryIndex].url})`,
+                backgroundImage: `url(${featuredImages[featuredIndex]?.url || ''})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 transition: 'opacity 0.6s ease'
               }}
             />
+            ) : (
+              <div style={{ width: '100%', height: '100%', background: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: '3rem' }}>📷</span>
+              </div>
+            )}
             <div style={{
               position: 'absolute',
               inset: 0,
@@ -273,7 +274,7 @@ export default function GalleryPage() {
                 transition: 'all 0.3s ease',
                 zIndex: 2
               }} 
-              onClick={(e) => { e.stopPropagation(); setTopGalleryIndex(prev => prev > 0 ? prev - 1 : topGalleryImages.length - 1); }}
+              onClick={(e) => { e.stopPropagation(); setFeaturedIndex(prev => prev > 0 ? prev - 1 : featuredImages.length - 1); }}
             >
               ‹
             </button>
@@ -297,7 +298,7 @@ export default function GalleryPage() {
                 transition: 'all 0.3s ease',
                 zIndex: 2
               }}
-              onClick={(e) => { e.stopPropagation(); setTopGalleryIndex(prev => (prev + 1) % topGalleryImages.length); }}
+              onClick={(e) => { e.stopPropagation(); setFeaturedIndex(prev => (prev + 1) % featuredImages.length); }}
             >
               ›
             </button>
@@ -310,20 +311,20 @@ export default function GalleryPage() {
               gap: '10px',
               zIndex: 2
             }}>
-              {topGalleryImages.map((_, idx) => (
+              {featuredImages.map((_, idx) => (
                 <button
                   key={idx}
                   style={{
-                    width: idx === topGalleryIndex ? '28px' : '10px',
+                    width: idx === featuredIndex ? '28px' : '10px',
                     height: '10px',
-                    borderRadius: idx === topGalleryIndex ? '6px' : '50%',
-                    background: idx === topGalleryIndex ? 'var(--warm)' : 'rgba(255, 255, 255, 0.5)',
+                    borderRadius: idx === featuredIndex ? '6px' : '50%',
+                    background: idx === featuredIndex ? 'var(--warm)' : 'rgba(255, 255, 255, 0.5)',
                     border: 'none',
                     cursor: 'pointer',
                     padding: 0,
                     transition: 'all 0.3s ease'
                   }}
-                  onClick={(e) => { e.stopPropagation(); setTopGalleryIndex(idx); }}
+                  onClick={(e) => { e.stopPropagation(); setFeaturedIndex(idx); }}
                 />
               ))}
             </div>
@@ -331,7 +332,7 @@ export default function GalleryPage() {
         </section>
 
         {/* Category Boards Section */}
-        <GalleryBoards onImageClick={openLightbox} onCategoryClick={handleCategoryClick} />
+        <GalleryBoards onImageClick={openLightbox} onCategoryClick={handleCategoryClick} galleryItems={gallery} />
 
         {/* Filtered Gallery Grid */}
         <section id="gallery-grid" style={{ background: 'var(--white)', padding: 'var(--space-3xl) 5%' }}>

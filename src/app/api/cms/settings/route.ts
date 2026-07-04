@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { getAllSettings, setMultipleSettings } from '@/lib/cms-supabase';
 import { requireAdminOrKitchen } from '@/lib/auth/requireRole';
 
@@ -22,6 +23,7 @@ export async function POST(request: NextRequest) {
   try {
     const settings = await request.json();
     await setMultipleSettings(settings);
+    revalidatePath('/', 'layout');
     return NextResponse.json({ success: true, message: 'Settings saved successfully' });
   } catch (error) {
     console.error('Error saving settings:', error);

@@ -6,19 +6,37 @@ import FadeInSection from '@/components/ui/FadeInSection';
 import Slideshow from '@/components/ui/Slideshow';
 import styles from '@/app/page.module.css';
 
-const eventSlideshowImages = [
-  { src: '/gallery/events/events-slideshow/slide/eventslide1.jpeg', alt: 'Boma Café event celebration' },
-  { src: '/gallery/events/events-slideshow/slide/eventslide2.jpeg', alt: 'Live music at The Boma Café' },
-  { src: '/gallery/events/events-slideshow/slide/eventslide3.jpeg', alt: 'Corporate event venue' },
-  { src: '/gallery/events/events-slideshow/slide/eventslide4.jpeg', alt: 'Birthday celebration' },
-  { src: '/gallery/events/events-slideshow/slide/eventslide5.jpeg', alt: 'Buffet experience' },
-  { src: '/gallery/events/events-slideshow/slide/eventslide6.jpeg', alt: 'Private dining' },
-  { src: '/gallery/events/events-slideshow/slide/eventslide7.jpg', alt: 'Group booking' },
-  { src: '/gallery/events/events-slideshow/slide/whatsapp-2026-04-29-081057-1.jpeg', alt: 'Event celebration' },
-  { src: '/gallery/events/events-slideshow/slide/whatsapp-2026-04-29-081058-2.jpeg', alt: 'Special occasion' },
-];
+interface EventCard {
+  id: string;
+  title: string;
+  date?: string;
+  time?: string;
+  description: string;
+  image?: string;
+  coverImage?: string;
+  location?: string;
+  ctaLabel?: string;
+  ctaLink?: string;
+}
 
-export default function UpcomingEventsSection() {
+interface UpcomingEventsSectionProps {
+  events?: EventCard[];
+  slideshowImages?: { src: string; alt: string }[];
+}
+
+export default function UpcomingEventsSection({ events = [], slideshowImages = [] }: UpcomingEventsSectionProps) {
+  const hasContent = events.length > 0 || slideshowImages.length > 0;
+
+  if (!hasContent) {
+    return null;
+  }
+
+  const displayImages = slideshowImages.length > 0
+    ? slideshowImages
+    : events
+        .filter(e => e.coverImage || e.image)
+        .map(e => ({ src: e.coverImage || e.image!, alt: e.title }));
+
   return (
     <section className={styles.eventsSection}>
       <div className="container">
@@ -28,77 +46,51 @@ export default function UpcomingEventsSection() {
           <p>Join us for memorable experiences</p>
         </FadeInSection>
 
-        {/* Premium Slideshow */}
-        <FadeInSection className={styles.eventSlideshowWrapper}>
-          <Slideshow images={eventSlideshowImages} autoPlayInterval={5000} aspectRatio="16/9" />
-        </FadeInSection>
+        {displayImages.length > 0 && (
+          <FadeInSection className={styles.eventSlideshowWrapper}>
+            <Slideshow images={displayImages} autoPlayInterval={5000} aspectRatio="16/9" />
+          </FadeInSection>
+        )}
 
-        {/* Event Cards Grid */}
-        <div className={styles.eventsGrid}>
-          <FadeInSection delay={200} className={styles.eventCardWrapper}>
-            <Link href="/experience" className={styles.eventCard}>
-              <div className={styles.eventCardImage}>
-                <Image src="/gallery/weekend-buffet.jpg" alt="Weekend Breakfast Buffet" fill sizes="(max-width: 768px) 100vw, 33vw" style={{ objectFit: 'cover' }} loading="lazy" />
-                <div className={styles.eventOverlay} />
-                <div className={styles.eventDate}>
-                  <span className={styles.eventDay}>SAT</span>
-                  <span className={styles.eventMonth}>SUN</span>
-                </div>
-              </div>
-              <div className={styles.eventCardContent}>
-                <h4>Weekend Breakfast Buffet</h4>
-                <p>Start your weekend with our delicious all-you-can-eat breakfast spread</p>
-                <div className={styles.eventMeta}>
-                  <span>📍 The Boma Cafe</span>
-                  <span>🕐 9h30 - 12h00pm Sat & Sun</span>
-                </div>
-                <button className={`btn btn-primary ${styles.eventCardBtn}`}>Book Now</button>
-              </div>
-            </Link>
-          </FadeInSection>
-          <FadeInSection delay={300} className={styles.eventCardWrapper}>
-            <Link href="/experience" className={styles.eventCard}>
-              <div className={styles.eventCardImage}>
-                <Image src="/gallery/events/friday-braai.jpg" alt="Friday Braai Evening" fill sizes="(max-width: 768px) 100vw, 33vw" style={{ objectFit: 'cover' }} loading="lazy" />
-                <div className={styles.eventOverlay} />
-                <div className={styles.eventDate}>
-                  <span className={styles.eventDay}>FRI</span>
-                  <span className={styles.eventMonth}>EVE</span>
-                </div>
-              </div>
-              <div className={styles.eventCardContent}>
-                <h4>Friday Braai Evening</h4>
-                <p>Join us for sizzling braai and live music every Friday night</p>
-                <div className={styles.eventMeta}>
-                  <span>📍 The Boma Cafe</span>
-                  <span>🕐 6pm - 10pm</span>
-                </div>
-                <button className={`btn btn-primary ${styles.eventCardBtn}`}>Book Now</button>
-              </div>
-            </Link>
-          </FadeInSection>
-          <FadeInSection delay={400} className={styles.eventCardWrapper}>
-            <Link href="/entertainment" className={styles.eventCard}>
-              <div className={styles.eventCardImage}>
-                <Image src="/gallery/events/live-music.jpg" alt="Live Music Night" fill sizes="(max-width: 768px) 100vw, 33vw" style={{ objectFit: 'cover' }} loading="lazy" />
-                <div className={styles.eventOverlay} />
-                <div className={styles.eventDate}>
-                  <span className={styles.eventDay}>SAT</span>
-                  <span className={styles.eventMonth}>NIGHT</span>
-                </div>
-              </div>
-              <div className={styles.eventCardContent}>
-                <h4>Live Music Nights</h4>
-                <p>Enjoy soulful live performances every Saturday night</p>
-                <div className={styles.eventMeta}>
-                  <span>📍 The Boma Cafe</span>
-                  <span>🕐 7pm - 11pm</span>
-                </div>
-                <button className={`btn btn-primary ${styles.eventCardBtn}`}>Book Now</button>
-              </div>
-            </Link>
-          </FadeInSection>
-        </div>
+        {events.length > 0 && (
+          <div className={styles.eventsGrid}>
+            {events.map((event, index) => (
+              <FadeInSection key={event.id} delay={200 + index * 100} className={styles.eventCardWrapper}>
+                <Link href={event.ctaLink || '/experience'} className={styles.eventCard}>
+                  <div className={styles.eventCardImage}>
+                    <Image
+                      src={event.coverImage || event.image || '/gallery/weekend-buffet.jpg'}
+                      alt={event.title}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                      style={{ objectFit: 'cover' }}
+                      loading="lazy"
+                    />
+                    <div className={styles.eventOverlay} />
+                    {event.date && (
+                      <div className={styles.eventDate}>
+                        <span className={styles.eventDay}>{event.date}</span>
+                        {event.time && <span className={styles.eventMonth}>{event.time}</span>}
+                      </div>
+                    )}
+                  </div>
+                  <div className={styles.eventCardContent}>
+                    <h4>{event.title}</h4>
+                    <p>{event.description}</p>
+                    {event.location && (
+                      <div className={styles.eventMeta}>
+                        <span>{event.location}</span>
+                      </div>
+                    )}
+                    <button className={`btn btn-primary ${styles.eventCardBtn}`}>
+                      {event.ctaLabel || 'Book Now'}
+                    </button>
+                  </div>
+                </Link>
+              </FadeInSection>
+            ))}
+          </div>
+        )}
 
         <FadeInSection className={styles.sectionCta}>
           <Link href="/experience" className="btn btn-primary">View All Events</Link>

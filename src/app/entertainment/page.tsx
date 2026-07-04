@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { cmsService } from '@/lib/client-cms';
 import PremiumHero from '@/components/ui/PremiumHero';
 
 const entertainmentTypes = [
@@ -35,15 +34,9 @@ export default function EntertainmentPage() {
   ];
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const allSettings = await cmsService.getAllSettings();
-        setSettings(allSettings);
-      } catch (error) {
-        console.error('Error loading settings:', error);
-      }
-    };
-    loadData();
+    fetch('/api/cms/public').then(r => r.json()).then(data => {
+      if (data?.settings) setSettings(data.settings);
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {

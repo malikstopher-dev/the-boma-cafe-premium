@@ -1,28 +1,59 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import styles from '@/app/gallery/Gallery.module.css';
-import { galleryCategories, galleryImages, getGalleryImages } from '@/data/galleryManifest';
+
+interface GalleryItemData {
+  id: string;
+  url: string;
+  title?: string;
+  category?: string;
+  isFeatured?: boolean;
+}
 
 interface GalleryBoardsProps {
   onManageClick?: () => void;
   onImageClick?: (images: string[], index: number) => void;
   onCategoryClick?: (category: string) => void;
+  galleryItems?: GalleryItemData[];
 }
 
-export default function GalleryBoards({ onManageClick, onImageClick, onCategoryClick }: GalleryBoardsProps) {
+const boardIcons: Record<string, string> = {
+  Events: '🎉',
+  Food: '🍽️',
+  Venue: '🏠',
+  People: '👥',
+  Promotions: '🎁',
+};
+
+export default function GalleryBoards({ onManageClick, onImageClick, onCategoryClick, galleryItems = [] }: GalleryBoardsProps) {
   const [activeSlide, setActiveSlide] = useState<Record<string, number>>({});
   const intervalRefs = useRef<Record<string, ReturnType<typeof setInterval>>>({});
   const sectionRef = useRef<HTMLElement>(null);
   const [isVisible, setIsVisible] = useState(true);
 
+  const boards = useMemo(() => {
+    const grouped: Record<string, { name: string; images: { url: string }[] }> = {};
+    for (const item of galleryItems) {
+      const cat = item.category || 'Other';
+      if (!grouped[cat]) grouped[cat] = { name: cat, images: [] };
+      grouped[cat].images.push({ url: item.url });
+    }
+    return Object.entries(grouped).map(([name, data]) => ({
+      id: name.toLowerCase().replace(/\s+/g, '-'),
+      name,
+      icon: boardIcons[name] || '📷',
+      images: data.images,
+    }));
+  }, [galleryItems]);
+
   useEffect(() => {
     const initialSlides: Record<string, number> = {};
-    galleryCategories.forEach(cat => {
+    boards.forEach(cat => {
       initialSlides[cat.id] = 0;
     });
     setActiveSlide(initialSlides);
-  }, []);
+  }, [boards]);
 
   useEffect(() => {
     const node = sectionRef.current;
@@ -42,8 +73,8 @@ export default function GalleryBoards({ onManageClick, onImageClick, onCategoryC
       return;
     }
 
-    galleryCategories.forEach(cat => {
-      const images = getGalleryImages(cat.id);
+    boards.forEach(cat => {
+      const images = cat.images;
       if (images.length <= 1) return;
       intervalRefs.current[cat.id] = setInterval(() => {
         setActiveSlide(prev => ({
@@ -57,7 +88,7 @@ export default function GalleryBoards({ onManageClick, onImageClick, onCategoryC
       Object.values(intervalRefs.current).forEach(clearInterval);
       intervalRefs.current = {};
     };
-  }, [isVisible]);
+  }, [isVisible, boards]);
 
   const handleDotClick = useCallback((boardId: string, index: number) => {
     setActiveSlide(prev => ({ ...prev, [boardId]: index }));
@@ -71,13 +102,13 @@ export default function GalleryBoards({ onManageClick, onImageClick, onCategoryC
       </div>
       
       <div className={styles.boardsGrid}>
-        {galleryCategories.map((cat) => {
-          const boardImages = getGalleryImages(cat.id);
+        {boards.map((cat) => {
+          const boardImages = cat.images;
           const currentSlide = activeSlide[cat.id] ?? 0;
           
           if (boardImages.length === 0) {
             return (
-<div key={cat.id} className={styles.boardCard} onClick={() => onImageClick && onImageClick(boardImages.map(i => i.url), currentSlide)}>
+<div key={cat.id} className={styles.boardCard}>
                 <div className={styles.boardHeader}>
                   <span className={styles.boardIcon}>{cat.icon}</span>
                   <h3 className={styles.boardTitle}>{cat.name}</h3>

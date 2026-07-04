@@ -10,6 +10,7 @@ import { BUSINESS_INFO } from '@/lib/whatsappConfig';
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [settings, setSettings] = useState<any>(null);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -24,6 +25,17 @@ export default function Header() {
     setMobileMenuOpen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch('/api/cms/public');
+        const data = await res.json();
+        if (data?.settings) setSettings(data.settings);
+      } catch {}
+    };
+    load();
+  }, []);
+
   const navLinks = [
     { href: '/', label: 'Home' },
     { href: '/about', label: 'About' },
@@ -36,6 +48,11 @@ export default function Header() {
 
   const leftLinks = navLinks.slice(0, 4);
   const rightLinks = navLinks.slice(4);
+
+  const contact = settings?.contact || {};
+  const phoneRaw = contact.phone?.replace(/\s/g, '') || BUSINESS_INFO.phoneRaw;
+  const email = contact.email || 'info@thebomacafe.co.za';
+  const mapUrl = contact.mapEmbedUrl ? `https://www.google.com/maps/embed?pb=${contact.mapEmbedUrl}` : 'https://maps.app.goo.gl/Xca93TRsznn9GN8K7';
 
   return (
     <>
@@ -67,13 +84,13 @@ export default function Header() {
               </Link>
             ))}
             <div className={styles.icons}>
-              <a href={`tel:${BUSINESS_INFO.phoneRaw}`} className={styles.icon} title="Call Us">
+              <a href={`tel:${phoneRaw}`} className={styles.icon} title="Call Us">
                 <i className="fas fa-phone" style={{ fontSize: '0.8rem' }} />
               </a>
-              <a href="mailto:info@thebomacafe.co.za" className={styles.icon} title="Email Us">
+              <a href={`mailto:${email}`} className={styles.icon} title="Email Us">
                 <i className="fas fa-envelope" style={{ fontSize: '0.8rem' }} />
               </a>
-              <a href="https://maps.app.goo.gl/Xca93TRsznn9GN8K7" target="_blank" rel="noopener noreferrer" className={styles.icon} title="Find Us">
+              <a href={mapUrl} target="_blank" rel="noopener noreferrer" className={styles.icon} title="Find Us">
                 <i className="fas fa-map-marker-alt" style={{ fontSize: '0.8rem' }} />
               </a>
             </div>
@@ -104,20 +121,20 @@ export default function Header() {
               ))}
             </nav>
             <div className={styles.mobileCtaRow}>
-              <a href={`tel:${BUSINESS_INFO.phoneRaw}`} className={styles.mobileCtaBtn}>
+              <a href={`tel:${phoneRaw}`} className={styles.mobileCtaBtn}>
                 <i className="fas fa-phone" />
                 <span>Call</span>
               </a>
-              <a href={`https://wa.me/${BUSINESS_INFO.phoneRaw}`} target="_blank" rel="noopener noreferrer" className={styles.mobileCtaBtn}>
+              <a href={`https://wa.me/${phoneRaw}`} target="_blank" rel="noopener noreferrer" className={styles.mobileCtaBtn}>
                 <WhatsAppIcon size={20} ariaLabel="Chat on WhatsApp" />
                 <span>WhatsApp</span>
               </a>
             </div>
             <div className={styles.mobileIcons}>
-              <a href="mailto:info@thebomacafe.co.za" className={styles.mobileIcon} title="Email">
+              <a href={`mailto:${email}`} className={styles.mobileIcon} title="Email">
                 <i className="fas fa-envelope" />
               </a>
-              <a href="https://maps.app.goo.gl/Xca93TRsznn9GN8K7" target="_blank" rel="noopener noreferrer" className={styles.mobileIcon} title="Map">
+              <a href={mapUrl} target="_blank" rel="noopener noreferrer" className={styles.mobileIcon} title="Map">
                 <i className="fas fa-map-marker-alt" />
               </a>
             </div>

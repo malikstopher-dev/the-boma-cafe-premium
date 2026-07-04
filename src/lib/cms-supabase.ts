@@ -491,16 +491,100 @@ export async function markInquiryRead(id: string): Promise<boolean> {
   return true
 }
 
+// --- Bar Menu ---
+
+export async function getBarCategories(): Promise<any[]> {
+  const client = await supabase()
+  const { data, error } = await client.from('bar_categories').select('*').order('order_index', { ascending: true })
+  if (error) throw error
+  return (data || []).map(c => ({ ...snakeToCamel(c), id: c.id, isActive: c.is_active, order: c.order_index }))
+}
+
+export async function saveBarCategory(category: any): Promise<any> {
+  const client = await supabase()
+  const now = new Date().toISOString()
+  const payload = {
+    name: category.name,
+    order_index: category.order || 0,
+    is_active: category.isActive !== false,
+    updated_at: now,
+  }
+  if (category.id) {
+    await client.from('bar_categories').update(payload).eq('id', category.id)
+    return category
+  } else {
+    const id = randomUUID()
+    await client.from('bar_categories').insert({ ...payload, id, created_at: now })
+    return { ...category, id }
+  }
+}
+
+export async function deleteBarCategory(id: string): Promise<boolean> {
+  const client = await supabase()
+  await client.from('bar_items').delete().eq('category_id', id)
+  await client.from('bar_categories').delete().eq('id', id)
+  return true
+}
+
+export async function getBarItems(): Promise<any[]> {
+  const client = await supabase()
+  const { data, error } = await client.from('bar_items').select('*').order('order_index', { ascending: true })
+  if (error) throw error
+  return (data || []).map(item => ({
+    ...snakeToCamel(item),
+    id: item.id,
+    categoryId: item.category_id,
+    isAvailable: item.is_available,
+    bottle: item.bottle ? Number(item.bottle) : null,
+    singlePrice: item.single_price ? Number(item.single_price) : null,
+    glassPrice: item.glass_price ? Number(item.glass_price) : null,
+    shotPrice: item.shot_price ? Number(item.shot_price) : null,
+  }))
+}
+
+export async function saveBarItem(item: any): Promise<any> {
+  const client = await supabase()
+  const now = new Date().toISOString()
+  const payload = {
+    category_id: item.categoryId || item.category_id,
+    name: item.name,
+    bottle: item.bottle || null,
+    single_price: item.singlePrice || item.single_price || null,
+    glass_price: item.glassPrice || item.glass_price || null,
+    shot_price: item.shotPrice || item.shot_price || null,
+    price: item.price || null,
+    order_index: item.order || 0,
+    is_available: item.isAvailable !== false,
+    updated_at: now,
+  }
+  if (item.id) {
+    await client.from('bar_items').update(payload).eq('id', item.id)
+    return item
+  } else {
+    const id = randomUUID()
+    await client.from('bar_items').insert({ ...payload, id, created_at: now })
+    return { ...item, id }
+  }
+}
+
+export async function deleteBarItem(id: string): Promise<boolean> {
+  await (await supabase()).from('bar_items').delete().eq('id', id)
+  return true
+}
+
 // --- Full CMS bundle for public endpoint ---
 
 export async function getPublicCMSData(): Promise<any> {
   const client = await supabase()
-  const [settingsRes, announcementRes, popupRes, eventsRes, promotionsRes] = await Promise.all([
+  const [settingsRes, announcementRes, popupRes, eventsRes, promotionsRes, galleryRes, barCategoriesRes, barItemsRes] = await Promise.all([
     client.from('site_settings').select('key, value'),
     client.from('announcement').select('*').limit(1).maybeSingle(),
     client.from('popup').select('*').limit(1).maybeSingle(),
     client.from('events').select('*').order('order_index').filter('visible', 'neq', false),
     client.from('promotions').select('*').order('order_index').filter('is_active', 'eq', true),
+    client.from('gallery').select('*').order('order_index', { ascending: true }),
+    client.from('bar_categories').select('*').order('order_index').filter('is_active', 'eq', true),
+    client.from('bar_items').select('*').order('order_index').filter('is_available', 'eq', true),
   ])
 
   const settings: Record<string, any> = {}
@@ -516,5 +600,17 @@ export async function getPublicCMSData(): Promise<any> {
     popup: popupRes.data ? { ...snakeToCamel(popupRes.data), isEnabled: popupRes.data.is_enabled } : null,
     events: (eventsRes.data || []).map((e: any) => ({ ...snakeToCamel(e), id: e.id })),
     promotions: (promotionsRes.data || []).map((p: any) => ({ ...snakeToCamel(p), id: p.id })),
+    gallery: (galleryRes.data || []).map((g: any) => ({ ...snakeToCamel(g), id: g.id, isFeatured: g.is_featured })),
+    barCategories: (barCategoriesRes.data || []).map((c: any) => ({ ...snakeToCamel(c), id: c.id, isActive: c.is_active, order: c.order_index })),
+    barItems: (barItemsRes.data || []).map((i: any) => ({
+      ...snakeToCamel(i),
+      id: i.id,
+      categoryId: i.category_id,
+      isAvailable: i.is_available,
+      bottle: i.bottle ? Number(i.bottle) : null,
+      singlePrice: i.single_price ? Number(i.single_price) : null,
+      glassPrice: i.glass_price ? Number(i.glass_price) : null,
+      shotPrice: i.shot_price ? Number(i.shot_price) : null,
+    })),
   }
 }

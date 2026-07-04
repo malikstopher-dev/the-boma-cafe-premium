@@ -44,15 +44,15 @@ Date:
 Number of guests:
 Contact name:`;
 
-export function formatWhatsAppLink(message: string): string {
+export function formatWhatsAppLink(message: string, phoneRaw?: string): string {
   const encodedMessage = encodeURIComponent(message);
-  return `https://wa.me/${businessInfo.phoneRaw}?text=${encodedMessage}`;
+  return `https://wa.me/${phoneRaw || businessInfo.phoneRaw}?text=${encodedMessage}`;
 }
 
-export function getReservationLink(): string {
-  return formatWhatsAppLink(reservationMessage);
+export function getReservationLink(phoneRaw?: string): string {
+  return formatWhatsAppLink(reservationMessage, phoneRaw);
 }
 
-export function getEventEnquiryLink(): string {
-  return formatWhatsAppLink(eventEnquiryMessage);
+export function getEventEnquiryLink(phoneRaw?: string): string {
+  return formatWhatsAppLink(eventEnquiryMessage, phoneRaw);
 }

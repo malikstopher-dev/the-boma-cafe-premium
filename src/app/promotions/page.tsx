@@ -5,109 +5,33 @@ import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import PremiumHero from '@/components/ui/PremiumHero';
-import { cmsService } from '@/lib/client-cms';
-
-const promotionImages = [
-  '/gallery/promotions/2026-04-05.webp',
-  '/gallery/events/live-music.jpg',
-  '/gallery/promotions/2026-04-08.webp',
-  '/gallery/promotions/2026-04-08-2.webp',
-  '/gallery/promotions/2026-03-27-1.jpg',
-  '/gallery/promotions/2025-04-23.jpg',
-  '/gallery/promotions/2026-02-21.jpg'
-];
-
-const promotionsData = [
-  {
-    id: 1,
-    title: 'Weekend Breakfast Special',
-    description: 'Start your weekend right with our famous breakfast buffet. Kids eat free!',
-    validFrom: '2026-04-01',
-    validUntil: '2026-04-30',
-    ctaText: 'Book Now',
-    ctaLink: '/contact',
-    imageIndex: 0
-  },
-  {
-    id: 2,
-    title: 'Live Music Nights',
-    description: 'Enjoy soulful performances every weekend. Great food, great music, great vibes.',
-    validFrom: '2026-04-01',
-    validUntil: '2026-12-31',
-    ctaText: 'View Events',
-    ctaLink: '/experience',
-    imageIndex: 1
-  },
-  {
-    id: 3,
-    title: 'Family Sunday Brunch',
-    description: 'Quality time with family. Kids eat free every Sunday!',
-    validFrom: '2026-04-01',
-    validUntil: '2026-04-30',
-    ctaText: 'Reserve Table',
-    ctaLink: '/contact',
-    imageIndex: 2
-  },
-  {
-    id: 4,
-    title: 'Friday Braai Evenings',
-    description: 'Experience authentic South African braai culture. Premium meats, great company.',
-    validFrom: '2026-04-01',
-    validUntil: '2026-12-31',
-    ctaText: 'Learn More',
-    ctaLink: '/experience',
-    imageIndex: 3
-  },
-  {
-    id: 5,
-    title: 'Corporate Event Packages',
-    description: 'Host your next corporate function in our unique rustic setting. Customized menus available.',
-    validFrom: '2026-04-01',
-    validUntil: '2026-12-31',
-    ctaText: 'Contact Us',
-    ctaLink: '/contact',
-    imageIndex: 4
-  },
-  {
-    id: 6,
-    title: 'Happy Hour Deals',
-    description: '2-for-1 cocktails and great bar snacks. Join us for the best sunset views in Sandton!',
-    validFrom: '2026-04-01',
-    validUntil: '2026-04-30',
-    ctaText: 'View Menu',
-    ctaLink: '/menu',
-    imageIndex: 5
-  }
-];
+const DEFAULT_IMAGE = '/gallery/promotions/default.jpg';
 
 export default function PromotionsPage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [cmsPromotions, setCmsPromotions] = useState<any[]>([]);
 
   useEffect(() => {
-    cmsService.getPromotions().then(promos => setCmsPromotions(promos)).catch(() => {});
+    fetch('/api/cms/public').then(r => r.json()).then(data => {
+      if (data?.promotions) setCmsPromotions(data.promotions);
+    }).catch(() => {});
   }, []);
 
-  const hasCmsPromos = cmsPromotions.length > 0;
+  const displayPromotions = cmsPromotions.filter(p => p.isActive).map((promo, idx) => ({
+    id: idx + 1,
+    title: promo.title,
+    description: promo.description,
+    validFrom: promo.startDate || '',
+    validUntil: promo.endDate || '',
+    ctaText: promo.ctaText || 'Learn More',
+    ctaLink: promo.ctaLink || '/promotions',
+    imageIndex: idx,
+  }));
 
-  const displayPromotions = hasCmsPromos
-    ? cmsPromotions.filter(p => p.isActive).map((promo, idx) => ({
-        id: idx + 1,
-        title: promo.title,
-        description: promo.description,
-        validFrom: promo.startDate || '',
-        validUntil: promo.endDate || '',
-        ctaText: promo.ctaText || 'Learn More',
-        ctaLink: promo.ctaLink || '/promotions',
-        imageIndex: idx,
-      }))
-    : promotionsData;
-
-  const displayImages = hasCmsPromos
-    ? cmsPromotions.filter(p => p.isActive).map(p => p.image || '/gallery/promotions/default.jpg')
-    : promotionImages;
+  const displayImages = cmsPromotions.filter(p => p.isActive).map(p => p.image || DEFAULT_IMAGE);
 
   useEffect(() => {
+    if (displayImages.length === 0) return;
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % displayImages.length);
     }, 5000);
@@ -125,7 +49,7 @@ export default function PromotionsPage() {
           subtitle="Don't miss out on our latest promotions and deals"
         />
 
-        {/* Featured Promo Slider */}
+        {displayPromotions.length > 0 && (
         <section style={{ background: 'var(--cream)', padding: 'var(--space-3xl) 5%' }}>
           <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 'var(--space-xl)' }}>
@@ -272,8 +196,9 @@ export default function PromotionsPage() {
             </div>
           </div>
         </section>
+        )}
 
-        {/* All Promotions Grid */}
+        {displayPromotions.length > 0 && (
         <section style={{ background: 'var(--white)', padding: 'var(--space-3xl) 5%' }}>
           <div className="container">
             <div style={{ textAlign: 'center', marginBottom: 'var(--space-xl)' }}>
@@ -342,6 +267,7 @@ export default function PromotionsPage() {
             </div>
           </div>
         </section>
+        )}
 
         {/* Newsletter */}
         <section style={{ background: 'var(--beige)', padding: 'var(--space-3xl) 5%', textAlign: 'center', position: 'relative' }}>

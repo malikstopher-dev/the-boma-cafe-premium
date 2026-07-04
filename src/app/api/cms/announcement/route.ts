@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { getAnnouncement, saveAnnouncement } from '@/lib/cms-supabase';
 import { requireAdminOrKitchen } from '@/lib/auth/requireRole';
 
@@ -24,6 +25,7 @@ export async function POST(request: NextRequest) {
     const success = await saveAnnouncement(announcement);
     
     if (success) {
+      revalidatePath('/');
       return NextResponse.json({ success: true });
     } else {
       return NextResponse.json({ error: 'Failed to save announcement' }, { status: 500 });

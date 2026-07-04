@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth/requireRole';
 import { getAdminClient } from '@/lib/supabase';
 import { defaultCategories, defaultMenuItems } from '@/data/defaultData';
@@ -74,6 +75,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = await seedDefaultData()
+    revalidatePath('/menu')
     return NextResponse.json(result)
   } catch (error: any) {
     console.error('Seed error:', error?.message || error, error?.stack || '')

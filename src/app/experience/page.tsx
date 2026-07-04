@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { cmsService } from '@/lib/client-cms';
 import OptimizedHero from '@/components/ui/OptimizedHero';
 import { getReservationLink } from '@/data/businessInfo';
 
@@ -75,10 +74,10 @@ export default function ExperiencePage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const allSettings = await cmsService.getAllSettings();
-        setSettings(allSettings);
-        if (allSettings.experience) {
-          setExpSettings(allSettings.experience);
+        const publicData = await fetch('/api/cms/public').then(r => r.json());
+        setSettings(publicData.settings || {});
+        if (publicData.settings?.experience) {
+          setExpSettings(publicData.settings.experience);
         }
       } catch (error) {
         console.error('Error loading settings:', error);
@@ -121,7 +120,8 @@ export default function ExperiencePage() {
     '/gallery/people/boma1-1152x864.jpeg'
   ];
 
-  const reservationLink = getReservationLink();
+  const contactPhoneRaw = settings?.contact?.phone?.replace(/\s/g, '') || '';
+  const reservationLink = getReservationLink(contactPhoneRaw);
 
   const heroBadge = expSettings?.heroBadge || 'Discover';
 

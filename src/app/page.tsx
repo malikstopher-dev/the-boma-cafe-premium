@@ -103,12 +103,15 @@ export default function Home() {
   }, []);
   
   const featuredMenuItems = menuItems.filter((item: any) => item.isFeatured && !item.isOutOfStock).slice(0, 4);
-  const upcomingEvents = events.filter((event: any) => event.status === 'upcoming' && event.showOnHomepage).slice(0, 0);
+  const upcomingEvents = events.filter((event: any) => event.isUpcoming && event.visible !== false).slice(0, 3);
   const activePromotions = promotions.filter((promo: any) => promo.isActive && promo.displayOnHomepage).slice(0, 2);
 
   const homepage = siteSettings?.homepage || {};
   const promoBar = siteSettings?.promoBar || {};
   const branding = siteSettings?.branding || {};
+
+  const contactSettings = siteSettings?.contact || {};
+  const contactPhoneRaw = contactSettings.phone?.replace(/\s/g, '') || '';
 
   const annText = announcement?.isEnabled ? announcement.text : null;
   const annLink = announcement?.isEnabled ? announcement.link : null;
@@ -253,7 +256,12 @@ export default function Home() {
         </section>
 
         {/* Premium Events Section */}
-        <UpcomingEventsSection />
+        <UpcomingEventsSection
+          events={upcomingEvents}
+          slideshowImages={upcomingEvents
+            .filter((e: any) => e.coverImage || e.image)
+            .map((e: any) => ({ src: e.coverImage || e.image, alt: e.title }))}
+        />
 
         {/* Premium Gallery Preview Section */}
         <section className={styles.gallerySection}>
@@ -359,8 +367,8 @@ export default function Home() {
               <h2>Reserve Your Table</h2>
               <p>Plan your perfect Boma experience. Whether it's a romantic dinner, family gathering, or celebration with friends, we're ready to welcome you.</p>
               <div className={styles.reservationButtons}>
-                <a href={getReservationLink()} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-lg">Book a Table</a>
-                <a href={getEventEnquiryLink()} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-lg">Plan an Event</a>
+                <a href={getReservationLink(contactPhoneRaw)} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-lg">Book a Table</a>
+                <a href={getEventEnquiryLink(contactPhoneRaw)} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-lg">Plan an Event</a>
               </div>
               
               <div className={styles.reservationInfo}>

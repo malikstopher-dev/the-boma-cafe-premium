@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { BUSINESS_INFO } from '@/lib/whatsappConfig';
 import styles from './Footer.module.css';
 import WhatsAppIcon from '@/components/icons/WhatsAppIcon';
@@ -17,10 +17,35 @@ const SOCIAL_LINKS = {
   tiktok: 'https://www.tiktok.com/@thebomacafe',
 };
 
-export default function Footer({ settings, branding }: FooterProps) {
-  const b = branding || {};
-  const c = settings || {};
-  const siteName = b.siteName || 'The Boma Cafe';
+export default function Footer({ settings: propSettings, branding: propBranding }: FooterProps) {
+  const [fetchedSettings, setFetchedSettings] = useState<any>(null);
+  const [fetchedBranding, setFetchedBranding] = useState<any>(null);
+
+  useEffect(() => {
+    if (propSettings) return;
+    const load = async () => {
+      try {
+        const res = await fetch('/api/cms/public');
+        const data = await res.json();
+        if (data?.settings) {
+          setFetchedSettings(data.settings);
+          setFetchedBranding(data.settings?.branding);
+        }
+      } catch {}
+    };
+    load();
+  }, [propSettings]);
+
+  const settings = propSettings || fetchedSettings || {};
+  const branding = propBranding || fetchedBranding || settings?.branding || {};
+  const b = branding;
+  const contact = settings?.contact || {};
+  const phoneRaw = contact.phone?.replace(/\s/g, '') || BUSINESS_INFO.phoneRaw;
+  const phone = contact.phone || BUSINESS_INFO.phone;
+  const email = contact.email || BUSINESS_INFO.email;
+  const address = contact.address || `${BUSINESS_INFO.address.street}, ${BUSINESS_INFO.address.suburb}, ${BUSINESS_INFO.address.city}, ${BUSINESS_INFO.address.postalCode}`;
+  const openingHours = contact.openingHours || 'Open daily: 08:00 AM – Late';
+
   const currentYear = new Date().getFullYear();
   const footerCredit = `© ${currentYear} The Boma Café. Website by `;
   const footerCreditEnd = ` & `;
@@ -85,26 +110,23 @@ export default function Footer({ settings, branding }: FooterProps) {
             <div className={styles.contact}>
               <h4>Contact Info</h4>
               <div className={styles.contactInfo}>
-                <a href={`tel:+${BUSINESS_INFO.phoneRaw}`} className={styles.contactItem}>
+                <a href={`tel:+${phoneRaw}`} className={styles.contactItem}>
                   <span className={styles.icon}>📞</span>
-                  <span className={styles.contactText}>{BUSINESS_INFO.phone}</span>
+                  <span className={styles.contactText}>{phone}</span>
                 </a>
-                <a href={`mailto:${BUSINESS_INFO.email}`} className={styles.contactItem}>
+                <a href={`mailto:${email}`} className={styles.contactItem}>
                   <span className={styles.icon}>✉️</span>
-                  <span className={styles.contactText}>{BUSINESS_INFO.email}</span>
+                  <span className={styles.contactText}>{email}</span>
                 </a>
                 <div className={styles.contactItem}>
                   <span className={styles.icon}>📍</span>
-                  <span className={styles.contactText}>
-                    {BUSINESS_INFO.address.street},{' '}
-                    <span className={styles.addressDetail}>{BUSINESS_INFO.address.suburb}, {BUSINESS_INFO.address.city}, {BUSINESS_INFO.address.postalCode}</span>
-                  </span>
+                  <span className={styles.contactText}>{address}</span>
                 </div>
                 <div className={styles.contactItem}>
                   <span className={styles.icon}>🕐</span>
-                  <span className={styles.contactText}>Open daily: 08:00 AM – Late</span>
+                  <span className={styles.contactText}>{openingHours}</span>
                 </div>
-                <a href={`https://wa.me/${BUSINESS_INFO.phoneRaw}`} target="_blank" rel="noopener noreferrer" className={styles.contactItem}>
+                <a href={`https://wa.me/${phoneRaw}`} target="_blank" rel="noopener noreferrer" className={styles.contactItem}>
                   <WhatsAppIcon size={18} color="#25D366" />
                   <span className={styles.contactText}>WhatsApp Order</span>
                 </a>
@@ -125,9 +147,9 @@ export default function Footer({ settings, branding }: FooterProps) {
           <p className={styles.mobileTagline}>Where rustic charm meets soulful dining in Sandton.</p>
 
           <div className={styles.mobileContactRow}>
-            <a href={`tel:+${BUSINESS_INFO.phoneRaw}`} className={styles.mobileFooterLink}>Call</a>
-            <a href={`mailto:${BUSINESS_INFO.email}`} className={styles.mobileFooterLink}>Email</a>
-            <a href={`https://wa.me/${BUSINESS_INFO.phoneRaw}`} target="_blank" rel="noopener noreferrer" className={styles.mobileFooterLink}>WhatsApp</a>
+            <a href={`tel:+${phoneRaw}`} className={styles.mobileFooterLink}>Call</a>
+            <a href={`mailto:${email}`} className={styles.mobileFooterLink}>Email</a>
+            <a href={`https://wa.me/${phoneRaw}`} target="_blank" rel="noopener noreferrer" className={styles.mobileFooterLink}>WhatsApp</a>
           </div>
 
           <div className={styles.mobileLinksRow}>

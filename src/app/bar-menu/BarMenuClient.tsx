@@ -6,9 +6,24 @@ import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import OptimizedHero from '@/components/ui/OptimizedHero';
-import { barCategories, BarItem } from './barMenuData';
 import { getBarMenuItemImage } from '@/lib/barImages';
 import styles from './BarMenu.module.css';
+
+interface BarItem {
+  id: string;
+  name: string;
+  bottle?: number;
+  single?: number;
+  glass?: number;
+  shot?: number;
+  price?: string;
+}
+
+interface BarCategory {
+  id: string;
+  name: string;
+  items: BarItem[];
+}
 
 const ALL_FILTER = 'All';
 
@@ -111,7 +126,7 @@ const MenuItem = memo(function MenuItem({ item, categoryName, onSelect }: { item
   );
 });
 
-function CategorySection({ category, onSelectItem }: { category: { id: string; name: string; items: BarItem[] }; onSelectItem: (item: BarItem, cat: string) => void }) {
+function CategorySection({ category, onSelectItem }: { category: BarCategory; onSelectItem: (item: BarItem, cat: string) => void }) {
   return (
     <motion.section
       id={category.id}
@@ -208,11 +223,40 @@ function ItemModal({ item, categoryName, onClose }: { item: BarItem; categoryNam
 }
 
 export default function BarMenuClient() {
+  const [categories, setCategories] = useState<BarCategory[]>([]);
   const [activeFilter, setActiveFilter] = useState(ALL_FILTER);
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobile, setIsMobile] = useState(false);
   const [modalItem, setModalItem] = useState<{ item: BarItem; categoryName: string } | null>(null);
   const filterRowRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch('/api/bar/public')
+      .then(r => r.json())
+      .then(data => {
+        if (!data?.categories || !data?.items) return;
+        const catMap: Record<string, BarItem[]> = {};
+        for (const item of data.items) {
+          if (!catMap[item.categoryId]) catMap[item.categoryId] = [];
+          catMap[item.categoryId].push({
+            id: item.id,
+            name: item.name,
+            bottle: item.bottle || undefined,
+            single: item.singlePrice || undefined,
+            glass: item.glassPrice || undefined,
+            shot: item.shotPrice || undefined,
+            price: item.price || undefined,
+          });
+        }
+        const cats: BarCategory[] = data.categories.map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          items: catMap[c.id] || [],
+        }));
+        setCategories(cats);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const mql = window.matchMedia('(max-width: 768px)');
@@ -241,7 +285,7 @@ export default function BarMenuClient() {
 
     const query = searchQuery.toLowerCase().trim();
 
-    return barCategories
+    return categories
       .filter((cat) => !allowedCategories || allowedCategories.includes(cat.name))
       .map((cat) => {
         if (!query) return cat;
@@ -253,7 +297,7 @@ export default function BarMenuClient() {
         return { ...cat, items: filtered };
       })
       .filter((cat) => cat.items.length > 0);
-  }, [activeFilter, searchQuery]);
+  }, [activeFilter, searchQuery, categories]);
 
   const totalItems = useMemo(
     () => filteredCategories.reduce((sum, c) => sum + c.items.length, 0),

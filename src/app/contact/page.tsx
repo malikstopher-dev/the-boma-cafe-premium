@@ -4,8 +4,6 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { dataService } from '@/lib/data';
-import { siteSettingsService } from '@/lib/siteSettings';
 import { businessInfo, getReservationLink, getEventEnquiryLink } from '@/data/businessInfo';
 import OptimizedHero from '@/components/ui/OptimizedHero';
 
@@ -28,8 +26,16 @@ export default function ContactPage() {
   }, []);
 
   useEffect(() => {
-    setSettings(dataService.getSettings());
-    setContactSettings(siteSettingsService.getContactSettings());
+    const loadSettings = async () => {
+      try {
+        const publicData = await fetch('/api/cms/public').then(r => r.json());
+        setSettings(publicData.settings || {});
+        setContactSettings(publicData.settings?.contact || null);
+      } catch (error) {
+        console.error('Error loading settings:', error);
+      }
+    };
+    loadSettings();
   }, []);
 
   const validate = (): boolean => {
@@ -89,6 +95,7 @@ export default function ContactPage() {
   };
 
   const contact = contactSettings || {};
+  const contactPhoneRaw = contact.phone?.replace(/\s/g, '') || businessInfo.phoneRaw;
 
   return (
     <>
@@ -202,7 +209,7 @@ export default function ContactPage() {
               gap: '1rem' 
             }}>
               <motion.a 
-                href={getReservationLink()}
+                href={getReservationLink(contactPhoneRaw)}
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ y: -4, boxShadow: '0 8px 25px rgba(139, 69, 19, 0.35)' }}
@@ -226,7 +233,7 @@ export default function ContactPage() {
               </motion.a>
               
               <motion.a 
-                href={getEventEnquiryLink()}
+                href={getEventEnquiryLink(contactPhoneRaw)}
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ y: -4, boxShadow: '0 8px 25px rgba(26, 15, 10, 0.15)' }}
@@ -251,7 +258,7 @@ export default function ContactPage() {
               </motion.a>
               
               <motion.a 
-                href={`https://wa.me/${businessInfo.phoneRaw}?text=${encodeURIComponent('Hello! I would like to order from The Boma Café')}`}
+                href={contact?.whatsapp || `https://wa.me/${businessInfo.phoneRaw}?text=${encodeURIComponent('Hello! I would like to order from The Boma Café')}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ y: -4, boxShadow: '0 8px 25px rgba(37, 211, 102, 0.35)' }}
@@ -316,9 +323,7 @@ export default function ContactPage() {
                     }}>📍</div>
                     <div>
                       <strong style={{ color: 'var(--dark-brown)', display: 'block', fontSize: '1.05rem', marginBottom: '0.25rem' }}>Address</strong>
-                      <span style={{ color: 'var(--text-light)', fontSize: '0.95rem', display: 'block' }}>{businessInfo.address.street}</span>
-                      <span style={{ color: 'var(--text-light)', fontSize: '0.95rem', display: 'block' }}>{businessInfo.address.suburb}, {businessInfo.address.city}, {businessInfo.address.postalCode}</span>
-                      <span style={{ color: 'var(--text-light)', fontSize: '0.95rem', display: 'block' }}>{businessInfo.address.country}</span>
+                      <span style={{ color: 'var(--text-light)', fontSize: '0.95rem', display: 'block' }}>{contact?.address || businessInfo.address.full}</span>
                     </div>
                   </div>
                   
@@ -338,7 +343,7 @@ export default function ContactPage() {
                     }}>📞</div>
                     <div>
                       <strong style={{ color: 'var(--dark-brown)', display: 'block', fontSize: '1.05rem', marginBottom: '0.25rem' }}>Phone</strong>
-                      <a href={`tel:${businessInfo.phone}`} style={{ color: 'var(--text-light)', fontSize: '0.95rem' }}>{businessInfo.phone}</a>
+                      <a href={`tel:${contact?.phone || businessInfo.phone}`} style={{ color: 'var(--text-light)', fontSize: '0.95rem' }}>{contact?.phone || businessInfo.phone}</a>
                     </div>
                   </div>
                   
@@ -358,7 +363,7 @@ export default function ContactPage() {
                     }}>✉️</div>
                     <div>
                       <strong style={{ color: 'var(--dark-brown)', display: 'block', fontSize: '1.05rem', marginBottom: '0.25rem' }}>Email</strong>
-                      <a href={`mailto:${businessInfo.email}`} style={{ color: 'var(--text-light)', fontSize: '0.95rem' }}>{businessInfo.email}</a>
+                      <a href={`mailto:${contact?.email || businessInfo.email}`} style={{ color: 'var(--text-light)', fontSize: '0.95rem' }}>{contact?.email || businessInfo.email}</a>
                     </div>
                   </div>
                   
@@ -379,12 +384,16 @@ export default function ContactPage() {
                     <div>
                       <strong style={{ color: 'var(--dark-brown)', display: 'block', fontSize: '1.05rem', marginBottom: '0.25rem' }}>Opening Hours</strong>
                       <div style={{ color: 'var(--text-light)', fontSize: '0.9rem' }}>
-                        {businessInfo.openingHoursArray.map(h => (
-                          <div key={h.day} style={{ display: 'flex', justifyContent: 'space-between', maxWidth: '200px' }}>
-                            <span>{h.day}</span>
-                            <span>{h.hours}</span>
-                          </div>
-                        ))}
+                        {contact?.openingHours ? (
+                          <span>{contact.openingHours}</span>
+                        ) : (
+                          businessInfo.openingHoursArray.map(h => (
+                            <div key={h.day} style={{ display: 'flex', justifyContent: 'space-between', maxWidth: '200px' }}>
+                              <span>{h.day}</span>
+                              <span>{h.hours}</span>
+                            </div>
+                          ))
+                        )}
                       </div>
                     </div>
                   </div>
@@ -393,7 +402,7 @@ export default function ContactPage() {
                 {/* Map */}
                 <div className="contact-map-container" style={{ marginTop: '2.5rem', borderRadius: '20px', overflow: 'hidden', height: '250px', background: 'var(--cream)', boxShadow: 'var(--shadow-md)' }}>
                   <iframe 
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3580.096099327458!2d28.05762037431698!3d-26.045961999999997!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1e957fcb4e722a79%3A0xc8e2d31c9e14a19e!2sThe%20Boma%20Cafe!5e0!3m2!1sen!2sza!4v1700000000000!5m2!1sen!2sza"
+                    src={contact?.mapEmbedUrl || "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3580.096099327458!2d28.05762037431698!3d-26.045961999999997!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1e957fcb4e722a79%3A0xc8e2d31c9e14a19e!2sThe%20Boma%20Cafe!5e0!3m2!1sen!2sza!4v1700000000000!5m2!1sen!2sza"}
                     width="100%" 
                     height="100%" 
                     style={{ border: 0 }} 
@@ -406,7 +415,7 @@ export default function ContactPage() {
 
                 {/* Directions Button */}
                 <a 
-                  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(businessInfo.address.full)}`}
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(contact?.address || businessInfo.address.full)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
@@ -430,7 +439,7 @@ export default function ContactPage() {
 
                 {/* WhatsApp CTA */}
                 <a 
-                  href={`https://wa.me/${businessInfo.phoneRaw}?text=${encodeURIComponent('Hello! I would like to inquire about The Boma Café')}`}
+                  href={contact?.whatsapp || `https://wa.me/${businessInfo.phoneRaw}?text=${encodeURIComponent('Hello! I would like to inquire about The Boma Café')}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { getEvents, saveEvent, deleteEvent } from '@/lib/cms-supabase';
 import { requireAdminOrKitchen } from '@/lib/auth/requireRole';
 
@@ -22,6 +23,7 @@ export async function POST(request: NextRequest) {
   try {
     const event = await request.json();
     const saved = await saveEvent(event);
+    revalidatePath('/');
     return NextResponse.json({ success: true, data: saved });
   } catch (error) {
     console.error('Error saving event:', error);
@@ -36,6 +38,7 @@ export async function PUT(request: NextRequest) {
   try {
     const event = await request.json();
     const saved = await saveEvent(event);
+    revalidatePath('/');
     return NextResponse.json({ success: true, data: saved });
   } catch (error) {
     console.error('Error saving event:', error);
@@ -53,6 +56,7 @@ export async function PATCH(request: NextRequest) {
       for (const event of body.events) {
         await saveEvent(event);
       }
+      revalidatePath('/');
       return NextResponse.json({ success: true });
     }
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
@@ -72,6 +76,7 @@ export async function DELETE(request: NextRequest) {
     
     if (id) {
       await deleteEvent(id);
+      revalidatePath('/');
       return NextResponse.json({ success: true });
     }
     
