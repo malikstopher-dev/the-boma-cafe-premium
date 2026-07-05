@@ -265,7 +265,7 @@ export default function CartButton() {
   return (
     <>
       <a
-        href={`https://wa.me/${BUSINESS_INFO.phoneRaw}?text=${encodeURIComponent(BUSINESS_INFO.name + ' - I would like to place an order')}`}
+        href={formatWhatsAppUrl(`${BUSINESS_INFO.name} - I would like to place an order`)}
         target="_blank"
         rel="noopener noreferrer"
         className="mobile-cta-button"
