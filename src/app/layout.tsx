@@ -1,4 +1,5 @@
 import "./globals.css";
+import { cache } from "react";
 import { AuthProvider } from "@/lib/auth-context";
 import { CartProvider } from "@/lib/cart";
 import { BookingProvider } from "@/lib/booking";
@@ -7,102 +8,130 @@ import ScrollToTopButton from "@/components/ui/ScrollToTopButton";
 import { BUSINESS_INFO } from "@/lib/whatsappConfig";
 import MobileBottomBar from "@/components/ui/MobileBottomBar";
 import ScrollArrows from "@/components/ui/ScrollArrows";
+import { getAllSettings } from "@/lib/cms-supabase";
 
-const localBusinessSchema = {
-  "@context": "https://schema.org",
-  "@type": "Restaurant",
-  "name": BUSINESS_INFO.name,
-  "url": BUSINESS_INFO.website,
-  "telephone": BUSINESS_INFO.phone,
-  "email": BUSINESS_INFO.email,
-  "address": {
-    "@type": "PostalAddress",
-    "streetAddress": BUSINESS_INFO.address.street,
-    "addressLocality": BUSINESS_INFO.address.suburb,
-    "addressRegion": BUSINESS_INFO.address.city,
-    "postalCode": BUSINESS_INFO.address.postalCode,
-    "addressCountry": BUSINESS_INFO.address.country
-  },
-  "geo": {
-    "@type": "GeoCoordinates",
-    "latitude": BUSINESS_INFO.coordinates.lat,
-    "longitude": BUSINESS_INFO.coordinates.lng
-  },
-  "openingHours": "Mo-Su 08:00-23:59",
-  "servesCuisine": ["South African", "Wood-Fired Pizza", "Braai", "Burgers", "Curries"],
-  "priceRange": "R50–R250",
-  "hasMap": "https://maps.google.com/?q=127+Wroxham+Road+Paulshof+Sandton",
-  "sameAs": [
-    BUSINESS_INFO.social.facebook,
-    BUSINESS_INFO.social.instagram
-  ],
-  "amenityFeature": [
-    {"@type":"LocationFeatureSpecification","name":"Kids Play Area","value":true},
-    {"@type":"LocationFeatureSpecification","name":"Outdoor Seating","value":true},
-    {"@type":"LocationFeatureSpecification","name":"Firepits","value":true},
-    {"@type":"LocationFeatureSpecification","name":"Live Entertainment","value":true}
-  ]
-};
-
-const websiteSchema = {
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  "name": BUSINESS_INFO.name,
-  "url": BUSINESS_INFO.website,
-  "author": {
-    "@type": "Person",
-    "name": "Stopher Malik"
-  },
-  "creator": {
-    "@type": "Organization",
-    "name": "SMK Web Design",
-    "url": "https://stopher-malik.co.za"
-  },
-  "potentialAction": {
-    "@type": "SearchAction",
-    "target": {
-      "@type": "EntryPoint",
-      "urlTemplate": `${BUSINESS_INFO.website}/menu?q={search_term_string}`
-    },
-    "query-input": "required name=search_term_string"
+const getSettings = cache(async () => {
+  try {
+    return await getAllSettings();
+  } catch {
+    return {};
   }
-};
+});
 
-export const metadata = {
-  title: "The Boma Café | Rustic Open-Air Restaurant in Paulshof, Sandton",
-  description: "Escape the city at The Boma Café — Sandton's hidden rustic gem. Breakfast, lunch & dinner under a thatched roof with firepits, kids play area, and live entertainment. 127 Wroxham Rd, Paulshof.",
-  keywords: "The Boma Café, restaurant Paulshof, restaurant Sandton, outdoor dining Johannesburg, Boma Cafe, events venue Paulshof, rustic restaurant South Africa, firepit dining, Paulshof cafe, Sandton restaurant, Johannesburg restaurant",
-  icons: {
-    icon: '/favicon.ico',
-  },
-  openGraph: {
-    type: "website",
-    locale: "en_ZA",
-    url: "https://www.thebomacafe.co.za/",
-    siteName: "The Boma Café",
-    title: "The Boma Café | Rustic Restaurant in Paulshof, Sandton",
-    description: "Open-air rustic dining, wood-fired pizza, braai platters, kids play area & live entertainment. Sandton's best kept secret.",
-    images: [
-      {
-        url: "https://www.thebomacafe.co.za/assets/images/og-hero.jpg",
-        width: 1200,
-        height: 630,
-        alt: "The Boma Café - Rustic Open-Air Restaurant",
-      }
+export async function generateMetadata() {
+  const settings = await getSettings();
+  const seo = settings.seo || {};
+  const branding = settings.branding || {};
+  const siteName = branding.siteName || BUSINESS_INFO.name;
+  const url = BUSINESS_INFO.website;
+
+  return {
+    title: seo.homepageTitle || `${siteName} | Rustic Open-Air Restaurant in Paulshof, Sandton`,
+    description: seo.homepageDescription || "Escape the city at The Boma Café — Sandton's hidden rustic gem. Breakfast, lunch & dinner under a thatched roof with firepits, kids play area, and live entertainment. 127 Wroxham Rd, Paulshof.",
+    keywords: seo.homepageKeywords || "The Boma Café, restaurant Paulshof, restaurant Sandton, outdoor dining Johannesburg, Boma Cafe, events venue Paulshof, rustic restaurant South Africa, firepit dining, Paulshof cafe, Sandton restaurant, Johannesburg restaurant",
+    icons: {
+      icon: '/favicon.ico',
+    },
+    openGraph: {
+      type: "website",
+      locale: "en_ZA",
+      url,
+      siteName,
+      title: seo.homepageTitle || `${siteName} | Rustic Restaurant in Paulshof, Sandton`,
+      description: seo.homepageDescription || "Open-air rustic dining, wood-fired pizza, braai platters, kids play area & live entertainment. Sandton's best kept secret.",
+      images: [
+        {
+          url: seo.ogImage || `${url}/assets/images/og-hero.jpg`,
+          width: 1200,
+          height: 630,
+          alt: `${siteName} - Rustic Open-Air Restaurant`,
+        }
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: seo.homepageTitle || `${siteName} | Paulshof, Sandton`,
+      description: seo.homepageDescription || "Rustic open-air dining in the heart of Sandton.",
+      images: [seo.ogImage || `${url}/assets/images/og-hero.jpg`],
+    },
+    alternates: {
+      canonical: url,
+    },
+  };
+}
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const settings = await getSettings();
+  const branding = settings.branding || {};
+  const contact = settings.contact || {};
+
+  const name = branding.siteName || BUSINESS_INFO.name;
+  const website = BUSINESS_INFO.website;
+  const social = {
+    facebook: branding.facebook || BUSINESS_INFO.social.facebook,
+    instagram: branding.instagram || BUSINESS_INFO.social.instagram,
+  };
+
+  const localBusinessSchema = {
+    "@context": "https://schema.org",
+    "@type": "Restaurant",
+    name,
+    url: website,
+    telephone: contact.phone || BUSINESS_INFO.phone,
+    email: contact.email || BUSINESS_INFO.email,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: BUSINESS_INFO.address.street,
+      addressLocality: BUSINESS_INFO.address.suburb,
+      addressRegion: BUSINESS_INFO.address.city,
+      postalCode: BUSINESS_INFO.address.postalCode,
+      addressCountry: 'South Africa',
+    },
+    geo: {
+      "@type": "GeoCoordinates",
+      latitude: BUSINESS_INFO.coordinates.lat,
+      longitude: BUSINESS_INFO.coordinates.lng,
+    },
+    openingHours: "Mo-Su 08:00-23:59",
+    servesCuisine: BUSINESS_INFO.servesCuisine,
+    priceRange: BUSINESS_INFO.priceRange,
+    hasMap: "https://maps.google.com/?q=127+Wroxham+Road+Paulshof+Sandton",
+    sameAs: [
+      social.facebook,
+      social.instagram,
     ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "The Boma Café | Paulshof, Sandton",
-    description: "Rustic open-air dining in the heart of Sandton.",
-    images: ["https://www.thebomacafe.co.za/assets/images/og-hero.jpg"],
-  },
-  alternates: {
-    canonical: "https://www.thebomacafe.co.za/",
-  },
-};
+    amenityFeature: [
+      {"@type":"LocationFeatureSpecification","name":"Kids Play Area","value":true},
+      {"@type":"LocationFeatureSpecification","name":"Outdoor Seating","value":true},
+      {"@type":"LocationFeatureSpecification","name":"Firepits","value":true},
+      {"@type":"LocationFeatureSpecification","name":"Live Entertainment","value":true},
+    ],
+  };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name,
+    url: website,
+    author: {
+      "@type": "Person",
+      name: "Stopher Malik",
+    },
+    creator: {
+      "@type": "Organization",
+      name: "SMK Web Design",
+      url: "https://stopher-malik.co.za",
+    },
+    potentialAction: {
+      "@type": "SearchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: `${website}/menu?q={search_term_string}`,
+      },
+      "query-input": "required name=search_term_string",
+    },
+  };
+
   return (
     <html lang="en">
       <head>
@@ -110,16 +139,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Poppins:wght@400;500;600&display=swap" />
-        <link 
-          href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Poppins:wght@400;500;600&display=swap" 
-          rel="stylesheet" 
+        <link
+          href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Poppins:wght@400;500;600&display=swap"
+          rel="stylesheet"
         />
         <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossOrigin="anonymous" />
-        <link 
-          rel="stylesheet" 
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" 
-          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" 
-          crossOrigin="anonymous" 
+        <link
+          rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+          crossOrigin="anonymous"
           referrerPolicy="no-referrer"
         />
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
