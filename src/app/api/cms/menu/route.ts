@@ -75,12 +75,14 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    if (body.id && body.name !== undefined) {
+    // Category: has name, no categoryId
+    if (body.name !== undefined && !body.categoryId) {
       const category = await saveCategory(body);
       revalidatePath('/menu');
       return NextResponse.json({ success: true, data: category });
     }
     
+    // Menu item: has categoryId
     if (body.categoryId !== undefined) {
       const item = await saveMenuItem(body);
       revalidatePath('/menu');
@@ -101,15 +103,21 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     
-    if (body.categoryId || (body.id && body.name !== undefined)) {
+    // Category: has id/name, no categoryId
+    if ((body.id && body.name !== undefined) && !body.categoryId) {
       const category = await saveCategory(body);
       revalidatePath('/menu');
       return NextResponse.json({ success: true, data: category });
     }
     
-    const item = await saveMenuItem(body);
-    revalidatePath('/menu');
-    return NextResponse.json({ success: true, data: item });
+    // Menu item: has categoryId
+    if (body.categoryId !== undefined) {
+      const item = await saveMenuItem(body);
+      revalidatePath('/menu');
+      return NextResponse.json({ success: true, data: item });
+    }
+    
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   } catch (error) {
     console.error('Error saving menu:', error);
     return NextResponse.json({ error: 'Failed to save menu' }, { status: 500 });
