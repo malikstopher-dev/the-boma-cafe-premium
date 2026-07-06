@@ -91,7 +91,7 @@ export default function AdminAnnouncement() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--dark-brown)', fontWeight: 500 }}>Link (optional)</label>
-              <input type="text" value={formData.link} onChange={e => setFormData({...formData, link: e.target.value})} placeholder="e.g., /events" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--cream)' }} />
+              <input type="text" value={formData.link} onChange={e => setFormData({...formData, link: e.target.value})} placeholder="e.g., /experience" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--cream)' }} />
             </div>
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--dark-brown)', fontWeight: 500 }}>Link Text (optional)</label>

@@ -137,7 +137,7 @@ export default function AdminSiteSettings() {
     isEnabled: true,
     message: '🎉 Join us for Live Music every Friday & Saturday evening!',
     buttonText: 'View Events',
-    buttonLink: '/events'
+    buttonLink: '/experience'
   });
 
   const [branding, setBranding] = useState({
