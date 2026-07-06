@@ -30,6 +30,7 @@ export default function AdminGallery() {
   const [localImages, setLocalImages] = useState<LocalImage[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -129,11 +130,12 @@ export default function AdminGallery() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaveError(null);
     try {
       if (editItem) {
-        const updated = gallery.map((item: any) => item.id === editItem.id ? { ...item, ...formData } : item);
-        await cmsService.reorderGallery(updated);
-        setGallery(updated);
+        const updated = { ...editItem, ...formData };
+        await cmsService.saveGalleryItem(updated);
+        setGallery(gallery.map((item: any) => item.id === editItem.id ? updated : item));
       } else {
         const newItem = { ...formData, id: generateId(), order: gallery.length + 1, isFeatured: formData.isFeatured } as any;
         const result = await cmsService.saveGalleryItem(newItem);
@@ -144,6 +146,7 @@ export default function AdminGallery() {
       setFormData({ type: 'image', url: '', title: '', category: 'Events', isFeatured: false });
     } catch (error) {
       console.error('Error saving gallery item:', error);
+      setSaveError(error instanceof Error ? error.message : 'Failed to save gallery item');
     }
   };
 
@@ -158,9 +161,10 @@ export default function AdminGallery() {
       try {
         await cmsService.deleteGalleryItem(id);
         setGallery(gallery.filter((item: any) => item.id !== id));
-      } catch (error) {
-        console.error('Error deleting gallery item:', error);
-      }
+    } catch (error) {
+      console.error('Error deleting gallery item:', error);
+      setSaveError(error instanceof Error ? error.message : 'Failed to delete gallery item');
+    }
     }
   };
 
@@ -240,6 +244,11 @@ export default function AdminGallery() {
                   {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                 </select>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><input type="checkbox" checked={formData.isFeatured} onChange={e => setFormData({...formData, isFeatured: e.target.checked})} /> Featured on Homepage</label>
+                {saveError && (
+                  <div style={{ padding: '0.75rem', background: '#fee2e2', color: '#dc2626', borderRadius: '8px', fontSize: '0.9rem' }}>
+                    {saveError}
+                  </div>
+                )}
                 <div style={{ display: 'flex', gap: '1rem' }}>
                   <button type="submit" className="btn btn-primary">Save</button>
                   <button type="button" onClick={() => { setIsEditing(false); setEditItem(null); }} className="btn btn-ghost">Cancel</button>

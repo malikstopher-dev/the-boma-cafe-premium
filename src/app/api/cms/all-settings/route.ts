@@ -52,6 +52,7 @@ export async function PUT(request: NextRequest) {
     const success = await setSetting(key, value);
     
     if (success) {
+      revalidatePath('/', 'layout');
       return NextResponse.json({ success: true });
     } else {
       return NextResponse.json({ error: 'Failed to save setting' }, { status: 500 });

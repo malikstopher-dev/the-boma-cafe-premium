@@ -10,6 +10,7 @@ export default function AdminPromotions() {
   const [isEditing, setIsEditing] = useState(false);
   const [editPromo, setEditPromo] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [formData, setFormData] = useState({ title: '', description: '', validFrom: '', validUntil: '', ctaText: '', ctaLink: '', image: '', isFeatured: false, isActive: true, displayOnHomepage: false, displayAsPopup: false, displayOnMenu: false, displayOnPromotionsPage: true });
 
   useEffect(() => {
@@ -28,6 +29,7 @@ export default function AdminPromotions() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaveError(null);
     try {
       if (editPromo) {
         const updated = { ...editPromo, ...formData, updatedAt: new Date().toISOString() };
@@ -43,6 +45,7 @@ export default function AdminPromotions() {
       setFormData({ title: '', description: '', validFrom: '', validUntil: '', ctaText: '', ctaLink: '', image: '', isFeatured: false, isActive: true, displayOnHomepage: false, displayAsPopup: false, displayOnMenu: false, displayOnPromotionsPage: true });
     } catch (error) {
       console.error('Error saving promotion:', error);
+      setSaveError(error instanceof Error ? error.message : 'Failed to save promotion');
     }
   };
 
@@ -59,6 +62,7 @@ export default function AdminPromotions() {
         setPromotions(promotions.filter((p: any) => p.id !== id));
       } catch (error) {
         console.error('Error deleting promotion:', error);
+        setSaveError(error instanceof Error ? error.message : 'Failed to delete promotion');
       }
     }
   };
@@ -72,6 +76,7 @@ export default function AdminPromotions() {
         setPromotions(promotions.map((p: any) => p.id === id ? updated : p));
       } catch (error) {
         console.error('Error toggling active:', error);
+        setSaveError(error instanceof Error ? error.message : 'Failed to update promotion');
       }
     }
   };
@@ -108,6 +113,11 @@ export default function AdminPromotions() {
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><input type="checkbox" checked={formData.displayAsPopup} onChange={e => setFormData({...formData, displayAsPopup: e.target.checked})} /> Popup</label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><input type="checkbox" checked={formData.displayOnPromotionsPage} onChange={e => setFormData({...formData, displayOnPromotionsPage: e.target.checked})} /> Promotions Page</label>
             </div>
+            {saveError && (
+              <div style={{ gridColumn: 'span 2', padding: '0.75rem', background: '#fee2e2', color: '#dc2626', borderRadius: '8px', fontSize: '0.9rem' }}>
+                {saveError}
+              </div>
+            )}
             <div style={{ gridColumn: 'span 2', display: 'flex', gap: '1rem' }}>
               <button type="submit" className="btn btn-primary">Save</button>
               <button type="button" onClick={() => { setIsEditing(false); setEditPromo(null); }} className="btn btn-ghost">Cancel</button>

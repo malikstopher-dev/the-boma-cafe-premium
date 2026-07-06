@@ -12,6 +12,7 @@ export default function AdminEvents() {
   const [isEditing, setIsEditing] = useState(false);
   const [editEvent, setEditEvent] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [galleryInput, setGalleryInput] = useState('');
   
   const [formData, setFormData] = useState({ 
@@ -77,6 +78,7 @@ export default function AdminEvents() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaveError(null);
     const eventData = { 
       ...formData, 
       coverImage: formData.coverImage,
@@ -88,9 +90,9 @@ export default function AdminEvents() {
     
     try {
       if (editEvent) {
-        const updated = events.map((e: any) => e.id === editEvent.id ? { ...e, ...eventData } : e);
-        await cmsService.reorderEvents(updated);
-        setEvents(updated);
+        const updated = { ...editEvent, ...eventData, updatedAt: new Date().toISOString() };
+        await cmsService.saveEvent(updated);
+        setEvents(events.map((e: any) => e.id === editEvent.id ? updated : e));
       } else {
         const newEvent = { 
           ...eventData, 
@@ -104,6 +106,7 @@ export default function AdminEvents() {
       resetForm();
     } catch (error) {
       console.error('Error saving event:', error);
+      setSaveError(error instanceof Error ? error.message : 'Failed to save event');
     }
   };
 
@@ -135,6 +138,7 @@ export default function AdminEvents() {
         setEvents(events.filter((e: any) => e.id !== id));
       } catch (error) {
         console.error('Error deleting event:', error);
+        setSaveError(error instanceof Error ? error.message : 'Failed to delete event');
       }
     }
   };
@@ -149,6 +153,7 @@ export default function AdminEvents() {
       alert('Last Week Highlight saved!');
     } catch (error) {
       console.error('Error saving highlight:', error);
+      alert('Error saving highlight: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
 
@@ -377,6 +382,11 @@ export default function AdminEvents() {
                   />
                   Visible (show on site)
                 </label>
+                {saveError && (
+                  <div style={{ gridColumn: 'span 2', padding: '0.75rem', background: '#fee2e2', color: '#dc2626', borderRadius: '8px', fontSize: '0.9rem' }}>
+                    {saveError}
+                  </div>
+                )}
                 <div style={{ gridColumn: 'span 2', display: 'flex', gap: '0.75rem' }}>
                   <button type="submit" className="btn btn-primary">Save Event</button>
                   <button type="button" onClick={resetForm} className="btn btn-ghost">Cancel</button>
