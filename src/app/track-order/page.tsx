@@ -217,7 +217,7 @@ export default function TrackOrderPage() {
             <div style={{ flex: 1, position: 'relative' }}>
               <input
                 type="text"
-                placeholder="BOMA-250611-001"
+                placeholder="20260706-001"
                 value={ref}
                 onChange={e => setRef(e.target.value.toUpperCase())}
                 style={{

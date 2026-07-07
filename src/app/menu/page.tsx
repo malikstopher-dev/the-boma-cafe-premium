@@ -116,7 +116,7 @@ function OptionModal({ item, isOpen, onClose, onAddToCart }: OptionModalProps) {
       <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <h2 className={styles.modalTitle}>{item.name}</h2>
-          <button className={styles.modalClose} onClick={onClose}>×</button>
+          <button className={styles.modalClose} onClick={onClose} aria-label="Close item details">×</button>
         </div>
 
         <div className={styles.modalBody}>
@@ -234,7 +234,7 @@ export default function MenuPage() {
   useEffect(() => {
     const loadFromCms = async () => {
       try {
-        const res = await fetch('/api/menu/public', { cache: 'no-cache' });
+        const res = await fetch(`/api/menu/public?t=${Date.now()}`, { cache: 'no-cache' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (!data.categories || !data.menuItems) throw new Error('Invalid response');
@@ -509,7 +509,10 @@ export default function MenuPage() {
                 </div>
                 <div className={styles.itemsGrid}>
                   {section.items.slice(0, visibleCount).map((item: MenuItem) => {
-                    const itemImage = getMenuItemImage(item.name);
+                    const CMS_IMAGE_NAMES = ['Full Chicken, Chips & 4 Rotis', '200g Ribs & Steak', '1/4 Chicken, Pap & Gravy'];
+                    const itemImage = (CMS_IMAGE_NAMES.includes(item.name) && item.image)
+                      ? item.image
+                      : getMenuItemImage(item.name);
                     return (
                     <div key={item.id} className={styles.itemCard} onClick={() => setSelectedItem(item)}>
                       <div className={styles.imageWrapper}>

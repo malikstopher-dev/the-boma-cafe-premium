@@ -94,15 +94,21 @@ function generateIdempotencyKey(): string {
 
 async function generateOrderRef(): Promise<string> {
   const now = new Date()
-  const yymmdd = now.toISOString().slice(2, 10).replace(/-/g, '')
-  const buf = new Uint8Array(4)
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-    crypto.getRandomValues(buf)
-  } else {
-    for (let i = 0; i < 4; i++) buf[i] = Math.floor(Math.random() * 256)
-  }
-  const random = Array.from(buf).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase()
-  return `BOMA-${yymmdd}-${random}`
+  const yyyymmdd = now.toISOString().slice(0, 10).replace(/-/g, '')
+
+  const todayStart = new Date(now)
+  todayStart.setHours(0, 0, 0, 0)
+  const todayEnd = new Date(now)
+  todayEnd.setHours(23, 59, 59, 999)
+
+  const { count, error } = await getAdminClient()
+    .from('orders')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', todayStart.toISOString())
+    .lte('created_at', todayEnd.toISOString())
+
+  const seq = ((count ?? 0) + 1).toString().padStart(3, '0')
+  return `${yyyymmdd}-${seq}`
 }
 
 const SUBMISSION_WINDOW_MS = 5000

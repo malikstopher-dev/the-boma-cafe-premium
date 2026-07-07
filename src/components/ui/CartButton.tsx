@@ -291,7 +291,7 @@ export default function CartButton() {
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.header}>
               <h2 style={{ fontSize: '1.35rem', color: 'var(--dark-brown)' }}>🛒 Your Order</h2>
-              {!showOrderSuccess && <button className={styles.closeBtn} onClick={closeCart}>✕</button>}
+              {!showOrderSuccess && <button className={styles.closeBtn} onClick={closeCart} aria-label="Close cart">✕</button>}
             </div>
 
             {showOrderSuccess ? (

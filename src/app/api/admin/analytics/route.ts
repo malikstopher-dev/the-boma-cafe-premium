@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient } from '@/lib/supabase'
 import { requireAdmin } from '@/lib/auth/requireRole'
 
+const NO_CACHE = { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+
 export async function GET(request: NextRequest) {
   const authError = await requireAdmin(request)
   if (authError) return authError
@@ -16,7 +18,7 @@ export async function GET(request: NextRequest) {
       .gte('created_at', new Date(Date.now() - days * 86400000).toISOString())
       .order('created_at', { ascending: false })
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return NextResponse.json({ error: error.message }, { status: 500, ...NO_CACHE })
     if (!orders || orders.length === 0) {
       return NextResponse.json({
         revenue: 0,
@@ -25,7 +27,7 @@ export async function GET(request: NextRequest) {
         orderTypeBreakdown: { pickup: 0, delivery: 0, 'dine-in': 0 },
         dailyRevenue: [],
         orderFrequency: [],
-      })
+      }, NO_CACHE)
     }
 
     const completed = orders.filter(o => o.status === 'completed')
@@ -87,8 +89,8 @@ export async function GET(request: NextRequest) {
       orderTypeBreakdown,
       dailyRevenue,
       orderFrequency,
-    })
+    }, NO_CACHE)
   } catch (err) {
-    return NextResponse.json({ error: (err as Error)?.message || 'Unknown error' }, { status: 500 })
+    return NextResponse.json({ error: (err as Error)?.message || 'Unknown error' }, { status: 500, ...NO_CACHE })
   }
 }

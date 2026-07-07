@@ -528,6 +528,7 @@ export default function GalleryPage() {
             <button 
               className={styles.lightboxClose}
               onClick={closeLightbox}
+              aria-label="Close lightbox"
             >
               ✕
             </button>
@@ -536,12 +537,14 @@ export default function GalleryPage() {
                 <button 
                   className={styles.lightboxPrev}
                   onClick={(e) => { e.stopPropagation(); goToPrev(); }}
+                  aria-label="Previous image"
                 >
                   ‹
                 </button>
                 <button 
                   className={styles.lightboxNext}
                   onClick={(e) => { e.stopPropagation(); goToNext(); }}
+                  aria-label="Next image"
                 >
                   ›
                 </button>

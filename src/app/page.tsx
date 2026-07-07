@@ -157,7 +157,7 @@ export default function Home() {
                 <FadeInSection key={idx} delay={idx * 100} className={styles.showcaseCardWrapper}>
                   <Link href={category.link} className={styles.showcaseCard}>
                     <div className={styles.showcaseCardImage}>
-                      <img src={category.image} alt={category.title} loading="lazy" decoding="async" />
+                      <img src={category.image} alt={category.title} width={600} height={450} loading="lazy" decoding="async" />
                       <div className={styles.showcaseCardOverlay} />
                       {category.badge && (
                         <span className={`${styles.showcaseBadge} ${category.badge === 'Chef Pick' ? styles.chefPick : ''}`}>
@@ -200,7 +200,7 @@ export default function Home() {
                 <FadeInSection key={idx} delay={idx * 100} className={styles.signatureCardWrapper}>
                   <Link href="/menu" className={styles.signatureCard}>
                     <div className={styles.signatureCardImage}>
-                      <img src={item.image} alt={item.name} loading="lazy" decoding="async" />
+                      <img src={item.image} alt={item.name} width={600} height={400} loading="lazy" decoding="async" />
                       <span className={styles.signatureBadge}>★ Featured</span>
                     </div>
                     <div className={styles.signatureCardContent}>
@@ -236,7 +236,7 @@ export default function Home() {
                 <FadeInSection key={idx} delay={idx * 100} className={styles.cocktailCardWrapper}>
                   <div className={styles.cocktailCard}>
                     <div className={styles.cocktailImageWrapper}>
-                      <img src={cocktail.image} alt={cocktail.name} className={styles.cocktailImage} loading="lazy" decoding="async" />
+                      <img src={cocktail.image} alt={cocktail.name} width={400} height={500} className={styles.cocktailImage} loading="lazy" decoding="async" />
                       <div className={styles.cocktailOverlay} />
                     </div>
                     <div className={styles.cocktailContent}>
@@ -275,16 +275,17 @@ export default function Home() {
             <FadeInSection animationType="scale" className={styles.galleryPreviewWrapper}>
               <div className={styles.galleryPreview}>
                 <div className={styles.galleryMainImage}>
-                  <img src={galleryPreview[galleryIndex].url} alt={galleryPreview[galleryIndex].alt} loading="lazy" decoding="async" />
+                  <img src={galleryPreview[galleryIndex].url} alt={galleryPreview[galleryIndex].alt} width={800} height={600} loading="lazy" decoding="async" />
                   <div className={styles.galleryOverlay} />
-                  <button className={styles.galleryNavPrev} onClick={() => setGalleryIndex(prev => prev > 0 ? prev - 1 : galleryPreview.length - 1)}>‹</button>
-                  <button className={styles.galleryNavNext} onClick={() => setGalleryIndex(prev => (prev + 1) % galleryPreview.length)}>›</button>
+                  <button className={styles.galleryNavPrev} onClick={() => setGalleryIndex(prev => prev > 0 ? prev - 1 : galleryPreview.length - 1)} aria-label="Previous gallery image">‹</button>
+                  <button className={styles.galleryNavNext} onClick={() => setGalleryIndex(prev => (prev + 1) % galleryPreview.length)} aria-label="Next gallery image">›</button>
                   <div className={styles.galleryDots}>
                     {galleryPreview.map((_, idx) => (
                       <button
                         key={idx}
                         className={`${styles.galleryDot} ${idx === galleryIndex ? styles.active : ''}`}
                         onClick={() => setGalleryIndex(idx)}
+                        aria-label={`Go to gallery image ${idx + 1}`}
                       />
                     ))}
                   </div>

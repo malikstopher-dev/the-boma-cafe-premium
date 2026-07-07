@@ -1,5 +1,6 @@
 import "./globals.css";
 import { cache } from "react";
+import { Playfair_Display, Poppins } from "next/font/google";
 import { AuthProvider } from "@/lib/auth-context";
 import { CartProvider } from "@/lib/cart";
 import { BookingProvider } from "@/lib/booking";
@@ -8,7 +9,20 @@ import ScrollToTopButton from "@/components/ui/ScrollToTopButton";
 import { BUSINESS_INFO } from "@/lib/whatsappConfig";
 import MobileBottomBar from "@/components/ui/MobileBottomBar";
 import ScrollArrows from "@/components/ui/ScrollArrows";
+import FontAwesomeLoader from "@/components/ui/FontAwesomeLoader";
 import { getAllSettings } from "@/lib/cms-supabase";
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  variable: "--font-display",
+});
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-body",
+});
 
 const getSettings = cache(async () => {
   try {
@@ -135,22 +149,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en">
       <head>
-        <style>{`:root { --font-display: 'Playfair Display', serif; --font-body: 'Poppins', sans-serif; }`}</style>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Poppins:wght@400;500;600&display=swap" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Poppins:wght@400;500;600&display=swap"
-          rel="stylesheet"
-        />
         <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossOrigin="anonymous" />
-        <link
-          rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
-          crossOrigin="anonymous"
-          referrerPolicy="no-referrer"
-        />
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#1a0f0a" />
@@ -167,8 +166,21 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
         />
+        <script
+          type="text/javascript"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function(c,l,a,r,i,t,y){
+                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+              })(window, document, "clarity", "script", "xid2ylu7y2");
+            `,
+          }}
+        />
       </head>
-      <body className="min-h-screen">
+      <body className={`min-h-screen ${playfair.variable} ${poppins.variable}`}>
+        <FontAwesomeLoader />
         <AuthProvider>
           <CartProvider>
             <BookingProvider>

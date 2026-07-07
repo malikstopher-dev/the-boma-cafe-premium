@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { MenuItem } from '@/types';
 import { getSuggestedItems } from '@/lib/upsellData';
+import { getMenuItemImage } from '@/lib/menuImage';
 import styles from './UpsellModal.module.css';
 
 interface UpsellModalProps {
@@ -138,7 +139,7 @@ export default function UpsellModal({
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={e => e.stopPropagation()}>
-        <button className={styles.closeBtn} onClick={onClose}>
+        <button className={styles.closeBtn} onClick={onClose} aria-label="Close upsell">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M18 6L6 18M6 6l12 12" />
           </svg>
@@ -164,8 +165,8 @@ export default function UpsellModal({
                 return (
                   <div key={item.id} className={`${styles.suggestionCard} ${isAdded ? styles.added : ''}`}>
                     <div className={styles.itemImage}>
-                      {item.image ? (
-                        <img src={item.image} alt={item.name} />
+                      {item.image || getMenuItemImage(item.name) ? (
+                        <img src={item.image || getMenuItemImage(item.name)} alt={item.name} />
                       ) : (
                         <div className={styles.placeholder}>
                           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">

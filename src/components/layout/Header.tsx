@@ -70,6 +70,8 @@ export default function Header() {
             <img 
               src="/logo.png" 
               alt="The Boma Cafe" 
+              width={354}
+              height={254}
               className={styles.logoImg}
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = 'none';

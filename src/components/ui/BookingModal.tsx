@@ -115,6 +115,7 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
       >
         <button
           onClick={onClose}
+          aria-label="Close booking modal"
           style={{
             position: 'absolute',
             top: '1rem',

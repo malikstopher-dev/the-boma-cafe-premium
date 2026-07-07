@@ -122,6 +122,7 @@ export default function PromotionsPage() {
               {/* Navigation arrows */}
               <button
                 onClick={() => setCurrentSlide(prev => prev > 0 ? prev - 1 : displayImages.length - 1)}
+                aria-label="Previous promotion"
                 style={{
                   position: 'absolute',
                   top: '50%',
@@ -145,6 +146,7 @@ export default function PromotionsPage() {
               </button>
               <button
                 onClick={() => setCurrentSlide(prev => (prev + 1) % displayImages.length)}
+                aria-label="Next promotion"
                 style={{
                   position: 'absolute',
                   top: '50%',
@@ -180,6 +182,7 @@ export default function PromotionsPage() {
                   <button
                     key={index}
                     onClick={() => setCurrentSlide(index)}
+                    aria-label={`Go to promotion ${index + 1}`}
                     style={{
                       width: index === currentSlide ? '24px' : '8px',
                       height: '8px',
