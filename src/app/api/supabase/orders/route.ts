@@ -84,6 +84,7 @@ export async function POST(request: NextRequest) {
 
     // ── Auth check: waiter orders require valid waiter session ──
     const role = await getRequestRole(request)
+    console.log('API ROLE', role, 'waiter_name', body.waiter_name)
     if (body.waiter_name) {
       if (role !== 'waiter') {
         return NextResponse.json({ error: 'Unauthorized — waiter login required' }, { status: 401 })

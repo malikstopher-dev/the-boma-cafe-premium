@@ -89,14 +89,14 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next({ request: { headers: setAuthHeaders(request.headers, auth.role) } })
     }
 
-    // Waiter page: waiter or admin
+    // Waiter page: has its own client-side PasswordGate — pass through.
+    // If authenticated, set headers for the page component.
     if (pathname.startsWith('/waiter')) {
       const auth = await verifyRole(request)
-      if (!auth) return redirectToLogin(request)
-      if (auth.role === 'admin' || auth.role === 'waiter') {
+      if (auth && (auth.role === 'admin' || auth.role === 'waiter')) {
         return NextResponse.next({ request: { headers: setAuthHeaders(request.headers, auth.role) } })
       }
-      return redirectToLogin(request)
+      return NextResponse.next()
     }
 
     // Admin pages

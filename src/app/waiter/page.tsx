@@ -55,6 +55,10 @@ function PasswordGate({ onSuccess }: { onSuccess: () => void }) {
         body: JSON.stringify({ password, role: 'waiter' }),
       })
       if (res.ok) {
+        // Diagnose: verify the cookie was set
+        const sessionCheck = await fetch('/api/admin/auth').then(r => r.json()).catch(() => null)
+        console.log('WAITER SESSION', sessionCheck)
+        try { console.log('WAITER STORAGE', { ...localStorage }) } catch {}
         onSuccess()
       } else {
         setError('Invalid password')
