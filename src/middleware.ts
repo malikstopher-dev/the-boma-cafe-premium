@@ -79,6 +79,16 @@ export async function middleware(request: NextRequest) {
 
   // ── Page routes ─────────────────────────────────────────
   if (!isApi) {
+    // Staff pages (PWA)
+    if (pathname.startsWith('/staff')) {
+      if (pathname === '/staff/login' || pathname === '/staff/install') return NextResponse.next()
+      const auth = await verifyRole(request)
+      if (!auth) {
+        return NextResponse.redirect(new URL('/staff/login', request.url))
+      }
+      return NextResponse.next({ request: { headers: setAuthHeaders(request.headers, auth.role) } })
+    }
+
     // Waiter page: waiter or admin
     if (pathname.startsWith('/waiter')) {
       const auth = await verifyRole(request)
@@ -128,6 +138,7 @@ export const config = {
   matcher: [
     '/admin/:path*',
     '/waiter/:path*',
+    '/staff/:path*',
     '/api/admin/:path*',
     '/api/cms/:path*',
     '/api/waiters/:path*',

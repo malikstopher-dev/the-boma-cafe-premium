@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
 
 interface Order {
@@ -18,11 +18,13 @@ interface Order {
   table_number: number | null
   created_at: string
   preparation_time_minutes: number | null
+  source?: string
 }
 
 const COLUMNS = [
   { key: 'pending', label: 'NEW ORDERS', icon: '🟡', color: '#f59e0b', bg: '#1a1500' },
-  { key: 'inPrep', label: 'IN PREP', icon: '🔵', color: '#3b82f6', bg: '#001830' },
+  { key: 'confirmed', label: 'ACCEPTED', icon: '🔵', color: '#3b82f6', bg: '#001830' },
+  { key: 'preparing', label: 'PREPARING', icon: '👨‍🍳', color: '#8b5cf6', bg: '#1a0030' },
   { key: 'packing', label: 'PACKING', icon: '📦', color: '#f97316', bg: '#1a0c00' },
   { key: 'ready', label: 'READY', icon: '🟢', color: '#10b981', bg: '#003020' },
 ]
@@ -311,27 +313,22 @@ export default function KitchenDisplay() {
     }
   }, [authed, authExpired, loadOrders, soundOn])
 
-  // Auto-cleanup ready orders
+  // Client-side auto-cleanup of old ready orders (removes from display only)
+  const displayOrders = useMemo(() => {
+    return orders.filter((o) => {
+      if (o.status !== 'ready') return true
+      const readyTs = readyTimesRef.current.get(o.id)
+      return !readyTs || Date.now() - readyTs < READY_CLEANUP_MS
+    })
+  }, [orders])
+
+  // Prune readyTimesRef for orders no longer in ready status
   useEffect(() => {
-    if (!authed) return
-    const cleanup = setInterval(async () => {
-      const now = Date.now()
-      for (const [id, ts] of Array.from(readyTimesRef.current.entries())) {
-        if (now - ts > READY_CLEANUP_MS) {
-          readyTimesRef.current.delete(id)
-          try {
-            await fetch(`/api/supabase/orders?id=${id}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ status: 'completed' }),
-            })
-            setOrders((prev) => prev.map((o) => o.id === id ? { ...o, status: 'completed' } : o))
-          } catch { /* silent */ }
-        }
-      }
-    }, 10000)
-    return () => clearInterval(cleanup)
-  }, [authed])
+    const readyIds = new Set(orders.filter((o) => o.status === 'ready').map((o) => o.id))
+    Array.from(readyTimesRef.current.keys()).forEach((id) => {
+      if (!readyIds.has(id)) readyTimesRef.current.delete(id)
+    })
+  }, [orders])
 
   const showCardError = (orderId: string, msg: string) => {
     setCardErrors(prev => ({ ...prev, [orderId]: msg }))
@@ -377,11 +374,12 @@ export default function KitchenDisplay() {
   }
 
   // Build flat list of actionable orders for keyboard nav
-  const pending = orders.filter((o) => o.status === 'pending')
-  const inPrep = orders.filter((o) => o.status === 'confirmed' || o.status === 'preparing')
-  const packing = orders.filter((o) => o.status === 'packing')
-  const readyOrders = orders.filter((o) => o.status === 'ready')
-  const allColumns = [pending, inPrep, packing, readyOrders]
+  const pending = displayOrders.filter((o) => o.status === 'pending')
+  const confirmed = displayOrders.filter((o) => o.status === 'confirmed')
+  const preparing = displayOrders.filter((o) => o.status === 'preparing')
+  const packing = displayOrders.filter((o) => o.status === 'packing')
+  const readyOrders = displayOrders.filter((o) => o.status === 'ready')
+  const allColumns = [pending, confirmed, preparing, packing, readyOrders]
 
   // Reset focus index when column changes
   useEffect(() => {
@@ -396,7 +394,7 @@ export default function KitchenDisplay() {
       if (document.activeElement?.tagName === 'INPUT') return
       // Arrow keys to navigate
       if (e.key === 'ArrowRight') {
-        setFocusedCol((p) => Math.min(p + 1, 3))
+        setFocusedCol((p) => Math.min(p + 1, 4))
         return
       }
       if (e.key === 'ArrowLeft') {
@@ -466,9 +464,10 @@ export default function KitchenDisplay() {
 
   const columnData = [
     { ...COLUMNS[0], items: pending, key: 'pending' },
-    { ...COLUMNS[1], items: inPrep, key: 'inPrep' },
-    { ...COLUMNS[2], items: packing, key: 'packing' },
-    { ...COLUMNS[3], items: readyOrders, key: 'ready' },
+    { ...COLUMNS[1], items: confirmed, key: 'confirmed' },
+    { ...COLUMNS[2], items: preparing, key: 'preparing' },
+    { ...COLUMNS[3], items: packing, key: 'packing' },
+    { ...COLUMNS[4], items: readyOrders, key: 'ready' },
   ]
 
   return (
@@ -590,11 +589,11 @@ export default function KitchenDisplay() {
         </div>
       )}
 
-      {/* 4-Column Layout */}
+      {/* 5-Column Layout */}
       <div style={{
         flex: 1,
         display: 'grid',
-        gridTemplateColumns: '1fr 1fr 1fr 1fr',
+        gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr',
         gap: '0',
         overflow: 'hidden',
       }}>
@@ -683,7 +682,7 @@ export default function KitchenDisplay() {
                   color: 'rgba(255,255,255,0.15)',
                   fontSize: '0.9rem',
                 }}>
-                  {col.key === 'pending' ? 'No new orders' : col.key === 'inPrep' ? 'Nothing in progress' : 'No completed orders'}
+                  {col.key === 'pending' ? 'No new orders' : col.key === 'confirmed' ? 'No accepted orders' : col.key === 'preparing' ? 'Nothing in prep' : 'No completed orders'}
                 </div>
               )}
               {col.items.map((order, idx) => {
@@ -861,7 +860,23 @@ export default function KitchenDisplay() {
                     )}
 
                     {/* Actions */}
-                    {order.status === 'pending' && (
+                    {order.status === 'pending' && order.source === 'waiter' && (
+                      <button
+                        onClick={() => updateStatus(order.id, 'confirmed')}
+                        disabled={updating === order.id}
+                        style={{
+                          width: '100%', padding: '0.875rem',
+                          border: '2px solid #3b82f6', borderRadius: '10px',
+                          background: 'rgba(59,130,246,0.15)',
+                          color: '#60a5fa', fontSize: '1rem', fontWeight: 700,
+                          cursor: updating === order.id ? 'not-allowed' : 'pointer',
+                          opacity: updating === order.id ? 0.5 : 1,
+                        }}
+                      >
+                        {updating === order.id ? '...' : '✅ Accept Waiter Order'}
+                      </button>
+                    )}
+                    {order.status === 'pending' && order.source !== 'waiter' && (
                       <div style={{
                         width: '100%', padding: '0.875rem',
                         borderRadius: '10px', background: 'rgba(245,158,11,0.08)',

@@ -80,6 +80,7 @@ async function enrichItems(items: OrderItemInput[]): Promise<{
       subtotal,
       ...(sizeMatched && item.selected_size ? { selected_size: { name: item.selected_size, price: itemPrice } } : {}),
       ...(resolvedAddOns.length > 0 ? { selected_add_ons: resolvedAddOns } : {}),
+      ...(item.notes ? { notes: item.notes } : {}),
     })
 
     total += subtotal
@@ -166,6 +167,8 @@ export async function createOrder(input: {
   table_number?: string
   delivery_address?: string
   waiter_name?: string
+  created_by?: string
+  order_notes?: string
 }): Promise<CreateOrderResult> {
   const idempotencyKey = input.idempotency_key || generateIdempotencyKey()
 
@@ -195,6 +198,7 @@ export async function createOrder(input: {
     quantity: i.quantity ?? 1,
     selected_size: i.selected_size,
     selected_add_ons: i.selected_add_ons,
+    notes: i.notes,
   }))
 
   // ── Server-authoritative pricing ───────────────────────────
@@ -207,7 +211,11 @@ export async function createOrder(input: {
     return { order: null, duplicate: false, error: 'Invalid total' }
   }
 
-  const items_json = JSON.stringify({ items: enriched, metadata: {} })
+  const metadata: Record<string, any> = {}
+  if (input.order_notes) {
+    metadata.orderNotes = input.order_notes
+  }
+  const items_json = JSON.stringify({ items: enriched, metadata })
   const order_ref = await generateOrderRef()
 
   const ORDER_TYPE_NORMALIZATIONS: Record<string, string> = {
@@ -220,7 +228,7 @@ export async function createOrder(input: {
   // ── Build insert payload (ONLY known columns, NO raw passthrough) ──
   const insertPayload: Record<string, unknown> = {
     customer_name: input.customer_name.trim(),
-    phone: input.phone.trim(),
+    phone: input.phone?.trim() || '',
     order_type: normalizedType,
     requested_time: input.requested_time || 'ASAP',
     items_json,
@@ -240,6 +248,9 @@ export async function createOrder(input: {
 
   if (input.waiter_name) {
     insertPayload.waiter_name = input.waiter_name.trim()
+    insertPayload.source = 'waiter'
+  } else {
+    insertPayload.source = 'online'
   }
 
   // ── Insert with retry (handles schema cache delays) ────────
@@ -264,7 +275,7 @@ export async function createOrder(input: {
         order_id: data.id,
         event_type: 'ORDER_CREATED',
         to_status: 'pending',
-        created_by: 'system',
+        created_by: input.created_by ?? 'system',
         metadata: { order_ref: data.order_ref, total },
       })
       return { order: data as unknown as OrderRecord, duplicate: false, error: null }

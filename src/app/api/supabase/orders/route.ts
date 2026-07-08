@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient } from '@/lib/supabase'
 import { requireAdminOrKitchen, requireAdmin, getRequestRole } from '@/lib/auth/requireRole'
 import { canTransition, requiresPaymentConfirmation, paymentRequiredForTransition } from '@/lib/order-state-machine'
-import { checkRateLimit } from '@/lib/rate-limit'
+import { checkRateLimit, checkRateLimitByWaiter } from '@/lib/rate-limit'
 import { validateOrder, sanitizeOrderInput } from '@/lib/pos/validateOrder'
 import { createOrder, logOrderEvent } from '@/lib/pos/orderService'
 import type { OrderEventType } from '@/lib/pos/types'
+import { notifyOrderCreated, notifyOrderConfirmed, notifyOrderRejected, notifyOrderPreparing, notifyOrderReady } from '@/lib/notifications/push'
 
 const ALLOWED_PATCH_FIELDS = new Set([
   'customer_name', 'phone', 'order_type', 'requested_time', 'status',
@@ -81,6 +82,17 @@ export async function POST(request: NextRequest) {
     // ── Sanitize: strip unknown fields before validation ──
     const body = sanitizeOrderInput(raw)
 
+    // ── Auth check: waiter orders require valid waiter session ──
+    const role = await getRequestRole(request)
+    if (body.waiter_name) {
+      if (role !== 'waiter') {
+        return NextResponse.json({ error: 'Unauthorized — waiter login required' }, { status: 401 })
+      }
+      if (!checkRateLimitByWaiter(body.waiter_name as string)) {
+        return NextResponse.json({ error: 'Too many requests (waiter)' }, { status: 429 })
+      }
+    }
+
     // ── Central validation ─────────────────────────────────
     const validation = validateOrder(body)
     if (!validation.valid) {
@@ -92,10 +104,17 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Process order ──────────────────────────────────────
-    const { order, duplicate, error } = await createOrder(body as any)
+    const { order, duplicate, error } = await createOrder({ ...body as any, created_by: role ?? undefined })
 
     if (error) {
       return NextResponse.json({ error }, { status: 400 })
+    }
+
+    // Fire-and-forget push notification
+    if (order?.order_ref) {
+      const role = await getRequestRole(request)
+      const source = (order as any).source || 'online'
+      notifyOrderCreated(order.order_ref, role || 'admin', source).catch(() => {})
     }
 
     return NextResponse.json({
@@ -125,14 +144,8 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Order ID required' }, { status: 400 })
     }
 
-    // Kitchen restrictions (admin bypasses all)
+    // ── Kitchen field-level restrictions (not state machine concerns) ──
     if (role === 'kitchen') {
-      if (body.status === 'cancelled') {
-        return NextResponse.json({ error: 'Kitchen cannot cancel orders' }, { status: 403 })
-      }
-      if (body.status === 'confirmed') {
-        return NextResponse.json({ error: 'Only admin can accept orders' }, { status: 403 })
-      }
       if (body.payment_status) {
         return NextResponse.json({ error: 'Kitchen cannot modify payment status' }, { status: 403 })
       }
@@ -191,10 +204,11 @@ export async function PATCH(request: NextRequest) {
     let currentStatus: string | null = null
     let currentOrderType: string | null = null
     let currentPaymentStatus: string | null = null
+    let orderSource: string = 'online'
     if (updateBody.status) {
       const { data: fetched, error: fetchError } = await getAdminClient()
         .from('orders')
-        .select('status, order_type, payment_status')
+        .select('status, order_type, payment_status, source')
         .eq('id', id)
         .single()
 
@@ -204,15 +218,16 @@ export async function PATCH(request: NextRequest) {
       currentStatus = fetched.status
       currentOrderType = fetched.order_type
       currentPaymentStatus = fetched.payment_status
+      orderSource = fetched.source || 'online'
 
       if (['completed', 'cancelled'].includes(currentStatus)) {
         return NextResponse.json({ error: `Cannot update a ${currentStatus} order` }, { status: 400 })
       }
 
-      if (!canTransition(currentStatus as any, updateBody.status as any)) {
-        if (updateBody.status !== 'cancelled') {
-          return NextResponse.json({ error: `Invalid transition: ${currentStatus} → ${updateBody.status}` }, { status: 400 })
-        }
+      // ── Use state machine as single source of truth ──
+      const smRole = role === 'admin' ? 'admin' : role === 'kitchen' ? 'kitchen' : 'either'
+      if (!canTransition(currentStatus as any, updateBody.status as any, smRole, orderSource)) {
+        return NextResponse.json({ error: `Invalid transition: ${currentStatus} → ${updateBody.status} for role ${smRole} on ${orderSource} order` }, { status: 400 })
       }
 
       if (updateBody.status === 'completed' && currentStatus === 'completed') {
@@ -220,11 +235,11 @@ export async function PATCH(request: NextRequest) {
       }
 
       // ── Payment verification check (skip if payment is being confirmed in this same request) ──
-      // Only enforce when transitioning OUT of 'pending' — once past pending, payment was already handled
       const paymentBeingConfirmed = updateBody.payment_status === 'paid'
       if (
         currentStatus === 'pending' &&
         updateBody.status !== 'cancelled' &&
+        updateBody.status !== 'rejected' &&
         currentPaymentStatus !== 'paid' &&
         !paymentBeingConfirmed &&
         requiresPaymentConfirmation(currentOrderType ?? '') &&
@@ -266,8 +281,31 @@ export async function PATCH(request: NextRequest) {
         event_type: eventTypeMap[updateBody.status] || 'ORDER_CREATED',
         from_status: currentStatus,
         to_status: updateBody.status,
-        created_by: 'admin',
+        created_by: role ?? 'admin',
       })
+
+      // Fire-and-forget push notification on status transitions
+      // Fetch order_ref from DB since it's not in the patch body
+      const { data: orderForNotification } = await getAdminClient()
+        .from('orders')
+        .select('order_ref')
+        .eq('id', id)
+        .single()
+      const orderRef = orderForNotification?.order_ref || ''
+      switch (updateBody.status) {
+        case 'confirmed':
+          notifyOrderConfirmed(orderRef).catch(() => {})
+          break
+        case 'rejected':
+          notifyOrderRejected(orderRef).catch(() => {})
+          break
+        case 'preparing':
+          notifyOrderPreparing(orderRef).catch(() => {})
+          break
+        case 'ready':
+          notifyOrderReady(orderRef).catch(() => {})
+          break
+      }
     }
 
     return NextResponse.json({ success: true })

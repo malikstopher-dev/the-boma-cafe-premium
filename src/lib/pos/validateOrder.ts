@@ -55,7 +55,10 @@ export function validateOrder(input: unknown): ValidationResult {
   }
 
   // ── phone ──────────────────────────────────────────────────
-  if (!body.phone || typeof body.phone !== 'string' || !body.phone.trim()) {
+  const isWaiterOrder = !!body.waiter_name
+  if (isWaiterOrder) {
+    // Waiter-created orders: phone is optional — skip validation
+  } else if (!body.phone || typeof body.phone !== 'string' || !body.phone.trim()) {
     errors.push({ field: 'phone', message: 'Phone number is required' })
   } else if (!/^[\d\s+\-()]{7,20}$/.test(body.phone.trim())) {
     errors.push({ field: 'phone', message: 'Enter a valid phone number (7-20 digits)' })

@@ -1,10 +1,8 @@
-export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'packing' | 'ready' | 'completed' | 'cancelled'
+export type { OrderStatus, OrderType } from '@/lib/pos/types'
 
 export type PaymentMethod = 'cash' | 'card' | 'mobile'
 
 export type PaymentStatus = 'pending' | 'paid' | 'refunded'
-
-export type OrderType = 'pickup' | 'delivery' | 'dine-in'
 
 export type TableStatus = 'empty' | 'occupied' | 'billing'
 

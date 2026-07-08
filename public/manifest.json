@@ -1,34 +1,19 @@
 {
-  "name": "The Boma Café",
+  "name": "The Boma Staff POS",
   "short_name": "Boma POS",
-  "description": "Restaurant POS system for The Boma Café — manage orders, tables, and kitchen display.",
-  "start_url": "/waiter",
+  "description": "Staff management system for The Boma Café",
+  "start_url": "/staff",
   "display": "standalone",
-  "orientation": "portrait",
   "background_color": "#0f0f1a",
-  "theme_color": "#1a0f0a",
-  "scope": "/",
+  "theme_color": "#111111",
+  "orientation": "portrait-primary",
   "icons": [
-    {
-      "src": "/icons/icon.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "/icons/icon.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/logo.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    }
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/icon-192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
-  "categories": ["food", "business", "productivity"],
-  "lang": "en-ZA",
-  "dir": "ltr"
+  "categories": ["business", "food"],
+  "screenshots": [],
+  "prefer_related_applications": false
 }

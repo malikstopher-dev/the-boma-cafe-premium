@@ -1,5 +1,8 @@
 import { OrderStatus } from '@/types/pos'
 
+export type Role = 'admin' | 'kitchen' | 'waiter' | 'foh' | 'either'
+export type OrderSource = 'online' | 'waiter' | 'any'
+
 export type AllowedAction =
   | 'accept'
   | 'start_prep'
@@ -16,32 +19,80 @@ export interface Transition {
   to: OrderStatus
   action: AllowedAction
   label: string
-  role: 'foh' | 'kitchen' | 'either'
+  role: Role
+  source: OrderSource
 }
 
 const TRANSITIONS: Transition[] = [
-  { from: 'pending',    to: 'confirmed',  action: 'accept',          label: 'Accept',          role: 'kitchen' },
-  { from: 'confirmed',  to: 'preparing',  action: 'start_prep',      label: 'Start Prep',      role: 'kitchen' },
-  { from: 'preparing',  to: 'packing',    action: 'start_packing',   label: 'Start Packing',   role: 'kitchen' },
-  { from: 'packing',    to: 'ready',      action: 'mark_ready',      label: 'Mark Ready',      role: 'kitchen' },
-  { from: 'pending',    to: 'cancelled',  action: 'cancel',          label: 'Cancel',          role: 'either'  },
-  { from: 'confirmed',  to: 'cancelled',  action: 'cancel',          label: 'Cancel',          role: 'either'  },
-  { from: 'preparing',  to: 'cancelled',  action: 'cancel',          label: 'Cancel',          role: 'either'  },
-  { from: 'packing',    to: 'cancelled',  action: 'cancel',          label: 'Cancel',          role: 'either'  },
-  { from: 'ready',      to: 'completed',  action: 'pay',             label: 'Mark Paid',       role: 'foh'     },
-  { from: 'completed',  to: 'completed',  action: 'archive',         label: 'Archive',         role: 'foh'     },
-  { from: 'pending',    to: 'confirmed',  action: 'confirm_payment', label: 'Confirm Payment', role: 'foh'     },
-  { from: 'confirmed',  to: 'confirmed',  action: 'confirm_payment', label: 'Confirm Payment', role: 'foh'     },
+  // Online orders: admin must accept
+  { from: 'pending',    to: 'confirmed',  action: 'accept',          label: 'Accept',          role: 'admin',   source: 'online' },
+  // Waiter orders: kitchen can accept
+  { from: 'pending',    to: 'confirmed',  action: 'accept',          label: 'Accept',          role: 'kitchen', source: 'waiter' },
+  // Kitchen flow
+  { from: 'confirmed',  to: 'preparing',  action: 'start_prep',      label: 'Start Prep',      role: 'kitchen', source: 'any' },
+  { from: 'preparing',  to: 'packing',    action: 'start_packing',   label: 'Start Packing',   role: 'kitchen', source: 'any' },
+  { from: 'packing',    to: 'ready',      action: 'mark_ready',      label: 'Mark Ready',      role: 'kitchen', source: 'any' },
+  // Cancel: either role, any source
+  { from: 'pending',    to: 'cancelled',  action: 'cancel',          label: 'Cancel',          role: 'either',  source: 'any' },
+  { from: 'confirmed',  to: 'cancelled',  action: 'cancel',          label: 'Cancel',          role: 'either',  source: 'any' },
+  { from: 'preparing',  to: 'cancelled',  action: 'cancel',          label: 'Cancel',          role: 'either',  source: 'any' },
+  { from: 'packing',    to: 'cancelled',  action: 'cancel',          label: 'Cancel',          role: 'either',  source: 'any' },
+  // Payment / completion
+  { from: 'ready',      to: 'completed',  action: 'pay',             label: 'Mark Paid',       role: 'foh',     source: 'any' },
+  { from: 'completed',  to: 'completed',  action: 'archive',         label: 'Archive',         role: 'foh',     source: 'any' },
+  { from: 'pending',    to: 'confirmed',  action: 'confirm_payment', label: 'Confirm Payment', role: 'foh',     source: 'any' },
+  { from: 'confirmed',  to: 'confirmed',  action: 'confirm_payment', label: 'Confirm Payment', role: 'foh',     source: 'any' },
+  // Admin-only: reject online orders
+  { from: 'pending',    to: 'rejected',   action: 'cancel',          label: 'Reject',          role: 'admin',   source: 'online' },
 ]
 
-export function getAvailableTransitions(currentStatus: OrderStatus, role: 'foh' | 'kitchen' | 'either' = 'either'): Transition[] {
+function roleMatches(transitionRole: Role, checkRole: Role | undefined): boolean {
+  if (!checkRole) return true
+  if (transitionRole === 'either') return true
+  if (checkRole === 'either') return true
+  if (transitionRole === checkRole) return true
+  // Admin can perform foh (front-of-house) actions (pay, archive, confirm_payment)
+  if (transitionRole === 'foh' && checkRole === 'admin') return true
+  return false
+}
+
+function sourceMatches(transitionSource: OrderSource, checkSource: string | undefined): boolean {
+  if (!checkSource) return transitionSource === 'any' || transitionSource === 'online'
+  if (transitionSource === 'any') return true
+  return transitionSource === checkSource
+}
+
+export function getAvailableTransitions(
+  currentStatus: OrderStatus,
+  role: Role = 'either',
+  source: string = 'online',
+): Transition[] {
   return TRANSITIONS.filter(
-    (t) => t.from === currentStatus && (t.role === role || t.role === 'either' || role === 'either')
+    (t) => t.from === currentStatus && roleMatches(t.role, role) && sourceMatches(t.source, source)
   )
 }
 
-export function canTransition(from: OrderStatus, to: OrderStatus): boolean {
-  return TRANSITIONS.some((t) => t.from === from && t.to === to)
+export function canTransition(
+  from: OrderStatus,
+  to: OrderStatus,
+  role?: Role,
+  source?: string,
+): boolean {
+  return TRANSITIONS.some(
+    (t) => t.from === from && t.to === to && roleMatches(t.role, role) && sourceMatches(t.source, source)
+  )
+}
+
+export function transition(
+  currentStatus: OrderStatus,
+  action: AllowedAction,
+  role: Role,
+  source: string = 'online',
+): OrderStatus | null {
+  const t = TRANSITIONS.find(
+    (t) => t.from === currentStatus && t.action === action && roleMatches(t.role, role) && sourceMatches(t.source, source)
+  )
+  return t?.to ?? null
 }
 
 export function getNextStatus(currentStatus: OrderStatus, action: AllowedAction): OrderStatus | null {
@@ -72,6 +123,7 @@ export const STATUS_LABELS: Record<OrderStatus, string> = {
   ready: 'READY',
   completed: 'COMPLETED',
   cancelled: 'CANCELLED',
+  rejected: 'REJECTED',
 }
 
 export const STATUS_COLORS: Record<OrderStatus, string> = {
@@ -82,4 +134,13 @@ export const STATUS_COLORS: Record<OrderStatus, string> = {
   ready: '#10b981',
   completed: '#6b7280',
   cancelled: '#ef4444',
+  rejected: '#ef4444',
+}
+
+export function getAllowedTransitions(
+  currentStatus: OrderStatus,
+  role: Role,
+  source: string = 'online',
+): AllowedAction[] {
+  return getAvailableTransitions(currentStatus, role, source).map(t => t.action)
 }

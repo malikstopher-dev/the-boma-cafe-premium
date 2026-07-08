@@ -214,18 +214,19 @@ export default function WaiterPage() {
       const items = cart.map((c) => ({
         menu_item_id: c.id,
         quantity: c.quantity,
+        notes: itemNotes[c.id] || undefined,
       }))
       const res = await fetch('/api/supabase/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           customer_name: `Table ${tableNumber}`,
-          phone: 'waiter-order',
           order_type: 'dine-in',
           requested_time: 'ASAP',
           items,
           table_number: String(tableNumber),
           waiter_name: waiterName || null,
+          order_notes: orderNotes || undefined,
         }),
       })
       if (!res.ok) {

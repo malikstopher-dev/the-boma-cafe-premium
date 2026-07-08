@@ -5,8 +5,10 @@ import { SupabaseOrder, TableInfo, parseOrderItems, getOrderTableNumber, Payment
 import BackButton from '@/components/admin/BackButton'
 import { STATUS_LABELS, STATUS_COLORS, requiresPaymentConfirmation } from '@/lib/order-state-machine'
 import { posService } from '@/lib/pos-service'
+import { createBrowserClient } from '@/lib/supabase'
 
 const POLL_INTERVAL = 4000
+const FALLBACK_POLL_INTERVAL = 30000
 const TOTAL_TABLES = 20
 
 function formatTime(iso: string) {
@@ -493,11 +495,43 @@ export default function OrdersPOS() {
   }, [])
 
   useEffect(() => { loadOrders() }, [loadOrders])
+
+  // ── Supabase Realtime subscription ─────────────────────────
+  const [realtimeConnected, setRealtimeConnected] = useState(false)
+
   useEffect(() => {
     if (authExpired) return
-    const interval = setInterval(loadOrders, POLL_INTERVAL)
+
+    const supabase = createBrowserClient()
+    const channel = supabase
+      .channel('admin-orders-realtime')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        (payload) => {
+          if (payload.eventType === 'INSERT' && payload.new) {
+            setOrders((prev) => [{ ...payload.new as any }, ...prev])
+          } else if (payload.eventType === 'UPDATE' && payload.new) {
+            setOrders((prev) =>
+              prev.map((o) => (o.id === payload.new.id ? { ...o, ...payload.new as any } : o))
+            )
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            setOrders((prev) => prev.filter((o) => o.id !== payload.old.id))
+          }
+        }
+      )
+      .subscribe((status) => {
+        setRealtimeConnected(status === 'SUBSCRIBED')
+      })
+
+    return () => { supabase.removeChannel(channel) }
+  }, [authExpired])
+
+  // ── Fallback polling (longer interval when Realtime is active) ──
+  useEffect(() => {
+    if (authExpired) return
+    const interval = setInterval(loadOrders, realtimeConnected ? FALLBACK_POLL_INTERVAL : POLL_INTERVAL)
     return () => clearInterval(interval)
-  }, [loadOrders, authExpired])
+  }, [loadOrders, authExpired, realtimeConnected])
 
 
 

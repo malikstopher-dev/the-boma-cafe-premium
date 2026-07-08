@@ -1,9 +1,9 @@
 const rateLimitStore = new Map<string, { count: number; resetAt: number }>()
 
 const WINDOW_MS = 60_000
-const MAX_REQUESTS = 10
+const DEFAULT_MAX_REQUESTS = 10
 
-export function checkRateLimit(key: string): boolean {
+export function checkRateLimit(key: string, maxRequests = DEFAULT_MAX_REQUESTS): boolean {
   const now = Date.now()
   const entry = rateLimitStore.get(key)
 
@@ -12,10 +12,14 @@ export function checkRateLimit(key: string): boolean {
     return true
   }
 
-  if (entry.count >= MAX_REQUESTS) {
+  if (entry.count >= maxRequests) {
     return false
   }
 
   entry.count++
   return true
+}
+
+export function checkRateLimitByWaiter(waiterName: string): boolean {
+  return checkRateLimit(`waiter-order:${waiterName}`, 60)
 }
