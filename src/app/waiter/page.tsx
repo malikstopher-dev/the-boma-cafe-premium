@@ -161,6 +161,8 @@ export default function WaiterPage() {
   const [done, setDone] = useState(false)
   const [orderRef, setOrderRef] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
+  const [confirmCancel, setConfirmCancel] = useState(false)
+  const [lastOrder, setLastOrder] = useState<{ tableNumber: number; cart: CartItem[]; itemNotes: Record<string, string>; orderNotes: string } | null>(null)
 
   const WAITER_STORAGE_KEY = 'boma_waiter_name'
 
@@ -227,6 +229,16 @@ export default function WaiterPage() {
   const total = cart.reduce((s, i) => s + i.price * i.quantity, 0)
   const itemCount = cart.reduce((s, i) => s + i.quantity, 0)
 
+  const cancelOrder = () => {
+    setCart([])
+    setItemNotes({})
+    setOrderNotes('')
+    setSubmitError(null)
+    setConfirmCancel(false)
+    localStorage.removeItem(CART_STORAGE_KEY)
+    setStep('tables')
+  }
+
   const goToStep = (s: 'tables' | 'menu' | 'review') => {
     setSubmitError(null)
     setStep(s)
@@ -262,6 +274,7 @@ export default function WaiterPage() {
         return
       }
       const data = await res.json()
+      setLastOrder({ tableNumber, cart, itemNotes, orderNotes })
       setOrderRef(data.order?.order_ref || `Table ${tableNumber}`)
       setDone(true)
       setCart([])
@@ -285,11 +298,18 @@ export default function WaiterPage() {
         <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '0.25rem' }}>Order for Table {tableNumber}</p>
         {waiterName && <p style={{ color: '#dc2626', fontWeight: 600, marginBottom: '0.5rem' }}>Waiter: {waiterName}</p>}
         <p style={{ color: '#f59e0b', fontFamily: 'monospace', fontSize: '1.2rem', marginBottom: '2rem' }}>{orderRef}</p>
-        <button onClick={() => { setDone(false); setTableNumber(null); setWaiterName(''); setSubmitError(null); setStep('tables'); setSearchQuery('') }}
-          style={{ padding: '1rem 2rem', border: 'none', borderRadius: '12px', background: '#10b981', color: '#000', fontSize: '1rem', fontWeight: 700, cursor: 'pointer' }}
-        >
-          New Order
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%', maxWidth: '300px' }}>
+          <button onClick={() => { setDone(false); setStep('review'); if (lastOrder) { setTableNumber(lastOrder.tableNumber); setCart(lastOrder.cart); setItemNotes(lastOrder.itemNotes); setOrderNotes(lastOrder.orderNotes); } }}
+            style={{ padding: '1rem 2rem', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '12px', background: 'transparent', color: '#fff', fontSize: '1rem', fontWeight: 600, cursor: 'pointer' }}
+          >
+            ← Back to Review
+          </button>
+          <button onClick={() => { setDone(false); setTableNumber(null); setWaiterName(''); setSubmitError(null); setStep('tables'); setSearchQuery('') }}
+            style={{ padding: '1rem 2rem', border: 'none', borderRadius: '12px', background: '#10b981', color: '#000', fontSize: '1rem', fontWeight: 700, cursor: 'pointer' }}
+          >
+            New Order
+          </button>
+        </div>
       </div>
     )
   }
@@ -486,6 +506,25 @@ export default function WaiterPage() {
               >
                 {submitting ? 'Sending...' : submitError ? 'Retry Order' : `Send to Kitchen — R${total.toFixed(2)}`}
               </button>
+              {confirmCancel ? (
+                <div style={{ marginTop: '0.75rem', padding: '1rem', background: 'rgba(239,68,68,0.1)', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.3)', textAlign: 'center' }}>
+                  <p style={{ color: '#fca5a5', fontSize: '0.9rem', margin: '0 0 0.75rem', fontWeight: 600 }}>
+                    Cancel this order? All items will be cleared.
+                  </p>
+                  <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                    <button onClick={cancelOrder} style={{ padding: '0.6rem 1.5rem', border: 'none', borderRadius: '8px', background: '#ef4444', color: '#fff', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer' }}>
+                      Yes, Cancel Order
+                    </button>
+                    <button onClick={() => setConfirmCancel(false)} style={{ padding: '0.6rem 1.5rem', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '8px', background: 'transparent', color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', cursor: 'pointer' }}>
+                      Keep Editing
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => setConfirmCancel(true)} style={{ width: '100%', marginTop: '0.5rem', padding: '0.75rem', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', background: 'transparent', color: '#ef4444', fontSize: '0.85rem', cursor: 'pointer' }}>
+                  Cancel Order
+                </button>
+              )}
               <button onClick={() => goToStep('menu')} style={{ width: '100%', marginTop: '0.5rem', padding: '0.75rem', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', background: 'transparent', color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', cursor: 'pointer' }}>
                 ← Add more items
               </button>
