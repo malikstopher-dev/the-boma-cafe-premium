@@ -1,4 +1,5 @@
 import "./globals.css";
+import "@/components/pos/pos-tokens.css";
 import { cache } from "react";
 import { Playfair_Display, Poppins } from "next/font/google";
 import { AuthProvider } from "@/lib/auth-context";
