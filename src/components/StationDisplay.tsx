@@ -7,6 +7,7 @@ import StationBadge from '@/components/pos/StationBadge'
 import OrderTypeBadge from '@/components/pos/OrderTypeBadge'
 import Timer from '@/components/pos/Timer'
 import CountBadge from '@/components/pos/CountBadge'
+import CancelModal from '@/components/pos/CancelModal'
 
 export interface StationDisplayProps {
   station: 'kitchen' | 'bar'
@@ -117,6 +118,10 @@ export default function StationDisplay({ station, title, icon, primaryColor, log
   const [passwordLoading, setPasswordLoading] = useState(false)
   const [showPasswordGate, setShowPasswordGate] = useState(false)
   const [mobileTab, setMobileTab] = useState(0)
+  const [cancelModalOpen, setCancelModalOpen] = useState(false)
+  const [cancelOrderId, setCancelOrderId] = useState<string | null>(null)
+  const [cancelOrderRef, setCancelOrderRef] = useState<string>('')
+  const [cancelling, setCancelling] = useState(false)
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const cardErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prevIdsRef = useRef<Set<string>>(new Set())
@@ -262,6 +267,33 @@ export default function StationDisplay({ station, title, icon, primaryColor, log
     }
   }
 
+  const cancelOrder = async (reason: string) => {
+    if (!cancelOrderId) return
+    setCancelling(true)
+    try {
+      const res = await fetch(`/api/supabase/orders?id=${cancelOrderId}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled', cancellation_reason: reason }),
+      })
+      if (res.ok) {
+        setOrders(prev => prev.map(o => o.id === cancelOrderId ? { ...o, status: 'cancelled', cancellation_reason: reason } : o))
+        setCancelModalOpen(false)
+        setCancelOrderId(null)
+        setCancelOrderRef('')
+      } else {
+        const errData = await res.json().catch(() => ({}))
+        showError(errData?.error || 'Failed to cancel order')
+      }
+    } catch { showError('Network error — try again') }
+    finally { setCancelling(false) }
+  }
+
+  const openCancelModal = (id: string, ref: string) => {
+    setCancelOrderId(id)
+    setCancelOrderRef(ref)
+    setCancelModalOpen(true)
+  }
+
   const pending = displayOrders.filter(o => o.status === 'pending')
   const confirmed = displayOrders.filter(o => o.status === 'confirmed')
   const preparing = displayOrders.filter(o => o.status === 'preparing')
@@ -404,7 +436,7 @@ export default function StationDisplay({ station, title, icon, primaryColor, log
         {columnData.map((col, colIdx) => (
           <Column key={col.key} col={col} colIdx={colIdx} focusedCol={isMobile ? mobileTab : focusedCol} focusedIdx={focusedIdx}
             orders={col.items} updating={updating} updateStatus={updateStatus} prepTimeInputs={prepTimeInputs} setPrepTimeInputs={setPrepTimeInputs}
-            cardErrors={cardErrors} readyTimesRef={readyTimesRef} station={station} isMobile={false} />
+            cardErrors={cardErrors} readyTimesRef={readyTimesRef} station={station} isMobile={false} openCancelModal={openCancelModal} />
         ))}
       </div>
 
@@ -413,15 +445,18 @@ export default function StationDisplay({ station, title, icon, primaryColor, log
         <div className="pos-kanban-mobile" style={{ flex: 1, flexDirection: 'column', overflow: 'hidden', background: activeColData.bg }}>
           <Column col={activeColData} colIdx={activeCol} focusedCol={activeCol} focusedIdx={0}
             orders={activeColData.items} updating={updating} updateStatus={updateStatus} prepTimeInputs={prepTimeInputs} setPrepTimeInputs={setPrepTimeInputs}
-            cardErrors={cardErrors} readyTimesRef={readyTimesRef} station={station} isMobile={true} />
+            cardErrors={cardErrors} readyTimesRef={readyTimesRef} station={station} isMobile={true} openCancelModal={openCancelModal} />
         </div>
       )}
+
+      <CancelModal open={cancelModalOpen} onClose={() => { setCancelModalOpen(false); setCancelOrderId(null); setCancelOrderRef('') }}
+        onConfirm={cancelOrder} orderRef={cancelOrderRef} loading={cancelling} />
     </div>
   )
 }
 
 /* ── Column sub-component ── */
-function Column({ col, colIdx, focusedCol, focusedIdx, orders, updating, updateStatus, prepTimeInputs, setPrepTimeInputs, cardErrors, readyTimesRef, station, isMobile }: {
+function Column({ col, colIdx, focusedCol, focusedIdx, orders, updating, updateStatus, prepTimeInputs, setPrepTimeInputs, cardErrors, readyTimesRef, station, isMobile, openCancelModal }: {
   col: typeof COLUMNS[number] & { items: Order[] }
   colIdx: number
   focusedCol: number
@@ -435,6 +470,7 @@ function Column({ col, colIdx, focusedCol, focusedIdx, orders, updating, updateS
   readyTimesRef: React.MutableRefObject<Map<string, number>>
   station: string
   isMobile: boolean
+  openCancelModal: (id: string, ref: string) => void
 }) {
   const isActive = colIdx === focusedCol
 
@@ -465,7 +501,7 @@ function Column({ col, colIdx, focusedCol, focusedIdx, orders, updating, updateS
         {col.items.map((order, idx) => (
           <OrderCard key={order.id} order={order} col={col} colIdx={colIdx} focusedCol={focusedCol} focusedIdx={idx}
             updating={updating} updateStatus={updateStatus} prepTimeInputs={prepTimeInputs} setPrepTimeInputs={setPrepTimeInputs}
-            cardErrors={cardErrors} readyTimesRef={readyTimesRef} station={station} isMobile={isMobile} />
+            cardErrors={cardErrors} readyTimesRef={readyTimesRef} station={station} isMobile={isMobile} openCancelModal={openCancelModal} />
         ))}
       </div>
     </div>
@@ -473,7 +509,7 @@ function Column({ col, colIdx, focusedCol, focusedIdx, orders, updating, updateS
 }
 
 /* ── Order Card sub-component ── */
-function OrderCard({ order, col, colIdx, focusedCol, focusedIdx, updating, updateStatus, prepTimeInputs, setPrepTimeInputs, cardErrors, readyTimesRef, station, isMobile }: {
+function OrderCard({ order, col, colIdx, focusedCol, focusedIdx, updating, updateStatus, prepTimeInputs, setPrepTimeInputs, cardErrors, readyTimesRef, station, isMobile, openCancelModal }: {
   order: Order
   col: typeof COLUMNS[number]
   colIdx: number
@@ -487,6 +523,7 @@ function OrderCard({ order, col, colIdx, focusedCol, focusedIdx, updating, updat
   readyTimesRef: React.MutableRefObject<Map<string, number>>
   station: string
   isMobile: boolean
+  openCancelModal: (id: string, ref: string) => void
 }) {
   const isFocused = colIdx === focusedCol
   const isNew = order.status === 'pending'
@@ -587,9 +624,14 @@ function OrderCard({ order, col, colIdx, focusedCol, focusedIdx, updating, updat
           </button>
         )}
         {order.status === 'pending' && order.source !== 'waiter' && (
-          <div style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--pos-radius-md)', background: 'rgba(245,158,11,0.08)', color: '#f59e0b', fontSize: '0.8rem', fontWeight: 600, textAlign: 'center', border: '1px solid rgba(245,158,11,0.2)' }}>
-            ⏳ Awaiting admin confirmation
-          </div>
+          <>
+            <div style={{ width: '100%', padding: '0.6rem', borderRadius: 'var(--pos-radius-md)', background: 'rgba(245,158,11,0.08)', color: '#f59e0b', fontSize: '0.8rem', fontWeight: 600, textAlign: 'center', border: '1px solid rgba(245,158,11,0.2)' }}>
+              ⏳ Awaiting admin confirmation
+            </div>
+            <button onClick={() => openCancelModal(order.id, displayRef)} style={{ width: '100%', marginTop: '0.3rem', padding: '0.4rem', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 'var(--pos-radius-sm)', background: 'transparent', color: '#ef4444', fontSize: '0.7rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--pos-font)' }}>
+              ❌ Cancel
+            </button>
+          </>
         )}
         {order.status === 'confirmed' && (
           <>
