@@ -1,6 +1,6 @@
 import { getAdminClient } from '@/lib/supabase'
 
-type PushRole = 'admin' | 'kitchen' | 'waiter'
+type PushRole = 'admin' | 'kitchen' | 'bar' | 'waiter'
 
 interface PushPayload {
   title: string
@@ -86,14 +86,27 @@ export async function notifyOrderCreated(
   orderRef: string,
   role: PushRole,
   source: string,
+  station?: string,
 ): Promise<void> {
   if (source === 'waiter') {
-    await sendToRole('kitchen', {
-      title: '🍽️ New Waiter Order',
-      body: `Order ${orderRef} — ready for kitchen`,
-      priority: 'high',
-      data: { link: '/staff/kitchen', type: 'new_order', order_ref: orderRef },
-    })
+    const promises: Promise<unknown>[] = []
+    if (!station || station === 'kitchen') {
+      promises.push(sendToRole('kitchen', {
+        title: '🍽️ New Waiter Order',
+        body: `Order ${orderRef} — ready for kitchen`,
+        priority: 'high',
+        data: { link: '/staff/kitchen', type: 'new_order', order_ref: orderRef },
+      }))
+    }
+    if (!station || station === 'bar') {
+      promises.push(sendToRole('bar', {
+        title: '🍸 New Bar Order',
+        body: `Order ${orderRef} — ready for bar`,
+        priority: 'high',
+        data: { link: '/staff/bar', type: 'new_order', order_ref: orderRef },
+      }))
+    }
+    await Promise.all(promises)
   } else {
     await sendToRole('admin', {
       title: '🛒 New Online Order',

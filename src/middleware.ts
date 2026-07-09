@@ -4,9 +4,11 @@ import type { NextRequest } from 'next/server'
 const ADMIN_COOKIE = 'boma_admin_auth'
 const KITCHEN_COOKIE = 'boma_kitchen_auth'
 const WAITER_COOKIE = 'boma_waiter_auth'
+const BAR_COOKIE = 'boma_bar_auth'
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD
 const KITCHEN_PASSWORD = process.env.KITCHEN_PASSWORD
 const WAITER_PASSWORD = process.env.WAITER_PASSWORD
+const BAR_PASSWORD = process.env.BAR_PASSWORD
 
 async function hashSHA256(input: string): Promise<string> {
   const data = new TextEncoder().encode(input)
@@ -14,14 +16,15 @@ async function hashSHA256(input: string): Promise<string> {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
-type AuthResult = { role: 'admin' | 'kitchen' | 'waiter' } | null
+type AuthResult = { role: 'admin' | 'kitchen' | 'waiter' | 'bar' } | null
 
 async function verifyRole(request: NextRequest): Promise<AuthResult> {
-  if (!ADMIN_PASSWORD || !KITCHEN_PASSWORD || !WAITER_PASSWORD) return null
+  if (!ADMIN_PASSWORD || !KITCHEN_PASSWORD || !WAITER_PASSWORD || !BAR_PASSWORD) return null
 
   const adminCookie = request.cookies.get(ADMIN_COOKIE)
   const kitchenCookie = request.cookies.get(KITCHEN_COOKIE)
   const waiterCookie = request.cookies.get(WAITER_COOKIE)
+  const barCookie = request.cookies.get(BAR_COOKIE)
 
   if (adminCookie?.value) {
     const expected = await hashSHA256(`admin:${ADMIN_PASSWORD}`)
@@ -31,6 +34,11 @@ async function verifyRole(request: NextRequest): Promise<AuthResult> {
   if (kitchenCookie?.value) {
     const expected = await hashSHA256(`kitchen:${KITCHEN_PASSWORD}`)
     if (kitchenCookie.value === expected) return { role: 'kitchen' }
+  }
+
+  if (barCookie?.value) {
+    const expected = await hashSHA256(`bar:${BAR_PASSWORD}`)
+    if (barCookie.value === expected) return { role: 'bar' }
   }
 
   if (waiterCookie?.value) {
@@ -44,6 +52,7 @@ async function verifyRole(request: NextRequest): Promise<AuthResult> {
 function roleScope(role: string): string {
   if (role === 'admin') return 'admin:full'
   if (role === 'kitchen') return 'kitchen:orders'
+  if (role === 'bar') return 'bar:orders'
   return 'waiter:orders'
 }
 
@@ -108,6 +117,13 @@ export async function middleware(request: NextRequest) {
 
     if (pathname === '/admin/kitchen') {
       if (auth.role === 'admin' || auth.role === 'kitchen') {
+        return NextResponse.next({ request: { headers: setAuthHeaders(request.headers, auth.role) } })
+      }
+      return redirectToLogin(request)
+    }
+
+    if (pathname === '/admin/bar') {
+      if (auth.role === 'admin' || auth.role === 'bar') {
         return NextResponse.next({ request: { headers: setAuthHeaders(request.headers, auth.role) } })
       }
       return redirectToLogin(request)

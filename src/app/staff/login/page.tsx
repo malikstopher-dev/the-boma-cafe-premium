@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 const ROLES = [
   { key: 'admin', label: 'Admin', icon: '⚙️', color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
   { key: 'kitchen', label: 'Kitchen', icon: '👨‍🍳', color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)' },
+  { key: 'bar', label: 'Bar', icon: '🍸', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
   { key: 'waiter', label: 'Waiter', icon: '📋', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
 ]
 
@@ -26,6 +27,7 @@ export default function StaffLogin() {
         if (data.authenticated) {
           if (data.role === 'admin') router.replace('/staff/admin')
           else if (data.role === 'kitchen') router.replace('/staff/kitchen')
+          else if (data.role === 'bar') router.replace('/staff/bar')
           else if (data.role === 'waiter') router.replace('/staff/waiter')
         }
       })

@@ -17,6 +17,10 @@ const NAV_ITEMS: Record<string, { label: string; icon: string }[]> = {
     { label: 'Orders', icon: '👨‍🍳' },
     { label: 'Messages', icon: '💬' },
   ],
+  bar: [
+    { label: 'Orders', icon: '🍸' },
+    { label: 'Messages', icon: '💬' },
+  ],
   waiter: [
     { label: 'Orders', icon: '📋' },
     { label: 'Tables', icon: '🪑' },
@@ -89,7 +93,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 1rem', background: '#16162a', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#f59e0b', letterSpacing: '-0.02em' }}>Boma</span>
-            <span style={{ padding: '0.15rem 0.5rem', borderRadius: '4px', background: role === 'admin' ? 'rgba(59,130,246,0.2)' : role === 'kitchen' ? 'rgba(139,92,246,0.2)' : 'rgba(16,185,129,0.2)', color: role === 'admin' ? '#60a5fa' : role === 'kitchen' ? '#a78bfa' : '#34d399', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.65rem' }}>
+            <span style={{ padding: '0.15rem 0.5rem', borderRadius: '4px', background: role === 'admin' ? 'rgba(59,130,246,0.2)' : role === 'kitchen' ? 'rgba(139,92,246,0.2)' : role === 'bar' ? 'rgba(245,158,11,0.2)' : 'rgba(16,185,129,0.2)', color: role === 'admin' ? '#60a5fa' : role === 'kitchen' ? '#a78bfa' : role === 'bar' ? '#f59e0b' : '#34d399', fontWeight: 600, textTransform: 'uppercase', fontSize: '0.65rem' }}>
               {role}
             </span>
           </div>
@@ -108,7 +112,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
       {showNav && (
         <div style={{ display: 'flex', background: '#16162a', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
           {nav.map((item) => {
-            const href = item.label === 'Orders' ? (role === 'kitchen' ? '/staff/kitchen' : '/staff/admin') :
+            const href = item.label === 'Orders' ? (role === 'kitchen' ? '/staff/kitchen' : role === 'bar' ? '/staff/bar' : role === 'waiter' ? '/staff/waiter/orders' : '/staff/admin') :
               item.label === 'Dashboard' ? '/staff/admin' :
               item.label === 'Tables' ? '/staff/waiter' :
               item.label === 'Messages' ? '/staff/messages' :

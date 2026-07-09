@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto';
 const ADMIN_COOKIE = 'boma_admin_auth';
 const KITCHEN_COOKIE = 'boma_kitchen_auth';
 const WAITER_COOKIE = 'boma_waiter_auth';
+const BAR_COOKIE = 'boma_bar_auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,6 +18,7 @@ export async function POST(request: NextRequest) {
       cookieStore.set(ADMIN_COOKIE, '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 0, path: '/' });
       cookieStore.set(KITCHEN_COOKIE, '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 0, path: '/' });
       cookieStore.set(WAITER_COOKIE, '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 0, path: '/' });
+      cookieStore.set(BAR_COOKIE, '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 0, path: '/' });
       return NextResponse.json({ success: true });
     }
 
@@ -42,6 +44,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, role: 'waiter' });
     }
 
+    if (role === 'bar') {
+      const barPassword = process.env.BAR_PASSWORD;
+      if (!barPassword) {
+        return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+      }
+      if (password !== barPassword) {
+        return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
+      }
+      const cookieStore = await cookies();
+      // Clear conflicting cookies when logging in as bar
+      cookieStore.set(ADMIN_COOKIE, '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 0, path: '/' });
+      cookieStore.set(KITCHEN_COOKIE, '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 0, path: '/' });
+      cookieStore.set(WAITER_COOKIE, '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 0, path: '/' });
+      cookieStore.set(BAR_COOKIE, expectedCookieValue('bar'), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 365,
+      });
+      return NextResponse.json({ success: true, role: 'bar' });
+    }
+
     if (role === 'kitchen') {
       const kitchenPassword = process.env.KITCHEN_PASSWORD;
       if (!kitchenPassword) {
@@ -54,6 +79,7 @@ export async function POST(request: NextRequest) {
       // Clear conflicting cookies when logging in as kitchen
       cookieStore.set(ADMIN_COOKIE, '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 0, path: '/' });
       cookieStore.set(WAITER_COOKIE, '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 0, path: '/' });
+      cookieStore.set(BAR_COOKIE, '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 0, path: '/' });
       cookieStore.set(KITCHEN_COOKIE, expectedCookieValue('kitchen'), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -74,6 +100,7 @@ export async function POST(request: NextRequest) {
       // Clear conflicting cookies when logging in as admin
       cookieStore.set(KITCHEN_COOKIE, '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 0, path: '/' });
       cookieStore.set(WAITER_COOKIE, '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 0, path: '/' });
+      cookieStore.set(BAR_COOKIE, '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 0, path: '/' });
       cookieStore.set(ADMIN_COOKIE, expectedCookieValue('admin'), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -109,6 +136,14 @@ export async function GET() {
         authenticated: true,
         role: 'kitchen',
         user: { id: '2', username: 'kitchen', email: '' }
+      });
+    }
+
+    if (session?.role === 'bar') {
+      return NextResponse.json({
+        authenticated: true,
+        role: 'bar',
+        user: { id: '4', username: 'bartender', email: '' }
       });
     }
 

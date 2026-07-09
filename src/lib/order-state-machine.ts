@@ -1,13 +1,13 @@
 import { OrderStatus } from '@/types/pos'
 
-export type Role = 'admin' | 'kitchen' | 'waiter' | 'foh' | 'either'
+export type Role = 'admin' | 'kitchen' | 'bar' | 'waiter' | 'foh' | 'either'
 export type OrderSource = 'online' | 'waiter' | 'any'
 
 export type AllowedAction =
   | 'accept'
   | 'start_prep'
-  | 'start_packing'
   | 'mark_ready'
+  | 'mark_served'
   | 'pay'
   | 'cancel'
   | 'archive'
@@ -24,26 +24,41 @@ export interface Transition {
 }
 
 const TRANSITIONS: Transition[] = [
-  // Online orders: admin must accept
+  // ── Online workflow: NEW → CONFIRMED → PREPARING → READY → COMPLETED ──
   { from: 'pending',    to: 'confirmed',  action: 'accept',          label: 'Accept',          role: 'admin',   source: 'online' },
-  // Waiter orders: kitchen can accept
-  { from: 'pending',    to: 'confirmed',  action: 'accept',          label: 'Accept',          role: 'kitchen', source: 'waiter' },
-  // Kitchen flow
   { from: 'confirmed',  to: 'preparing',  action: 'start_prep',      label: 'Start Prep',      role: 'kitchen', source: 'any' },
-  { from: 'preparing',  to: 'packing',    action: 'start_packing',   label: 'Start Packing',   role: 'kitchen', source: 'any' },
-  { from: 'packing',    to: 'ready',      action: 'mark_ready',      label: 'Mark Ready',      role: 'kitchen', source: 'any' },
-  // Cancel: either role, any source
+  { from: 'preparing',  to: 'ready',      action: 'mark_ready',      label: 'Mark Ready',      role: 'kitchen', source: 'any' },
+  { from: 'ready',      to: 'completed',  action: 'pay',             label: 'Complete',        role: 'foh',     source: 'any' },
+
+  // ── Waiter workflow: NEW → PREPARING → READY → SERVED → COMPLETED ──
+  { from: 'pending',    to: 'preparing',  action: 'start_prep',      label: 'Start Prep',      role: 'kitchen', source: 'waiter' },
+  { from: 'pending',    to: 'preparing',  action: 'start_prep',      label: 'Start Prep',      role: 'bar',     source: 'waiter' },
+  { from: 'preparing',  to: 'ready',      action: 'mark_ready',      label: 'Mark Ready',      role: 'kitchen', source: 'waiter' },
+  { from: 'preparing',  to: 'ready',      action: 'mark_ready',      label: 'Mark Ready',      role: 'bar',     source: 'waiter' },
+  { from: 'ready',      to: 'served',     action: 'mark_served',     label: 'Mark Served',     role: 'waiter',  source: 'waiter' },
+  { from: 'served',     to: 'completed',  action: 'pay',             label: 'Complete',        role: 'waiter',  source: 'waiter' },
+
+  // ── Cancel (any role, any source) ──
   { from: 'pending',    to: 'cancelled',  action: 'cancel',          label: 'Cancel',          role: 'either',  source: 'any' },
   { from: 'confirmed',  to: 'cancelled',  action: 'cancel',          label: 'Cancel',          role: 'either',  source: 'any' },
   { from: 'preparing',  to: 'cancelled',  action: 'cancel',          label: 'Cancel',          role: 'either',  source: 'any' },
-  { from: 'packing',    to: 'cancelled',  action: 'cancel',          label: 'Cancel',          role: 'either',  source: 'any' },
-  // Payment / completion
-  { from: 'ready',      to: 'completed',  action: 'pay',             label: 'Mark Paid',       role: 'foh',     source: 'any' },
-  { from: 'completed',  to: 'completed',  action: 'archive',         label: 'Archive',         role: 'foh',     source: 'any' },
-  { from: 'pending',    to: 'confirmed',  action: 'confirm_payment', label: 'Confirm Payment', role: 'foh',     source: 'any' },
-  { from: 'confirmed',  to: 'confirmed',  action: 'confirm_payment', label: 'Confirm Payment', role: 'foh',     source: 'any' },
-  // Admin-only: reject online orders
+  { from: 'ready',      to: 'cancelled',  action: 'cancel',          label: 'Cancel',          role: 'either',  source: 'any' },
+  { from: 'served',     to: 'cancelled',  action: 'cancel',          label: 'Cancel',          role: 'either',  source: 'any' },
+
+  // ── Admin-only: reject online orders ──
   { from: 'pending',    to: 'rejected',   action: 'cancel',          label: 'Reject',          role: 'admin',   source: 'online' },
+
+  // ── Payment confirmation (online orders only) ──
+  { from: 'pending',    to: 'confirmed',  action: 'confirm_payment', label: 'Confirm Payment', role: 'foh',     source: 'online' },
+  { from: 'confirmed',  to: 'confirmed',  action: 'confirm_payment', label: 'Confirm Payment', role: 'foh',     source: 'any' },
+
+  // ── Archive (post-completion) ──
+  { from: 'completed',  to: 'completed',  action: 'archive',         label: 'Archive',         role: 'foh',     source: 'any' },
+
+  // ── Legacy packing→ready for orders still in packing status ──
+  { from: 'packing',    to: 'ready',      action: 'mark_ready',      label: 'Mark Ready',      role: 'kitchen', source: 'any' },
+  { from: 'packing',    to: 'ready',      action: 'mark_ready',      label: 'Mark Ready',      role: 'bar',     source: 'any' },
+  { from: 'packing',    to: 'cancelled',  action: 'cancel',          label: 'Cancel',          role: 'either',  source: 'any' },
 ]
 
 function roleMatches(transitionRole: Role, checkRole: Role | undefined): boolean {
@@ -51,7 +66,6 @@ function roleMatches(transitionRole: Role, checkRole: Role | undefined): boolean
   if (transitionRole === 'either') return true
   if (checkRole === 'either') return true
   if (transitionRole === checkRole) return true
-  // Admin can perform foh (front-of-house) actions (pay, archive, confirm_payment)
   if (transitionRole === 'foh' && checkRole === 'admin') return true
   return false
 }
@@ -105,22 +119,24 @@ export function getTransitionLabel(currentStatus: OrderStatus, action: AllowedAc
   return t?.label ?? null
 }
 
-/** Order types that require payment confirmation before processing */
-export function requiresPaymentConfirmation(orderType: string): boolean {
+/** Waiter (dine-in) orders never need payment confirmation */
+export function requiresPaymentConfirmation(orderType: string, source?: string): boolean {
+  if (source === 'waiter') return false
   return orderType !== 'dine-in'
 }
 
-/** Status transitions that require payment confirmation */
+/** Status transitions that require payment confirmation (online only) */
 export function paymentRequiredForTransition(toStatus: string): boolean {
-  return ['confirmed', 'preparing', 'packing', 'ready', 'completed'].includes(toStatus)
+  return ['confirmed', 'preparing', 'ready', 'served', 'completed'].includes(toStatus)
 }
 
 export const STATUS_LABELS: Record<OrderStatus, string> = {
   pending: 'NEW',
-  confirmed: 'ACCEPTED',
-  preparing: 'IN PREP',
+  confirmed: 'CONFIRMED',
+  preparing: 'PREPARING',
   packing: 'PACKING',
   ready: 'READY',
+  served: 'SERVED',
   completed: 'COMPLETED',
   cancelled: 'CANCELLED',
   rejected: 'REJECTED',
@@ -132,6 +148,7 @@ export const STATUS_COLORS: Record<OrderStatus, string> = {
   preparing: '#8b5cf6',
   packing: '#f97316',
   ready: '#10b981',
+  served: '#06b6d4',
   completed: '#6b7280',
   cancelled: '#ef4444',
   rejected: '#ef4444',

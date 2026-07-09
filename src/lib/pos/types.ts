@@ -1,5 +1,5 @@
 export type OrderType = 'pickup' | 'delivery' | 'dine-in'
-export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'packing' | 'ready' | 'completed' | 'cancelled' | 'rejected'
+export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'packing' | 'ready' | 'served' | 'completed' | 'cancelled' | 'rejected'
 export type OrderEventType =
   | 'ORDER_CREATED'
   | 'ORDER_CONFIRMED'
@@ -9,12 +9,15 @@ export type OrderEventType =
   | 'ORDER_COMPLETED'
   | 'ORDER_CANCELLED'
 
+export type Station = 'kitchen' | 'bar'
+
 export interface OrderItemInput {
   menu_item_id: string
   quantity: number
   selected_size?: string
   selected_add_ons?: string[]
   notes?: string
+  station?: Station
 }
 
 export interface EnrichedItem {
@@ -26,6 +29,7 @@ export interface EnrichedItem {
   selected_size?: { name: string; price: number }
   selected_add_ons?: { name: string; price: number }[]
   notes?: string
+  station: Station
 }
 
 export interface CreateOrderInput {
@@ -72,4 +76,11 @@ export interface OrderRecord {
   delivery_address?: string
   idempotency_key?: string
   waiter_name?: string
+  station?: Station
+  parent_order_id?: string
+}
+
+export interface OrderSplitResult {
+  kitchen?: any
+  bar?: any
 }

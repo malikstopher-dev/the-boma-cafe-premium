@@ -38,6 +38,20 @@ export async function requireAdminOrKitchen(request: NextRequest): Promise<NextR
   return null
 }
 
+export async function requireBar(request: NextRequest): Promise<NextResponse | null> {
+  const role = await getRequestRole(request)
+  if (!role) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 })
+  if (role !== 'bar') return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
+  return null
+}
+
+export async function requireAdminOrKitchenOrBar(request: NextRequest): Promise<NextResponse | null> {
+  const role = await getRequestRole(request)
+  if (!role) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 })
+  if (role !== 'admin' && role !== 'kitchen' && role !== 'bar') return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 })
+  return null
+}
+
 export async function requireWaiter(request: NextRequest): Promise<NextResponse | null> {
   const role = await getRequestRole(request)
   if (!role) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 })

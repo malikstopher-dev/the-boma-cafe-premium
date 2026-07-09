@@ -22,6 +22,25 @@ interface MenuCategory {
   isActive: boolean
 }
 
+interface BarItem {
+  id: string
+  categoryId: string
+  name: string
+  singlePrice: number | null
+  bottle: number | null
+  glassPrice: number | null
+  shotPrice: number | null
+  price: number | null
+  isAvailable: boolean
+}
+
+interface BarCategory {
+  id: string
+  name: string
+  isActive: boolean
+  order: number
+}
+
 interface CartItem {
   id: string
   name: string
@@ -29,6 +48,7 @@ interface CartItem {
   price: number
   quantity: number
   notes: string
+  station?: 'kitchen' | 'bar'
 }
 
 const STEPS = [
@@ -160,9 +180,14 @@ export default function WaiterPage() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
   const [orderRef, setOrderRef] = useState('')
+  const [orderRefs, setOrderRefs] = useState<{ ref: string; station?: string; id?: string }[]>([])
+  const [cancelledRefs, setCancelledRefs] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [confirmCancel, setConfirmCancel] = useState(false)
   const [lastOrder, setLastOrder] = useState<{ tableNumber: number; cart: CartItem[]; itemNotes: Record<string, string>; orderNotes: string } | null>(null)
+  const [barCategories, setBarCategories] = useState<BarCategory[]>([])
+  const [barItems, setBarItems] = useState<BarItem[]>([])
+  const [menuMode, setMenuMode] = useState<'food' | 'bar'>('food')
 
   const WAITER_STORAGE_KEY = 'boma_waiter_name'
 
@@ -190,14 +215,16 @@ export default function WaiterPage() {
 
   useEffect(() => {
     if (!authed) return
-    fetch('/api/menu/public', { cache: 'no-cache' })
-      .then((r) => r.json())
-      .then((data) => {
-        setCategories(data.categories || [])
-        setMenuItems(data.menuItems || [])
-        if (data.categories?.length > 0) setActiveCategory(data.categories[0].id)
-      })
-      .catch(() => {})
+    Promise.all([
+      fetch('/api/menu/public', { cache: 'no-cache' }).then(r => r.json()).catch(() => ({ categories: [], menuItems: [] })),
+      fetch('/api/bar/public', { cache: 'no-cache' }).then(r => r.json()).catch(() => ({ categories: [], items: [] })),
+    ]).then(([menuData, barData]) => {
+      setCategories(menuData.categories || [])
+      setMenuItems(menuData.menuItems || [])
+      if (menuData.categories?.length > 0) setActiveCategory(menuData.categories[0].id)
+      setBarCategories(barData.categories || [])
+      setBarItems(barData.items || [])
+    })
   }, [authed])
 
   useEffect(() => {
@@ -212,13 +239,27 @@ export default function WaiterPage() {
     ? filteredByCategory.filter((m) => m.name.toLowerCase().includes(searchQuery.toLowerCase()))
     : filteredByCategory
 
-  const addItem = (item: MenuItem, price?: number) => {
+  const barFilteredByCategory = barItems.filter((m) => m.categoryId === activeCategory)
+  const barSearchedItems = searchQuery
+    ? barFilteredByCategory.filter((m) => m.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : barFilteredByCategory
+
+  function getBarPrice(item: BarItem): number {
+    if (item.singlePrice != null) return item.singlePrice
+    if (item.price != null) return item.price
+    if (item.glassPrice != null) return item.glassPrice
+    if (item.shotPrice != null) return item.shotPrice
+    return 0
+  }
+
+  const addItem = (item: MenuItem | BarItem, price?: number, station?: 'kitchen' | 'bar') => {
     setCart((prev) => {
       const existing = prev.find((c) => c.id === item.id)
       if (existing) {
         return prev.map((c) => c.id === item.id ? { ...c, quantity: c.quantity + 1 } : c)
       }
-      return [...prev, { id: item.id, name: item.name, description: item.description, price: price ?? (parseFloat(item.price) || 0), quantity: 1, notes: '' }]
+      const p = price ?? (station === 'bar' ? getBarPrice(item as BarItem) : (parseFloat((item as MenuItem).price) || 0))
+      return [...prev, { id: item.id, name: item.name, description: (item as MenuItem).description || '', price: p, quantity: 1, notes: '', station }]
     })
   }
 
@@ -254,6 +295,7 @@ export default function WaiterPage() {
         menu_item_id: c.id,
         quantity: c.quantity,
         notes: itemNotes[c.id] || undefined,
+        station: c.station || undefined,
       }))
       const res = await fetch('/api/supabase/orders', {
         method: 'POST',
@@ -275,7 +317,13 @@ export default function WaiterPage() {
       }
       const data = await res.json()
       setLastOrder({ tableNumber, cart, itemNotes, orderNotes })
-      setOrderRef(data.order?.order_ref || `Table ${tableNumber}`)
+      const refs: { ref: string; station?: string; id?: string }[] = (data.orders || []).map((o: any) => ({
+        ref: o.order_ref || '',
+        station: o.station || undefined,
+        id: o.id,
+      }))
+      setOrderRefs(refs)
+      setOrderRef(data.order?.order_ref || refs[0]?.ref || `Table ${tableNumber}`)
       setDone(true)
       setCart([])
       setItemNotes({})
@@ -288,16 +336,70 @@ export default function WaiterPage() {
     }
   }
 
+  // Poll for cancellations on Done screen
+  useEffect(() => {
+    if (!done || orderRefs.length === 0) return
+    const firstId = orderRefs[0]?.id
+    if (!firstId) return
+
+    const check = async () => {
+      try {
+        const res = await fetch(`/api/supabase/orders?sibling_of=${firstId}`)
+        if (!res.ok) return
+        const { orders: siblings } = await res.json()
+        const all = [...orderRefs.map(r => ({ id: r.id })), ...(siblings || [])]
+        const cc = all.filter((o: any) => o.status === 'cancelled' || o.status === 'rejected')
+          .map((o: any) => ({ ref: o.order_ref || o.id, reason: o.cancellation_reason || undefined }))
+        setCancelledRefs(cc)
+      } catch { /* */ }
+    }
+    check()
+    const iv = setInterval(check, 15000)
+    return () => clearInterval(iv)
+  }, [done, orderRefs])
+
   if (!authed) return <PasswordGate onSuccess={() => setAuthed(true)} />
 
   if (done) {
+    const stationLabel = (s?: string) => {
+      if (s === 'bar') return { label: 'Bar', icon: '🍸', color: '#f59e0b' }
+      if (s === 'kitchen') return { label: 'Kitchen', icon: '👨‍🍳', color: '#10b981' }
+      return { label: 'Order', icon: '📋', color: '#f59e0b' }
+    }
     return (
       <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0f0f1a', color: '#fff', padding: '2rem', textAlign: 'center' }}>
         <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>✅</div>
         <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Order Sent!</h1>
-        <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '0.25rem' }}>Order for Table {tableNumber}</p>
-        {waiterName && <p style={{ color: '#dc2626', fontWeight: 600, marginBottom: '0.5rem' }}>Waiter: {waiterName}</p>}
-        <p style={{ color: '#f59e0b', fontFamily: 'monospace', fontSize: '1.2rem', marginBottom: '2rem' }}>{orderRef}</p>
+        <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '0.25rem' }}>Table {tableNumber}</p>
+        {waiterName && <p style={{ color: '#dc2626', fontWeight: 600, marginBottom: '0.75rem' }}>Waiter: {waiterName}</p>}
+        {orderRefs.map((r, i) => {
+          const sl = stationLabel(r.station)
+          return (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem',
+              padding: '0.5rem 1rem', borderRadius: '10px', background: 'rgba(255,255,255,0.04)',
+            }}>
+              <span>{sl.icon}</span>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: sl.color, textTransform: 'uppercase' }}>{sl.label}</span>
+              <span style={{ fontFamily: 'monospace', fontSize: '1rem', fontWeight: 700, color: '#f59e0b' }}>{r.ref}</span>
+            </div>
+          )
+        })}
+        {orderRefs.length > 1 && (
+          <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', marginBottom: '1rem' }}>
+            Both tickets created — kitchen and bar work independently. The table is active until both are ready.
+          </p>
+        )}
+        {cancelledRefs.length > 0 && (
+          <div style={{ marginBottom: '1rem', padding: '0.75rem', borderRadius: '10px', background: 'rgba(239,68,68,0.12)', border: '2px solid rgba(239,68,68,0.4)', width: '100%', maxWidth: '320px' }}>
+            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fca5a5', marginBottom: '0.25rem' }}>❌ Order Cancelled</div>
+            {cancelledRefs.map((c, i) => (
+              <div key={i} style={{ fontSize: '0.8rem', color: '#fca5a5', marginTop: '0.2rem' }}>
+                <strong>{c.ref}</strong>{c.reason ? `: ${c.reason}` : ''}
+              </div>
+            ))}
+          </div>
+        )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%', maxWidth: '300px' }}>
           <button onClick={() => { setDone(false); setStep('review'); if (lastOrder) { setTableNumber(lastOrder.tableNumber); setCart(lastOrder.cart); setItemNotes(lastOrder.itemNotes); setOrderNotes(lastOrder.orderNotes); } }}
             style={{ padding: '1rem 2rem', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '12px', background: 'transparent', color: '#fff', fontSize: '1rem', fontWeight: 600, cursor: 'pointer' }}
@@ -397,10 +499,32 @@ export default function WaiterPage() {
       {/* Step: Menu */}
       {step === 'menu' && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Food / Bar Toggle */}
+          <div style={{ display: 'flex', gap: '0.5rem', padding: '0.5rem', flexShrink: 0 }}>
+            <button onClick={() => { setMenuMode('food'); setActiveCategory(categories[0]?.id || null); setSearchQuery('') }}
+              style={{
+                flex: 1, padding: '0.5rem', borderRadius: '8px', border: 'none', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer',
+                background: menuMode === 'food' ? '#10b981' : 'rgba(255,255,255,0.07)',
+                color: menuMode === 'food' ? '#000' : 'rgba(255,255,255,0.7)',
+              }}
+            >
+              🍽️ Food
+            </button>
+            <button onClick={() => { setMenuMode('bar'); setActiveCategory(barCategories[0]?.id || null); setSearchQuery('') }}
+              style={{
+                flex: 1, padding: '0.5rem', borderRadius: '8px', border: 'none', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer',
+                background: menuMode === 'bar' ? '#f59e0b' : 'rgba(255,255,255,0.07)',
+                color: menuMode === 'bar' ? '#000' : 'rgba(255,255,255,0.7)',
+              }}
+            >
+              🍸 Bar
+            </button>
+          </div>
+
           {/* Search */}
-          <div style={{ padding: '0.5rem', flexShrink: 0 }}>
+          <div style={{ padding: '0 0.5rem 0.5rem', flexShrink: 0 }}>
             <input
-              type="text" placeholder="🔍 Search menu items..." value={searchQuery}
+              type="text" placeholder={menuMode === 'bar' ? "🔍 Search bar items..." : "🔍 Search menu items..."} value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
                 width: '100%', padding: '0.65rem 0.75rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)',
@@ -411,11 +535,11 @@ export default function WaiterPage() {
 
           {/* Category chips */}
           <div style={{ display: 'flex', gap: '0.35rem', padding: '0 0.5rem 0.5rem', overflowX: 'auto', flexShrink: 0 }}>
-            {categories.map((cat) => (
+            {(menuMode === 'bar' ? barCategories : categories).map((cat) => (
               <button key={cat.id} onClick={() => { setActiveCategory(cat.id); setSearchQuery('') }}
                 style={{
                   padding: '0.4rem 0.8rem', borderRadius: '20px', border: 'none', whiteSpace: 'nowrap', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
-                  background: activeCategory === cat.id ? '#10b981' : 'rgba(255,255,255,0.07)',
+                  background: activeCategory === cat.id ? (menuMode === 'bar' ? '#f59e0b' : '#10b981') : 'rgba(255,255,255,0.07)',
                   color: activeCategory === cat.id ? '#000' : 'rgba(255,255,255,0.7)',
                 }}
               >
@@ -426,26 +550,47 @@ export default function WaiterPage() {
 
           {/* Items grid */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '0 0.5rem 0.5rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            {searchedItems.map((item) => (
-              <button key={item.id} onClick={() => addItem(item)}
-                style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '0.7rem 0.85rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)',
-                  background: 'rgba(255,255,255,0.03)', color: '#fff', cursor: 'pointer', textAlign: 'left', width: '100%',
-                }}
-              >
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{item.name}</div>
-                  <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.description?.slice(0, 50)}</div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0, marginLeft: '0.5rem' }}>
-                  <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#10b981' }}>
-                    R{parseFloat(item.price).toFixed(2)}
-                  </span>
-                </div>
-              </button>
-            ))}
-            {searchedItems.length === 0 && (
+            {menuMode === 'bar' ? (
+              barSearchedItems.map((item) => (
+                <button key={item.id} onClick={() => addItem(item, undefined, 'bar')}
+                  style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '0.7rem 0.85rem', borderRadius: '10px', border: '1px solid rgba(245,158,11,0.15)',
+                    background: 'rgba(245,158,11,0.04)', color: '#fff', cursor: 'pointer', textAlign: 'left', width: '100%',
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{item.name}</div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0, marginLeft: '0.5rem' }}>
+                    <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#f59e0b' }}>
+                      R{getBarPrice(item).toFixed(2)}
+                    </span>
+                  </div>
+                </button>
+              ))
+            ) : (
+              searchedItems.map((item) => (
+                <button key={item.id} onClick={() => addItem(item)}
+                  style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '0.7rem 0.85rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)',
+                    background: 'rgba(255,255,255,0.03)', color: '#fff', cursor: 'pointer', textAlign: 'left', width: '100%',
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{item.name}</div>
+                    <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.description?.slice(0, 50)}</div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0, marginLeft: '0.5rem' }}>
+                    <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#10b981' }}>
+                      R{parseFloat(item.price).toFixed(2)}
+                    </span>
+                  </div>
+                </button>
+              ))
+            )}
+            {(menuMode === 'bar' ? barSearchedItems : searchedItems).length === 0 && (
               <div style={{ textAlign: 'center', padding: '2rem', color: 'rgba(255,255,255,0.2)', fontSize: '0.9rem' }}>No items found</div>
             )}
           </div>
@@ -504,7 +649,7 @@ export default function WaiterPage() {
               <button onClick={submitOrder} disabled={submitting}
                 style={{ width: '100%', marginTop: '0.75rem', padding: '1rem', border: 'none', borderRadius: '12px', background: submitting ? 'rgba(255,255,255,0.1)' : submitError ? '#f59e0b' : '#10b981', color: submitting ? 'rgba(255,255,255,0.5)' : '#000', fontSize: '1.1rem', fontWeight: 800, cursor: submitting ? 'not-allowed' : 'pointer' }}
               >
-                {submitting ? 'Sending...' : submitError ? 'Retry Order' : `Send to Kitchen — R${total.toFixed(2)}`}
+                {submitting ? 'Sending...' : submitError ? 'Retry Order' : `Send Order — R${total.toFixed(2)}`}
               </button>
               {confirmCancel ? (
                 <div style={{ marginTop: '0.75rem', padding: '1rem', background: 'rgba(239,68,68,0.1)', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.3)', textAlign: 'center' }}>

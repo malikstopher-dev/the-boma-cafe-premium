@@ -1,9 +1,34 @@
 import { getAdminClient } from '@/lib/supabase'
 import { getMenuItemsByIds, type DbMenuItem } from '@/lib/menu-prices'
-import type { EnrichedItem, OrderItemInput, OrderRecord, OrderStatus, OrderEventType } from './types'
+import type { EnrichedItem, OrderItemInput, OrderRecord, OrderStatus, Station, OrderEventType, OrderSplitResult } from './types'
 
 const MIN_TOTAL = 1
 const MAX_TOTAL = 99999
+
+interface BarDbItem {
+  id: string
+  name: string
+  single_price: number | null
+  bottle: number | null
+  glass_price: number | null
+  shot_price: number | null
+  price: number | null
+}
+
+async function getBarItemsByIds(ids: string[]): Promise<Map<string, BarDbItem>> {
+  const result = new Map<string, BarDbItem>()
+  if (ids.length === 0) return result
+  try {
+    const { data, error } = await getAdminClient()
+      .from('bar_items')
+      .select('id, name, single_price, bottle, glass_price, shot_price, price')
+      .in('id', ids)
+    if (!error && data) {
+      for (const item of data) result.set(item.id, item)
+    }
+  } catch { /* ignore */ }
+  return result
+}
 
 function resolveSizePrice(
   dbItem: DbMenuItem,
@@ -22,6 +47,19 @@ function resolveSizePrice(
   }
 
   return { price: basePrice, matched: false }
+}
+
+function resolveBarSizePrice(
+  barItem: BarDbItem,
+  selectedSize?: string,
+): { price: number; matched: boolean } {
+  if (selectedSize === 'single' && barItem.single_price != null) return { price: Number(barItem.single_price), matched: true }
+  if (selectedSize === 'bottle' && barItem.bottle != null) return { price: Number(barItem.bottle), matched: true }
+  if (selectedSize === 'glass' && barItem.glass_price != null) return { price: Number(barItem.glass_price), matched: true }
+  if (selectedSize === 'shot' && barItem.shot_price != null) return { price: Number(barItem.shot_price), matched: true }
+  if (barItem.single_price != null) return { price: Number(barItem.single_price), matched: false }
+  if (barItem.price != null) return { price: Number(barItem.price), matched: false }
+  return { price: -1, matched: false }
 }
 
 function resolveAddOnPrices(
@@ -50,40 +88,65 @@ async function enrichItems(items: OrderItemInput[]): Promise<{
   const enriched: EnrichedItem[] = []
   let total = 0
 
-  const itemIds = Array.from(new Set(items.map(i => i.menu_item_id)))
-  const menuMap = await getMenuItemsByIds(itemIds)
+  const foodIds = items.filter(i => i.station !== 'bar').map(i => i.menu_item_id)
+  const barIds = items.filter(i => i.station === 'bar').map(i => i.menu_item_id)
+  const [menuMap, barMap] = await Promise.all([
+    foodIds.length > 0 ? getMenuItemsByIds(foodIds) : Promise.resolve(new Map<string, DbMenuItem>()),
+    barIds.length > 0 ? getBarItemsByIds(barIds) : Promise.resolve(new Map<string, BarDbItem>()),
+  ])
 
   for (const item of items) {
-    const row = menuMap.get(item.menu_item_id)
-    if (!row) {
-      return { enriched: [], total: 0, error: `Menu item not found: ${item.menu_item_id}` }
+    if (item.station === 'bar') {
+      const row = barMap.get(item.menu_item_id)
+      if (!row) {
+        return { enriched: [], total: 0, error: `Bar item not found: ${item.menu_item_id}` }
+      }
+      const { price: itemPrice, matched: sizeMatched } = resolveBarSizePrice(row, item.selected_size)
+      if (itemPrice < 0) {
+        return { enriched: [], total: 0, error: `Invalid price for bar item: ${row.name}` }
+      }
+      const linePrice = itemPrice
+      const subtotal = linePrice * item.quantity
+      enriched.push({
+        menu_item_id: row.id,
+        name: row.name,
+        price: linePrice,
+        quantity: item.quantity,
+        subtotal,
+        station: 'bar',
+        ...(sizeMatched && item.selected_size ? { selected_size: { name: item.selected_size, price: itemPrice } } : {}),
+        ...(item.notes ? { notes: item.notes } : {}),
+      })
+      total += subtotal
+    } else {
+      const row = menuMap.get(item.menu_item_id)
+      if (!row) {
+        return { enriched: [], total: 0, error: `Menu item not found: ${item.menu_item_id}` }
+      }
+      const { price: itemPrice, matched: sizeMatched } = resolveSizePrice(row, item.selected_size)
+      if (itemPrice < 0) {
+        const reason = item.selected_size
+          ? `Size "${item.selected_size}" not found for item: ${row.name}`
+          : `Invalid price for item: ${row.name}`
+        return { enriched: [], total: 0, error: reason }
+      }
+      const resolvedAddOns = resolveAddOnPrices(row, item.selected_add_ons)
+      const addOnTotal = resolvedAddOns.reduce((s, a) => s + a.price, 0)
+      const linePrice = itemPrice + addOnTotal
+      const subtotal = linePrice * item.quantity
+      enriched.push({
+        menu_item_id: row.id,
+        name: row.name,
+        price: linePrice,
+        quantity: item.quantity,
+        subtotal,
+        station: 'kitchen',
+        ...(sizeMatched && item.selected_size ? { selected_size: { name: item.selected_size, price: itemPrice } } : {}),
+        ...(resolvedAddOns.length > 0 ? { selected_add_ons: resolvedAddOns } : {}),
+        ...(item.notes ? { notes: item.notes } : {}),
+      })
+      total += subtotal
     }
-
-    const { price: itemPrice, matched: sizeMatched } = resolveSizePrice(row, item.selected_size)
-    if (itemPrice < 0) {
-      const reason = item.selected_size
-        ? `Size "${item.selected_size}" not found for item: ${row.name}`
-        : `Invalid price for item: ${row.name}`
-      return { enriched: [], total: 0, error: reason }
-    }
-
-    const resolvedAddOns = resolveAddOnPrices(row, item.selected_add_ons)
-    const addOnTotal = resolvedAddOns.reduce((s, a) => s + a.price, 0)
-    const linePrice = itemPrice + addOnTotal
-    const subtotal = linePrice * item.quantity
-
-    enriched.push({
-      menu_item_id: row.id,
-      name: row.name,
-      price: linePrice,
-      quantity: item.quantity,
-      subtotal,
-      ...(sizeMatched && item.selected_size ? { selected_size: { name: item.selected_size, price: itemPrice } } : {}),
-      ...(resolvedAddOns.length > 0 ? { selected_add_ons: resolvedAddOns } : {}),
-      ...(item.notes ? { notes: item.notes } : {}),
-    })
-
-    total += subtotal
   }
 
   return { enriched, total: Math.round(total * 100) / 100, error: null }
@@ -110,6 +173,19 @@ async function generateOrderRef(): Promise<string> {
 
   const seq = ((count ?? 0) + 1).toString().padStart(3, '0')
   return `${yyyymmdd}-${seq}`
+}
+
+export function splitItemsByStation(input: CreateOrderInputType): OrderSplitResult {
+  const kitchenItems = input.items.filter(i => i.station !== 'bar')
+  const barItems = input.items.filter(i => i.station === 'bar')
+  const result: OrderSplitResult = {}
+  if (kitchenItems.length > 0) {
+    result.kitchen = { ...input, items: kitchenItems }
+  }
+  if (barItems.length > 0) {
+    result.bar = { ...input, items: barItems }
+  }
+  return result
 }
 
 const SUBMISSION_WINDOW_MS = 5000
@@ -151,13 +227,7 @@ export async function logOrderEvent(event: {
   } catch { /* non-critical — don't block the order */ }
 }
 
-export type CreateOrderResult = {
-  order: OrderRecord | null
-  duplicate: boolean
-  error: string | null
-}
-
-export async function createOrder(input: {
+export type CreateOrderInputType = {
   customer_name: string
   phone: string
   order_type: string
@@ -169,7 +239,17 @@ export async function createOrder(input: {
   waiter_name?: string
   created_by?: string
   order_notes?: string
-}): Promise<CreateOrderResult> {
+  station?: Station
+  parent_order_id?: string
+}
+
+export type CreateOrderResult = {
+  order: OrderRecord | null
+  duplicate: boolean
+  error: string | null
+}
+
+export async function createOrder(input: CreateOrderInputType): Promise<CreateOrderResult> {
   const idempotencyKey = input.idempotency_key || generateIdempotencyKey()
 
   // ── In-memory dedup (same request within 5s window) ────────
@@ -246,6 +326,14 @@ export async function createOrder(input: {
     insertPayload.delivery_address = input.delivery_address.trim()
   }
 
+  if (input.station) {
+    insertPayload.station = input.station
+  }
+
+  if (input.parent_order_id) {
+    insertPayload.parent_order_id = input.parent_order_id
+  }
+
   if (input.waiter_name) {
     insertPayload.waiter_name = input.waiter_name.trim()
     insertPayload.source = 'waiter'
@@ -311,4 +399,61 @@ export async function createOrder(input: {
   }
 
   return { order: null, duplicate: false, error: 'Failed to create order after retries' }
+}
+
+export async function getSiblingOrders(orderId: string): Promise<OrderRecord[]> {
+  try {
+    const { data: current } = await getAdminClient()
+      .from('orders')
+      .select('parent_order_id')
+      .eq('id', orderId)
+      .single()
+    if (!current?.parent_order_id) return []
+    const { data: siblings } = await getAdminClient()
+      .from('orders')
+      .select('*')
+      .eq('parent_order_id', current.parent_order_id)
+      .neq('id', orderId)
+    return (siblings || []) as unknown as OrderRecord[]
+  } catch {
+    return []
+  }
+}
+
+export async function splitAndCreateOrders(input: CreateOrderInputType): Promise<{
+  orders: OrderRecord[]
+  duplicate: boolean
+  error: string | null
+}> {
+  const splits = splitItemsByStation(input)
+  if (!splits.kitchen && !splits.bar) {
+    return { orders: [], duplicate: false, error: 'No items to order' }
+  }
+
+  const orders: OrderRecord[] = []
+  const baseKey = input.idempotency_key || generateIdempotencyKey()
+
+  const firstSplit = splits.kitchen ?? splits.bar!
+  const firstRes = await createOrder({ ...firstSplit, idempotency_key: `${baseKey}-first` })
+  if (firstRes.error) return { orders: [], duplicate: firstRes.duplicate, error: firstRes.error }
+  const first = firstRes.order!
+  orders.push(first)
+
+  const secondSplit = splits.kitchen && splits.bar
+    ? (firstSplit === splits.kitchen ? splits.bar : splits.kitchen)
+    : undefined
+
+  if (secondSplit) {
+    const secondRes = await createOrder({
+      ...secondSplit,
+      idempotency_key: `${baseKey}-second`,
+      parent_order_id: first.id,
+    })
+    if (secondRes.error) {
+      return { orders: [first], duplicate: false, error: `First order created (${first.order_ref}) but second failed: ${secondRes.error}` }
+    }
+    if (secondRes.order) orders.push(secondRes.order)
+  }
+
+  return { orders, duplicate: firstRes.duplicate, error: null }
 }
