@@ -357,7 +357,7 @@ export default function StationDisplay({ station, title, icon, primaryColor, log
     finally { setPasswordLoading(false) }
   }
 
-  const handleLogout = () => { setAuthed(false); setShowPasswordGate(true) }
+  const handleLogout = () => { window.location.href = '/api/admin/auth?action=logout' }
 
   if (checkingCookie) {
     return (
