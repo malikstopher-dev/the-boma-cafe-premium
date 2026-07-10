@@ -58,7 +58,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
         localStorage.setItem('boma_staff_user_id', uuidv4())
       }
     })()
-  }, [])
+  }, [pathname])
 
   const handleLogout = async () => {
     // Clear local state before redirect
