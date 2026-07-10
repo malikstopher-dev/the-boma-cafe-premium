@@ -98,6 +98,7 @@ export default function CartButton() {
     const itemsPayload = items.map(item => ({
       menu_item_id: item?.menuItemId || item?.id || '',
       quantity: item?.quantity ?? 1,
+      ...(item?.station ? { station: item.station } : {}),
       ...(item?.selectedSize ? { selected_size: item.selectedSize } : {}),
       ...(item?.selectedAddOns && item.selectedAddOns.length > 0
         ? { selected_add_ons: item.selectedAddOns }

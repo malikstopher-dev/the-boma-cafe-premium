@@ -16,6 +16,7 @@ interface CartItem {
   starch?: string;
   dietaryFlags?: string[];
   notes?: string;
+  station?: 'kitchen' | 'bar';
 }
 
 interface CartContextType {

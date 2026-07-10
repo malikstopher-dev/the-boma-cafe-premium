@@ -328,6 +328,10 @@ export async function createOrder(input: CreateOrderInputType): Promise<CreateOr
 
   if (input.station) {
     insertPayload.station = input.station
+  } else if (enriched.some(i => i.station === 'bar')) {
+    insertPayload.station = 'bar'
+  } else {
+    insertPayload.station = 'kitchen'
   }
 
   if (input.parent_order_id) {

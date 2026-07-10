@@ -48,6 +48,11 @@ const DESSERT_CATEGORIES = [
   'Desserts',
 ];
 
+const BAR_CATEGORIES = [
+  ...DRINK_CATEGORIES,
+  ...DESSERT_CATEGORIES,
+];
+
 function getSpecialInstructionsPlaceholder(category?: string): string {
   if (!category) {
     return 'Any special requests or notes?';
@@ -314,6 +319,7 @@ export default function MenuPage() {
     const finalPrice = calculateItemTotal(item, selectedSize, selectedAddOns);
     const sizeDisplay = selectedSize ? ` (${selectedSize})` : '';
     const addOnsDisplay = (selectedAddOns?.length || 0) > 0 ? ` + ${selectedAddOns.join(', ')}` : '';
+    const isBar = BAR_CATEGORIES.some(c => item.category?.toLowerCase().includes(c.toLowerCase()));
     
     addItem({
       id: `${item.id}${selectedSize ? `-${selectedSize.replace(/\s/g, '')}` : ''}${(selectedAddOns?.length || 0) > 0 ? `-${selectedAddOns.length}extras` : ''}-${Date.now()}`,
@@ -324,7 +330,8 @@ export default function MenuPage() {
       category: item.category,
       selectedSize,
       selectedAddOns,
-      notes
+      notes,
+      station: isBar ? 'bar' : 'kitchen',
     });
 
     setLastAddedItem(item);
