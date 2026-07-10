@@ -94,8 +94,12 @@ export async function GET(request: NextRequest) {
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
+  if (error) {
+    console.error('[orders GET] query error:', { station, error: error.message, code: error.code })
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+  console.log('[orders GET]', { station, count: data?.length ?? 0 })
+  return NextResponse.json(data ?? [])
 }
 
 export async function POST(request: NextRequest) {

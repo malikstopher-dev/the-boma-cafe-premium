@@ -144,24 +144,29 @@ export default function StationDisplay({ station, title, icon, primaryColor, log
     try {
       const res = await fetch(apiUrl)
       if (res.status === 401) { setAuthExpired(true); setConnectionError(false); return }
-      if (!res.ok) { setConnectionError(true); return }
+      if (!res.ok) {
+        console.error('[StationDisplay] fetch failed:', res.status, res.statusText)
+        setConnectionError(true); return
+      }
       setConnectionError(false)
       setAuthExpired(false)
-      const data: Order[] = await res.json()
+      const text = await res.text()
+      const data: Order[] = text ? JSON.parse(text) : []
 
-      const currentIds = new Set(data.map((o) => o.id))
+      const safeOrders = Array.isArray(data) ? data : []
+      const currentIds = new Set(safeOrders.map((o) => o.id))
       const prevIds = prevIdsRef.current
 
       if (prevIds.size > 0 && soundOn) {
         for (const id of Array.from(currentIds)) {
           if (!prevIds.has(id)) {
-            const order = data.find((o) => o.id === id)
+            const order = safeOrders.find((o) => o.id === id)
             if (order && order.status === 'pending') playDing()
           }
         }
       }
 
-      for (const order of data) {
+      for (const order of safeOrders) {
         if (order.status === 'ready' && !readyTimesRef.current.has(order.id)) {
           readyTimesRef.current.set(order.id, Date.now())
           if (soundOn) playReadyChime()
@@ -170,8 +175,9 @@ export default function StationDisplay({ station, title, icon, primaryColor, log
       }
 
       prevIdsRef.current = currentIds
-      setOrders(data)
-    } catch {
+      setOrders(safeOrders)
+    } catch (err) {
+      console.error('[StationDisplay] loadOrders error:', err)
       setConnectionError(true)
     }
   }, [soundOn, apiUrl])
@@ -190,6 +196,7 @@ export default function StationDisplay({ station, title, icon, primaryColor, log
 
     let supabase: ReturnType<typeof createBrowserClient> | null = null
     let channel: ReturnType<ReturnType<typeof createBrowserClient>['channel']> | null = null
+    let fallbackInterval: ReturnType<typeof setInterval> | null = null
 
     try {
       supabase = createBrowserClient()
@@ -209,17 +216,26 @@ export default function StationDisplay({ station, title, icon, primaryColor, log
             if (updated.status === 'ready' && soundOn) playReadyChime()
           }
         })
-        .subscribe()
-    } catch {
-      const fallback = setInterval(loadOrders, 5000)
-      return () => clearInterval(fallback)
+        .subscribe((status) => {
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            console.warn('[StationDisplay] realtime subscription failed:', status, '— falling back to polling')
+            if (!fallbackInterval) fallbackInterval = setInterval(loadOrders, 5000)
+          }
+        })
+    } catch (err) {
+      console.warn('[StationDisplay] realtime setup failed:', err, '— falling back to polling')
+      fallbackInterval = setInterval(loadOrders, 5000)
     }
 
-    return () => { if (channel && supabase) supabase.removeChannel(channel) }
+    return () => {
+      if (channel && supabase) supabase.removeChannel(channel).catch(() => {})
+      if (fallbackInterval) clearInterval(fallbackInterval)
+    }
   }, [authed, authExpired, loadOrders, soundOn, station])
 
   const displayOrders = useMemo(() => {
-    return orders.filter((o) => {
+    const safeOrders = Array.isArray(orders) ? orders : []
+    return safeOrders.filter((o) => {
       if (o.status !== 'ready') return true
       const readyTs = readyTimesRef.current.get(o.id)
       return !readyTs || Date.now() - readyTs < READY_CLEANUP_MS
@@ -227,7 +243,8 @@ export default function StationDisplay({ station, title, icon, primaryColor, log
   }, [orders])
 
   useEffect(() => {
-    const readyIds = new Set(orders.filter((o) => o.status === 'ready').map((o) => o.id))
+    const safeOrders = Array.isArray(orders) ? orders : []
+    const readyIds = new Set(safeOrders.filter((o) => o.status === 'ready').map((o) => o.id))
     Array.from(readyTimesRef.current.keys()).forEach((id) => { if (!readyIds.has(id)) readyTimesRef.current.delete(id) })
   }, [orders])
 
@@ -294,11 +311,12 @@ export default function StationDisplay({ station, title, icon, primaryColor, log
     setCancelModalOpen(true)
   }
 
-  const pending = displayOrders.filter(o => o.status === 'pending')
-  const confirmed = displayOrders.filter(o => o.status === 'confirmed')
-  const preparing = displayOrders.filter(o => o.status === 'preparing')
-  const packing = displayOrders.filter(o => o.status === 'packing')
-  const readyOrders = displayOrders.filter(o => o.status === 'ready')
+  const safeDisplayOrders = Array.isArray(displayOrders) ? displayOrders : []
+  const pending = safeDisplayOrders.filter(o => o.status === 'pending')
+  const confirmed = safeDisplayOrders.filter(o => o.status === 'confirmed')
+  const preparing = safeDisplayOrders.filter(o => o.status === 'preparing')
+  const packing = safeDisplayOrders.filter(o => o.status === 'packing')
+  const readyOrders = safeDisplayOrders.filter(o => o.status === 'ready')
   const allColumns = [pending, confirmed, preparing, packing, readyOrders]
 
   useEffect(() => { setFocusedIdx(0) }, [focusedCol])
@@ -417,8 +435,23 @@ export default function StationDisplay({ station, title, icon, primaryColor, log
       {authExpired && <div style={{ padding: '0.4rem 1rem', background: 'rgba(239,68,68,0.15)', borderBottom: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5', fontSize: '0.8rem', textAlign: 'center', flexShrink: 0 }}>⚠ Session expired — please log in again</div>}
       {errorMessage && <div style={{ padding: '0.4rem 1rem', background: 'rgba(239,68,68,0.12)', borderBottom: '1px solid rgba(239,68,68,0.25)', color: '#fca5a5', fontSize: '0.8rem', textAlign: 'center', flexShrink: 0 }}>{errorMessage}</div>}
 
+      {/* Empty state when zero orders */}
+      {!connectionError && !authExpired && displayOrders.length === 0 && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem 1.5rem', textAlign: 'center' }}>
+          <div style={{ fontSize: '4rem', marginBottom: '1rem', opacity: 0.6 }}>{icon}</div>
+          <h2 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--pos-text)', margin: '0 0 0.5rem' }}>No {station === 'bar' ? 'drink' : 'food'} orders yet</h2>
+          <p style={{ color: 'var(--pos-text-dim)', fontSize: '0.9rem', margin: '0 0 1.5rem', maxWidth: '320px' }}>
+            {station === 'bar' ? 'Drink orders from waiters will appear here.' : 'Food orders from waiters will appear here.'}
+          </p>
+          <button onClick={loadOrders}
+            style={{ padding: '0.75rem 1.5rem', borderRadius: 'var(--pos-radius-md)', border: `1px solid ${primaryColor}`, background: 'transparent', color: primaryColor, fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--pos-font)', touchAction: 'manipulation' }}>
+            🔄 Refresh
+          </button>
+        </div>
+      )}
+
       {/* Mobile tab bar */}
-      {isMobile && (
+      {isMobile && displayOrders.length > 0 && (
         <div style={{ display: 'flex', background: 'var(--pos-surface)', borderBottom: '1px solid var(--pos-border)', overflowX: 'auto', flexShrink: 0 }}>
           {columnData.map((col, i) => (
             <button key={col.key} onClick={() => setMobileTab(i)}
@@ -432,16 +465,16 @@ export default function StationDisplay({ station, title, icon, primaryColor, log
       )}
 
       {/* Desktop kanban */}
-      <div className="pos-kanban-desktop" style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 0, overflow: 'hidden' }}>
+      {displayOrders.length > 0 && <div className="pos-kanban-desktop" style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 0, overflow: 'hidden' }}>
         {columnData.map((col, colIdx) => (
           <Column key={col.key} col={col} colIdx={colIdx} focusedCol={isMobile ? mobileTab : focusedCol} focusedIdx={focusedIdx}
             orders={col.items} updating={updating} updateStatus={updateStatus} prepTimeInputs={prepTimeInputs} setPrepTimeInputs={setPrepTimeInputs}
             cardErrors={cardErrors} readyTimesRef={readyTimesRef} station={station} isMobile={false} openCancelModal={openCancelModal} />
         ))}
-      </div>
+      </div>}
 
       {/* Mobile single-column view */}
-      {isMobile && activeColData && (
+      {isMobile && displayOrders.length > 0 && activeColData && (
         <div className="pos-kanban-mobile" style={{ flex: 1, flexDirection: 'column', overflow: 'hidden', background: activeColData.bg }}>
           <Column col={activeColData} colIdx={activeCol} focusedCol={activeCol} focusedIdx={0}
             orders={activeColData.items} updating={updating} updateStatus={updateStatus} prepTimeInputs={prepTimeInputs} setPrepTimeInputs={setPrepTimeInputs}
