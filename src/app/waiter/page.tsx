@@ -288,6 +288,10 @@ export default function WaiterPage() {
               🛒 {itemCount} • R{total.toFixed(0)}
             </PosButton>
           )}
+          <button onClick={() => { window.location.href = '/api/admin/auth?action=logout' }}
+            style={{ padding: '0.35rem 0.6rem', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 'var(--pos-radius-sm)', background: 'transparent', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontFamily: 'var(--pos-font)' }}>
+            Sign Out
+          </button>
         </div>
       )}
 

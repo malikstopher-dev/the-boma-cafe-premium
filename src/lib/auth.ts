@@ -29,7 +29,7 @@ export function expectedCookieValue(role: Role): string {
  */
 export function getRoleFromHeaders(headers: Headers): Session | null {
   const role = headers.get('x-user-role') as Role | null
-  if (role === 'admin' || role === 'kitchen' || role === 'bar') {
+  if (role === 'admin' || role === 'kitchen' || role === 'bar' || role === 'waiter') {
     return { role }
   }
   return null
