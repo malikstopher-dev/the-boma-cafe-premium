@@ -28,7 +28,7 @@ export default function StaffLogin() {
           if (data.role === 'admin') router.replace('/staff/admin')
           else if (data.role === 'kitchen') router.replace('/staff/kitchen')
           else if (data.role === 'bar') router.replace('/staff/bar')
-          else if (data.role === 'waiter') router.replace('/staff/waiter')
+          else if (data.role === 'waiter') router.replace('/waiter')
         }
       })
       .catch(() => {})
@@ -52,7 +52,7 @@ export default function StaffLogin() {
       })
       const data = await res.json()
       if (res.ok && (data.authenticated || data.success)) {
-        const target = selectedRole === 'admin' ? '/staff/admin' : selectedRole === 'kitchen' ? '/staff/kitchen' : selectedRole === 'bar' ? '/staff/bar' : '/staff/waiter'
+        const target = selectedRole === 'admin' ? '/staff/admin' : selectedRole === 'kitchen' ? '/staff/kitchen' : selectedRole === 'bar' ? '/staff/bar' : '/waiter'
         router.replace(target)
         router.refresh()
       } else {

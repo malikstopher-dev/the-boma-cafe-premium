@@ -12,7 +12,7 @@ export default function StaffHome() {
       .then(data => {
         if (data.authenticated && data.role === 'admin') router.replace('/staff/admin')
         else if (data.authenticated && data.role === 'kitchen') router.replace('/staff/kitchen')
-        else if (data.authenticated && data.role === 'waiter') router.replace('/staff/waiter')
+        else if (data.authenticated && data.role === 'waiter') router.replace('/waiter')
         else router.replace('/staff/login')
       })
       .catch(() => router.replace('/staff/login'))
