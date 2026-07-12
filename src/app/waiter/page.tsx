@@ -489,9 +489,15 @@ export default function WaiterPage() {
           { key: 'drinks', icon: '🍸', label: 'Drinks', color: '#8b5cf6' },
           { key: 'tables', icon: '🪑', label: 'Tables', color: '#f59e0b' },
           { key: 'history', icon: '📋', label: 'History', color: '#6b7280' },
+          { key: 'messages', icon: '💬', label: 'Messages', color: '#3b82f6' },
           { key: 'cart', icon: '🛒', label: 'Cart', color: '#10b981', badge: itemCount },
         ].map(nav => (
-          <button key={nav.key} onClick={() => { if (nav.key === 'food') { setMenuMode('food'); setActiveCategory(categories[0]?.id || null) } else if (nav.key === 'drinks') { setMenuMode('bar'); setActiveCategory(barCategories[0]?.id || null) } setTab(nav.key as any); setSearchQuery('') }}
+          <button key={nav.key} onClick={() => {
+            if (nav.key === 'messages') { window.location.href = '/staff/messages'; return }
+            if (nav.key === 'food') { setMenuMode('food'); setActiveCategory(categories[0]?.id || null) }
+            else if (nav.key === 'drinks') { setMenuMode('bar'); setActiveCategory(barCategories[0]?.id || null) }
+            setTab(nav.key as any); setSearchQuery('')
+          }}
             style={{
               flex: 1, padding: '8px 4px', border: 'none', background: 'transparent',
               color: tab === nav.key ? nav.color : t.colors.text.dim,

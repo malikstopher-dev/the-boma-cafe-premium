@@ -74,6 +74,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div style={{ minHeight: '100vh', background: '#0F1115' }}>
           {children}
           <ConnectionStatus />
+
+          {/* Floating nav overlay for full-width POS pages */}
+          <div style={{
+            position: 'fixed', top: 12, left: 12, zIndex: 100,
+            display: 'flex', gap: 8,
+          }}>
+            <button
+              onClick={() => router.push('/admin/dashboard')}
+              style={{
+                padding: '6px 12px', borderRadius: 8,
+                background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)',
+                color: '#fff', fontSize: 13, cursor: 'pointer', backdropFilter: 'blur(8px)',
+              }}
+            >
+              ← Dashboard
+            </button>
+            <button
+              onClick={() => router.push('/admin/messages')}
+              style={{
+                padding: '6px 12px', borderRadius: 8,
+                background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)',
+                color: '#fff', fontSize: 13, cursor: 'pointer', backdropFilter: 'blur(8px)',
+              }}
+            >
+              💬 Messages
+            </button>
+          </div>
         </div>
       </ToastProvider>
     );

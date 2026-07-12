@@ -7,13 +7,7 @@ export default function BackButton() {
 
   return (
     <button
-      onClick={() => {
-        try {
-          router.back()
-        } catch {
-          router.push('/admin/dashboard')
-        }
-      }}
+      onClick={() => router.push('/admin/dashboard')}
       style={{
         display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
         padding: '0.4rem 0.75rem', borderRadius: '8px',

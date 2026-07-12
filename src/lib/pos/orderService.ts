@@ -280,6 +280,8 @@ export async function createOrder(input: CreateOrderInputType): Promise<CreateOr
     selected_size: i.selected_size,
     selected_add_ons: i.selected_add_ons,
     notes: i.notes,
+    station: i.station,
+    bar_item_id: i.bar_item_id,
   }))
 
   // ── Server-authoritative pricing ───────────────────────────

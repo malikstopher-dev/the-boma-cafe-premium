@@ -41,6 +41,7 @@ export interface SupabaseOrder {
   items_json: string
   total: number
   status: string
+  station: string | null
   payment_status: string
   payment_confirmed_at: string | null
   payment_confirmed_by: string | null
