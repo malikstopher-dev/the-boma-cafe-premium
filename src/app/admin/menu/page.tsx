@@ -1,31 +1,33 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import BackButton from '@/components/admin/BackButton';
-import { cmsService, generateId } from '@/lib/client-cms';
-import MediaPicker from '@/components/admin/MediaPicker';
+import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
+import { PageHeader } from '@/components/admin/design-system/PageHeader';
+import Button from '@/components/admin/design-system/Button';
+import { Input, Textarea, Select } from '@/components/admin/design-system/Input';
+import Badge from '@/components/admin/design-system/Badge';
+import { SkeletonCard } from '@/components/admin/design-system/Skeleton';
+import EmptyState from '@/components/admin/design-system/EmptyState';
+import ConfirmDialog from '@/components/admin/design-system/ConfirmDialog';
+import { useToast } from '@/components/admin/design-system/Toast';
+import { cmsService } from '@/lib/client-cms';
 
 export default function AdminMenu() {
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const { success, error: showError } = useToast();
 
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: '',
-    categoryId: '',
-    isFeatured: false,
-    isOnPromo: false,
-    promoBadge: '',
-    isOutOfStock: false,
-    image: '',
-    isAvailable: true
+    name: '', description: '', price: '', categoryId: '',
+    isFeatured: false, isOnPromo: false, promoBadge: '',
+    isOutOfStock: false, image: '', isAvailable: true,
   });
 
   useEffect(() => {
@@ -33,12 +35,12 @@ export default function AdminMenu() {
       try {
         const [items, cats] = await Promise.all([
           cmsService.getMenuItems(),
-          cmsService.getCategories()
+          cmsService.getCategories(),
         ]);
         setMenuItems(items);
         setCategories(cats);
-      } catch (error) {
-        console.error('Error loading menu data:', error);
+      } catch {
+        showError('Failed to load menu data');
       } finally {
         setIsLoading(false);
       }
@@ -46,232 +48,240 @@ export default function AdminMenu() {
     loadData();
   }, []);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result as string;
-        setFormData({ ...formData, image: base64 });
-        setImagePreview(base64);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  const filteredItems = useMemo(() => {
+    return menuItems.filter((item: any) => {
+      const matchSearch = !search || item.name?.toLowerCase().includes(search.toLowerCase());
+      const matchCategory = !categoryFilter || item.category === categoryFilter || item.categoryId === categoryFilter;
+      return matchSearch && matchCategory;
+    });
+  }, [menuItems, search, categoryFilter]);
 
-  const clearImage = () => {
-    setFormData({ ...formData, image: '' });
-    setImagePreview(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const handleMediaPick = (url: string) => {
-    setFormData({ ...formData, image: url });
-    setImagePreview(url);
-  };
+  const activeCategories = categories.filter((c: any) => c.isActive);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaveError(null);
+    if (!formData.name.trim()) { showError('Item name is required'); return; }
+    setIsSaving(true);
     try {
       const category = categories.find((c: any) => c.name === formData.categoryId || c.id === formData.categoryId);
       const itemData = {
         ...formData,
         price: String(formData.price),
         categoryId: category?.id || formData.categoryId,
-        isAvailable: !formData.isOutOfStock
+        isAvailable: !formData.isOutOfStock,
       };
-      
+
       if (editItem) {
         const updated = { ...editItem, ...itemData, updatedAt: new Date().toISOString() };
         await cmsService.saveMenuItem(updated);
         setMenuItems(menuItems.map((item: any) => item.id === editItem.id ? updated : item));
+        success('Item updated', `${formData.name} has been saved`);
       } else {
         const newItem = {
           ...itemData,
-          id: generateId(),
+          id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
           order: menuItems.length + 1,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         };
         const result = await cmsService.saveMenuItem(newItem);
-        setMenuItems([...menuItems, result.data]);
+        setMenuItems([...menuItems, result?.data || newItem]);
+        success('Item created', `${formData.name} has been added`);
       }
-      setIsEditing(false);
-      setEditItem(null);
-      setFormData({ name: '', description: '', price: '', categoryId: '', isFeatured: false, isOnPromo: false, promoBadge: '', isOutOfStock: false, image: '', isAvailable: true });
-      setImagePreview(null);
-    } catch (error) {
-      console.error('Error saving menu item:', error);
-      setSaveError(error instanceof Error ? error.message : 'Failed to save menu item');
+      closeForm();
+    } catch (err) {
+      showError('Failed to save', err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleEdit = (item: any) => {
-    setEditItem(item);
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await cmsService.deleteMenuItem(deleteTarget.id);
+      setMenuItems(menuItems.filter((item: any) => item.id !== deleteTarget.id));
+      success('Item deleted', `${deleteTarget.name} has been removed`);
+    } catch {
+      showError('Failed to delete item');
+    }
+    setDeleteTarget(null);
+  };
+
+  const openEdit = (item: any) => {
     const category = categories.find((c: any) => c.id === item.categoryId);
+    setEditItem(item);
     setFormData({
-      name: item.name,
+      name: item.name || '',
       description: item.description || '',
-      price: String(item.price).replace('R', ''),
+      price: String(item.price || '').replace('R', ''),
       categoryId: category?.name || item.categoryId || '',
       isFeatured: item.isFeatured || false,
       isOnPromo: item.isOnPromo || false,
       promoBadge: item.promoBadge || '',
       isOutOfStock: !item.isAvailable,
       image: item.image || '',
-      isAvailable: item.isAvailable !== false
+      isAvailable: item.isAvailable !== false,
     });
-    setImagePreview(item.image || null);
     setIsEditing(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Delete this item?')) {
-      try {
-        await cmsService.deleteMenuItem(id);
-        setMenuItems(menuItems.filter((item: any) => item.id !== id));
-        setSaveError(null);
-      } catch (error) {
-        console.error('Error deleting menu item:', error);
-        setSaveError(error instanceof Error ? error.message : 'Failed to delete menu item');
-      }
-    }
-  };
-
-  const handleAddNew = () => {
-    setIsEditing(true);
+  const openAdd = () => {
     setEditItem(null);
     setFormData({
-      name: '',
-      description: '',
-      price: '',
-      categoryId: categories[0]?.id || '',
-      isFeatured: false,
-      isOnPromo: false,
-      promoBadge: '',
-      isOutOfStock: false,
-      image: '',
-      isAvailable: true
+      name: '', description: '', price: '',
+      categoryId: activeCategories[0]?.id || '',
+      isFeatured: false, isOnPromo: false, promoBadge: '',
+      isOutOfStock: false, image: '', isAvailable: true,
     });
-    setImagePreview(null);
+    setIsEditing(true);
   };
+
+  const closeForm = () => {
+    setIsEditing(false);
+    setEditItem(null);
+  };
+
+  const categoryOptions = [
+    { value: '', label: 'All Categories' },
+    ...activeCategories.map((c: any) => ({ value: c.name, label: c.name })),
+  ];
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <div>
-          <BackButton />
-          <h1 style={{ fontSize: '2rem', color: 'var(--dark-brown)' }}>Menu Items</h1>
-          <p style={{ color: 'var(--text-light)' }}>{menuItems.length} items</p>
+      <PageHeader
+        title="Menu Items"
+        description={`${menuItems.length} items across ${activeCategories.length} categories`}
+        actions={<Button variant="primary" onClick={openAdd}>+ Add Item</Button>}
+      />
+
+      {/* Search + Filter */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <Input
+            placeholder="Search menu items..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
         </div>
-        <button onClick={handleAddNew} className="btn btn-primary">+ Add Item</button>
+        <div style={{ minWidth: 180 }}>
+          <Select
+            options={categoryOptions}
+            value={categoryFilter}
+            onChange={e => setCategoryFilter(e.target.value)}
+          />
+        </div>
       </div>
 
+      {/* Edit Form */}
       {isEditing && (
-        <div style={{ background: 'var(--white)', padding: '2rem', borderRadius: '16px', marginBottom: '2rem', boxShadow: 'var(--shadow-md)' }}>
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem' }}>{editItem ? 'Edit Item' : 'Add New Item'}</h2>
-          <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <input type="text" placeholder="Item Name *" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--cream)' }} />
-            <input type="number" placeholder="Price (R) *" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} required style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--cream)' }} />
-            
-            <select value={formData.categoryId} onChange={e => setFormData({...formData, categoryId: e.target.value})} style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--cream)' }}>
-              {categories.filter((c: any) => c.isActive).map((cat: any) => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
-            </select>
-            
-            <input type="text" placeholder="Promo Badge (e.g., Special, New)" value={formData.promoBadge} onChange={e => setFormData({...formData, promoBadge: e.target.value})} style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--cream)' }} />
-
-            {/* Image Upload */}
-            <div style={{ gridColumn: 'span 2' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--dark-brown)' }}>Item Image</label>
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                <div style={{ flex: 1 }}>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    style={{ padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--cream)', width: '100%' }}
-                  />
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-light)', marginTop: '0.25rem' }}>
-                    Upload an image (recommended: 400x300px) or use the Media Library:
-                  </p>
-                  <div style={{ marginTop: '0.5rem' }}>
-                    <MediaPicker
-                      module="menu"
-                      type="food_image"
-                      value={formData.image}
-                      onChange={handleMediaPick}
-                      label="📁 Browse Media Library"
-                    />
-                  </div>
-                </div>
-                {imagePreview && (
-                  <div style={{ position: 'relative', width: '120px', height: '90px', borderRadius: '8px', overflow: 'hidden' }}>
-                    <img src={imagePreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    <button
-                      type="button"
-                      onClick={clearImage}
-                      style={{ position: 'absolute', top: '4px', right: '4px', width: '24px', height: '24px', borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.6)', color: 'white', cursor: 'pointer', fontSize: '14px', lineHeight: 1 }}
-                    >
-                      ×
-                    </button>
-                  </div>
-                )}
-              </div>
+        <div style={{
+          background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 12,
+          padding: 24, marginBottom: 24,
+        }}>
+          <h2 style={{ fontSize: 18, fontWeight: 600, color: '#0F172A', marginBottom: 20 }}>
+            {editItem ? 'Edit Item' : 'Add New Item'}
+          </h2>
+          <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
+            <Input label="Item Name" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="e.g., Boma Pastry Platter" />
+            <Input label="Price (R)" required type="number" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} placeholder="85" />
+            <Select label="Category" options={activeCategories.map((c: any) => ({ value: c.name, label: c.name }))} value={formData.categoryId} onChange={e => setFormData({ ...formData, categoryId: e.target.value })} />
+            <Input label="Promo Badge" value={formData.promoBadge} onChange={e => setFormData({ ...formData, promoBadge: e.target.value })} placeholder="e.g., Special, New" helperText="Optional badge shown on menu" />
+            <div style={{ gridColumn: '1 / -1' }}>
+              <Textarea label="Description" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} placeholder="Describe this item..." />
             </div>
-
-            <textarea placeholder="Description" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} style={{ gridColumn: 'span 2', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--cream)', minHeight: '80px' }} />
-            
-            <div style={{ gridColumn: 'span 2', display: 'flex', gap: '1rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><input type="checkbox" checked={formData.isFeatured} onChange={e => setFormData({...formData, isFeatured: e.target.checked})} /> Featured</label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><input type="checkbox" checked={formData.isOnPromo} onChange={e => setFormData({...formData, isOnPromo: e.target.checked})} /> On Promo</label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><input type="checkbox" checked={formData.isOutOfStock} onChange={e => setFormData({...formData, isOutOfStock: e.target.checked})} /> Out of Stock</label>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <Input label="Image URL" value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} placeholder="https://... or /menu/item.jpg" />
             </div>
-            
-            {saveError && (
-              <div style={{ gridColumn: 'span 2', padding: '0.75rem', background: '#fee2e2', color: '#dc2626', borderRadius: '8px', fontSize: '0.9rem' }}>
-                {saveError}
-              </div>
-            )}
-            <div style={{ gridColumn: 'span 2', display: 'flex', gap: '1rem' }}>
-              <button type="submit" className="btn btn-primary">Save</button>
-              <button type="button" onClick={() => { setIsEditing(false); setEditItem(null); setImagePreview(null); }} className="btn btn-ghost">Cancel</button>
+            <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#475569', cursor: 'pointer' }}>
+                <input type="checkbox" checked={formData.isFeatured} onChange={e => setFormData({ ...formData, isFeatured: e.target.checked })} />
+                Featured
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#475569', cursor: 'pointer' }}>
+                <input type="checkbox" checked={formData.isOnPromo} onChange={e => setFormData({ ...formData, isOnPromo: e.target.checked })} />
+                On Promo
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#475569', cursor: 'pointer' }}>
+                <input type="checkbox" checked={formData.isOutOfStock} onChange={e => setFormData({ ...formData, isOutOfStock: e.target.checked })} />
+                Out of Stock
+              </label>
+            </div>
+            <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 12 }}>
+              <Button type="submit" variant="primary" loading={isSaving}>
+                {editItem ? 'Save Changes' : 'Add Item'}
+              </Button>
+              <Button type="button" variant="ghost" onClick={closeForm}>Cancel</Button>
             </div>
           </form>
         </div>
       )}
 
-      <div style={{ display: 'grid', gap: '1rem' }}>
-        {menuItems.map((item: any) => (
-          <div key={item.id} style={{ background: 'var(--white)', padding: '1.5rem', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: 'var(--shadow-sm)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      {/* Item List */}
+      {isLoading ? (
+        <div style={{ display: 'grid', gap: 12 }}>
+          <SkeletonCard /><SkeletonCard /><SkeletonCard />
+        </div>
+      ) : filteredItems.length === 0 ? (
+        <EmptyState
+          icon="🍽️"
+          title={search || categoryFilter ? 'No items match your search' : 'No menu items yet'}
+          description={search || categoryFilter ? 'Try adjusting your search or filters' : 'Add your first menu item to get started'}
+          action={!search && !categoryFilter ? 'Add Item' : undefined}
+          onAction={openAdd}
+        />
+      ) : (
+        <div style={{ display: 'grid', gap: 8 }}>
+          {filteredItems.map((item: any) => (
+            <div key={item.id} style={{
+              display: 'flex', alignItems: 'center', gap: 16,
+              padding: '14px 16px', background: '#FFFFFF',
+              border: '1px solid #E5E7EB', borderRadius: 12,
+              transition: 'border-color 0.15s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.borderColor = '#D1D5DB')}
+            onMouseLeave={e => (e.currentTarget.style.borderColor = '#E5E7EB')}
+            >
+              {/* Thumbnail */}
               {item.image ? (
-                <img src={item.image} alt={item.name} style={{ width: '60px', height: '60px', borderRadius: '8px', objectFit: 'cover' }} />
+                <img src={item.image} alt={item.name} style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
               ) : (
-                <div style={{ width: '60px', height: '60px', borderRadius: '8px', background: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', color: 'var(--text-light)' }}>
-                  {item.name.charAt(0)}
+                <div style={{ width: 48, height: 48, borderRadius: 8, background: '#F1F3F7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: '#94A3B8', flexShrink: 0 }}>
+                  {item.name?.charAt(0) || '?'}
                 </div>
               )}
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                  <h3 style={{ fontSize: '1.1rem', color: 'var(--dark-brown)' }}>{item.name}</h3>
-                  {item.isFeatured && <span style={{ background: 'var(--gold)', padding: '0.2rem 0.5rem', borderRadius: '10px', fontSize: '0.7rem' }}>★ Featured</span>}
-                  {item.isOnPromo && item.promoBadge && <span style={{ background: 'var(--fire-orange)', color: 'var(--white)', padding: '0.2rem 0.5rem', borderRadius: '10px', fontSize: '0.7rem' }}>{item.promoBadge}</span>}
-                  {item.isOutOfStock && <span style={{ background: '#dc2626', color: 'var(--white)', padding: '0.2rem 0.5rem', borderRadius: '10px', fontSize: '0.7rem' }}>Out of Stock</span>}
+
+              {/* Info */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+                  {item.isFeatured && <Badge variant="accent">Featured</Badge>}
+                  {item.isOnPromo && item.promoBadge && <Badge variant="warning">{item.promoBadge}</Badge>}
+                  {!item.isAvailable && <Badge variant="danger">Out of Stock</Badge>}
                 </div>
-                <p style={{ color: 'var(--text-light)', fontSize: '0.9rem' }}>{item.category} • R{item.price}</p>
+                <span style={{ fontSize: 13, color: '#94A3B8' }}>
+                  {item.category || 'Uncategorized'} · R{item.price}
+                </span>
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                <Button variant="ghost" size="sm" onClick={() => openEdit(item)}>Edit</Button>
+                <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(item)} style={{ color: '#EF4444' }}>Delete</Button>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button onClick={() => handleEdit(item)} style={{ padding: '0.5rem 1rem', background: 'var(--cream)', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Edit</button>
-              <button onClick={() => handleDelete(item.id)} style={{ padding: '0.5rem 1rem', background: '#fee2e2', border: 'none', borderRadius: '8px', cursor: 'pointer', color: '#dc2626' }}>Delete</button>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete Item"
+        message={`Are you sure you want to delete "${deleteTarget?.name}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

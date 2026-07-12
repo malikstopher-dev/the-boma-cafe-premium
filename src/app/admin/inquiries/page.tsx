@@ -1,125 +1,84 @@
 'use client'
 
-import BackButton from '@/components/admin/BackButton'
 import { useState, useEffect } from 'react'
+import { PageHeader } from '@/components/admin/design-system/PageHeader'
+import Button from '@/components/admin/design-system/Button'
+import Badge from '@/components/admin/design-system/Badge'
+import { SkeletonCard } from '@/components/admin/design-system/Skeleton'
+import EmptyState from '@/components/admin/design-system/EmptyState'
+import ConfirmDialog from '@/components/admin/design-system/ConfirmDialog'
+import { useToast } from '@/components/admin/design-system/Toast'
 
 interface ContactMessage {
-  id: string
-  name: string
-  phone: string | null
-  email: string
-  subject: string | null
-  message: string
-  is_read: boolean
-  created_at: string
+  id: string; name: string; phone: string | null; email: string
+  subject: string | null; message: string; is_read: boolean; created_at: string
 }
 
 export default function AdminInquiries() {
   const [messages, setMessages] = useState<ContactMessage[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [deleteTarget, setDeleteTarget] = useState<ContactMessage | null>(null)
+  const { success, error: showError } = useToast()
 
   useEffect(() => {
-    loadMessages()
+    fetch('/api/supabase/contact').then(r => r.json()).then(setMessages).catch(() => showError('Failed to load messages')).finally(() => setIsLoading(false))
   }, [])
-
-  const loadMessages = async () => {
-    try {
-      const res = await fetch('/api/supabase/contact')
-      if (res.ok) {
-        const data = await res.json()
-        setMessages(data)
-      }
-    } catch (err) {
-      console.error('Error loading messages:', err)
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   const markAsRead = async (id: string) => {
     try {
       const res = await fetch(`/api/supabase/contact?id=${id}`, { method: 'PATCH' })
-      if (res.ok) {
-        setMessages(messages.map(m => m.id === id ? { ...m, is_read: true } : m))
-      }
-    } catch (err) {
-      console.error('Error marking message read:', err)
-    }
+      if (res.ok) { setMessages(messages.map(m => m.id === id ? { ...m, is_read: true } : m)); success('Marked as read') }
+    } catch { showError('Failed to mark as read') }
   }
 
-  const deleteMessage = async (id: string) => {
-    if (!confirm('Delete this message?')) return
+  const deleteMessage = async () => {
+    if (!deleteTarget) return
     try {
-      const res = await fetch(`/api/supabase/contact?id=${id}`, { method: 'DELETE' })
-      if (res.ok) {
-        setMessages(messages.filter(m => m.id !== id))
-      }
-    } catch (err) {
-      console.error('Error deleting message:', err)
-    }
+      const res = await fetch(`/api/supabase/contact?id=${deleteTarget.id}`, { method: 'DELETE' })
+      if (res.ok) { setMessages(messages.filter(m => m.id !== deleteTarget.id)); success('Message deleted') }
+    } catch { showError('Failed to delete') }
+    setDeleteTarget(null)
   }
 
-  if (isLoading) {
-    return <div style={{ padding: '2rem' }}>Loading...</div>
-  }
+  const unreadCount = messages.filter(m => !m.is_read).length
 
   return (
     <div>
-      <div style={{ marginBottom: '2rem' }}>
-        <BackButton />
-        <h1 style={{ fontSize: '2rem', color: 'var(--dark-brown)' }}>Contact Inquiries</h1>
-        <p style={{ color: 'var(--text-light)' }}>{messages.length} message{messages.length !== 1 ? 's' : ''}</p>
-      </div>
+      <PageHeader title="Inquiries" description={`${messages.length} messages · ${unreadCount} unread`} />
 
-      {messages.length === 0 ? (
-        <div style={{ background: 'var(--white)', padding: '3rem', borderRadius: '16px', textAlign: 'center' }}>
-          <p style={{ color: 'var(--text-light)' }}>
-            No messages yet. Contact form submissions will appear here.
-          </p>
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gap: '1rem' }}>
+      {isLoading ? <div style={{ display: 'grid', gap: 12 }}><SkeletonCard /><SkeletonCard /><SkeletonCard /></div>
+      : messages.length === 0 ? <EmptyState icon="✉️" title="No messages yet" description="Contact form submissions will appear here" />
+      : (
+        <div style={{ display: 'grid', gap: 8 }}>
           {messages.map(msg => (
-            <div
-              key={msg.id}
-              style={{
-                background: 'var(--white)',
-                padding: '1.5rem',
-                borderRadius: '12px',
-                boxShadow: 'var(--shadow-sm)',
-                borderLeft: msg.is_read ? 'none' : '4px solid var(--primary)',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+            <div key={msg.id} style={{
+              background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 12, padding: 20,
+              borderLeft: msg.is_read ? '1px solid #E5E7EB' : '4px solid #0F766E',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                 <div>
-                  <h3 style={{ fontSize: '1.1rem', color: 'var(--dark-brown)', marginBottom: '0.25rem' }}>{msg.name}</h3>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>{msg.email} {msg.phone && `• ${msg.phone}`}</p>
-                  {msg.subject && (
-                    <span style={{
-                      display: 'inline-block', marginTop: '0.35rem',
-                      padding: '0.15rem 0.5rem', borderRadius: '6px',
-                      background: 'rgba(139,92,246,0.1)', color: '#7c3aed',
-                      fontSize: '0.8rem', fontWeight: 600,
-                    }}>
-                      {msg.subject}
-                    </span>
-                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: '#0F172A' }}>{msg.name}</span>
+                    {!msg.is_read && <Badge variant="accent">New</Badge>}
+                    {msg.subject && <Badge variant="default">{msg.subject}</Badge>}
+                  </div>
+                  <span style={{ fontSize: 13, color: '#94A3B8' }}>{msg.email}{msg.phone ? ` · ${msg.phone}` : ''}</span>
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  {!msg.is_read && (
-                    <button onClick={() => markAsRead(msg.id)} style={{ padding: '0.5rem 1rem', background: 'var(--cream)', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>Mark Read</button>
-                  )}
-                  <button onClick={() => deleteMessage(msg.id)} style={{ padding: '0.5rem 1rem', background: '#fee2e2', border: 'none', borderRadius: '8px', cursor: 'pointer', color: '#dc2626', fontSize: '0.85rem' }}>Delete</button>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {!msg.is_read && <Button variant="ghost" size="sm" onClick={() => markAsRead(msg.id)}>Mark Read</Button>}
+                  <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(msg)} style={{ color: '#EF4444' }}>Delete</Button>
                 </div>
               </div>
-              <p style={{ color: 'var(--text)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{msg.message}</p>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-light)', marginTop: '1rem' }}>
+              <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginBottom: 8 }}>{msg.message}</p>
+              <p style={{ fontSize: 12, color: '#94A3B8' }}>
                 {new Date(msg.created_at).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
               </p>
             </div>
           ))}
         </div>
       )}
+
+      <ConfirmDialog open={!!deleteTarget} title="Delete Message" message={`Delete message from "${deleteTarget?.name}"?`} confirmLabel="Delete" onConfirm={deleteMessage} onCancel={() => setDeleteTarget(null)} />
     </div>
   )
 }

@@ -1,32 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import dynamic from 'next/dynamic';
+import Sidebar, { BottomNav } from '@/components/admin/Sidebar';
+import { ToastProvider } from '@/components/admin/design-system';
 
 const ConnectionStatus = dynamic(() => import('@/components/ui/ConnectionStatus'), { ssr: false });
 
-const menuItems = [
-  { label: 'Dashboard', icon: '📊', href: '/admin/dashboard' },
-  { label: 'Content Map', icon: '🗺️', href: '/admin/content-map' },
-  { label: 'Site Settings', icon: '⚙️', href: '/admin/site-settings' },
-  { label: 'Menu', icon: '🍽️', href: '/admin/menu' },
-  { label: 'Bar Menu', icon: '🍹', href: '/admin/bar-menu' },
-  { label: 'Categories', icon: '🗂️', href: '/admin/categories' },
-  { label: 'Events', icon: '🎉', href: '/admin/events' },
-  { label: 'Promotions', icon: '🎁', href: '/admin/promotions' },
-  { label: 'Gallery', icon: '🖼️', href: '/admin/gallery' },
-  { label: 'Popup', icon: '🔔', href: '/admin/popup' },
-  { label: 'Announcement', icon: '📢', href: '/admin/announcement' },
-  { label: 'Inquiries', icon: '✉️', href: '/admin/inquiries' },
-  { label: 'Orders', icon: '📋', href: '/admin/orders' },
-  { label: 'Kitchen', icon: '👨‍🍳', href: '/admin/kitchen' },
-  { label: 'Waiters', icon: '👤', href: '/admin/waiters' },
-  { label: 'Analytics', icon: '📊', href: '/admin/analytics' },
-  { label: 'Marketing Studio', icon: '🎨', href: '/admin/marketing' },
-];
+// Pages that get full-width layout (no sidebar)
+const FULL_WIDTH_PAGES = ['/admin/orders', '/admin/kitchen', '/admin/bar'];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, logout, isLoading } = useAuth();
@@ -34,177 +18,140 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // ── Auth redirect: runs before any conditional return ──────
+  // Auth redirect
   useEffect(() => {
-    if (pathname === '/admin/login' || pathname === '/admin/kitchen' || pathname === '/admin/bar') return
+    if (pathname === '/admin/login' || pathname === '/admin/kitchen' || pathname === '/admin/bar') return;
     if (!isLoading && !isAuthenticated) {
-      router.replace(`/admin/login?redirect=${encodeURIComponent(pathname)}`)
+      router.replace(`/admin/login?redirect=${encodeURIComponent(pathname)}`);
     }
-  }, [isAuthenticated, isLoading, pathname, router])
+  }, [isAuthenticated, isLoading, pathname, router]);
 
-  // Kitchen / Bar: full-width, no sidebar (has own password gate)
-  if (pathname === '/admin/kitchen' || pathname === '/admin/bar') {
-    return (
-      <div style={{ minHeight: '100vh', background: '#0f0f1a' }}>
-        {children}
-        <ConnectionStatus />
-      </div>
-    )
-  }
+  // Close sidebar on navigation
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
 
-  // Login page: no sidebar, no auth required
+  // Login page: no sidebar, no auth
   if (pathname === '/admin/login') {
-    return <>{children}</>
+    return <>{children}</>;
   }
 
-  // Show loading while auth is being checked
+  // Loading state
   if (isLoading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f0f1a', color: '#fff' }}>
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#F8F9FB',
+        fontFamily: "'Inter', -apple-system, sans-serif",
+      }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
-          <p>Loading...</p>
+          <div style={{
+            width: 40,
+            height: 40,
+            border: '3px solid #E5E7EB',
+            borderTopColor: '#0F766E',
+            borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite',
+            margin: '0 auto 16px',
+          }} />
+          <p style={{ color: '#94A3B8', fontSize: 14 }}>Loading...</p>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       </div>
-    )
+    );
   }
 
   // Not authenticated → render null (redirect handled by useEffect)
-  if (!isAuthenticated) return null
+  if (!isAuthenticated) return null;
 
-  // Orders POS: full-width, no sidebar (still requires admin auth)
-  if (pathname === '/admin/orders') {
+  // Full-width pages (Orders POS, Kitchen, Bar)
+  if (FULL_WIDTH_PAGES.includes(pathname)) {
     return (
-      <div style={{ minHeight: '100vh', background: '#0f0f1a' }}>
-        {children}
-        <ConnectionStatus />
-      </div>
-    )
+      <ToastProvider>
+        <div style={{ minHeight: '100vh', background: '#0F1115' }}>
+          {children}
+          <ConnectionStatus />
+        </div>
+      </ToastProvider>
+    );
   }
 
-  const closeSidebar = () => setSidebarOpen(false);
-
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#f8f5f2' }}>
-      {/* Sidebar */}
-      <aside className={`admin-sidebar ${sidebarOpen ? 'open' : ''}`} style={{
-        width: '280px',
-        background: 'linear-gradient(180deg, var(--dark-brown) 0%, #1a0f0a 100%)',
-        padding: '1.5rem',
-        position: 'fixed',
-        height: '100vh',
-        overflowY: 'auto',
-        zIndex: 100,
-        transition: 'transform 0.3s ease',
-      }}>
-        <div style={{ marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-          <Link href="/" style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', textDecoration: 'none' }}>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 700, color: 'var(--white)' }}>The Boma Café</span>
-          </Link>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', marginTop: '0.5rem' }}>Admin Dashboard</p>
-        </div>
+    <ToastProvider>
+      <div style={{ display: 'flex', minHeight: '100vh', background: '#F8F9FB', fontFamily: "'Inter', -apple-system, sans-serif" }}>
+        {/* Sidebar */}
+        <Sidebar
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          onLogout={logout}
+        />
 
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {menuItems.filter((item): item is { label: string; icon: string; href: string } => !!(item && item.href)).map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                padding: '0.875rem 1rem',
-                borderRadius: '10px',
-                textDecoration: 'none',
-                color: pathname === item.href ? 'var(--white)' : 'rgba(255,255,255,0.7)',
-                background: pathname === item.href ? 'rgba(244,164,96,0.25)' : 'transparent',
-                borderLeft: pathname === item.href ? '3px solid var(--warm)' : '3px solid transparent',
-                fontSize: '0.95rem',
-                fontWeight: 500,
-                transition: 'all 0.2s ease'
-              }}
-              onClick={closeSidebar}
-            >
-              <span>{item.icon}</span>
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div style={{ marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderRadius: '10px', textDecoration: 'none', color: 'rgba(255,255,255,0.7)', fontSize: '0.95rem' }}>
-            <span>🌐</span>
-            View Website
-          </Link>
-          <button
-            onClick={() => { closeSidebar(); logout(); }}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderRadius: '10px', textDecoration: 'none', color: '#f87171', fontSize: '0.95rem', background: 'none', width: '100%', cursor: 'pointer', border: 'none', textAlign: 'left' }}
-          >
-            <span>🚪</span>
-            Logout
-          </button>
-        </div>
-      </aside>
-
-      {/* Mobile Overlay */}
-      {sidebarOpen && (
-        <div
+        {/* Mobile hamburger */}
+        <button
+          onClick={() => setSidebarOpen(true)}
+          aria-label="Open menu"
           style={{
             position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            zIndex: 99,
+            top: 12,
+            left: 12,
+            zIndex: 101,
+            width: 40,
+            height: 40,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: '#FFFFFF',
+            border: '1px solid #E5E7EB',
+            borderRadius: 8,
+            cursor: 'pointer',
+            fontSize: 18,
+            color: '#0F172A',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
           }}
-          onClick={closeSidebar}
-        />
-      )}
+          className="admin-hamburger"
+        >
+          ☰
+        </button>
 
-      {/* Mobile Toggle */}
-      <button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        style={{
-          position: 'fixed',
-          top: '1rem',
-          left: '1rem',
-          zIndex: 101,
-          padding: '0.75rem',
-          background: 'var(--dark-brown)',
-          border: 'none',
-          borderRadius: '8px',
-          color: 'var(--white)',
-          cursor: 'pointer',
-          display: 'none'
-        }}
-      >
-        ☰
-      </button>
+        {/* Main content */}
+        <main style={{
+          flex: 1,
+          marginLeft: 240,
+          padding: '24px 32px',
+          paddingBottom: 32,
+          maxWidth: '100%',
+          overflowX: 'hidden',
+        }} className="admin-main">
+          {children}
+        </main>
 
-      {/* Main Content */}
-      <main className="admin-main" style={{ flex: 1, marginLeft: '280px', padding: '2rem' }}>
-        {children}
-      </main>
+        {/* Mobile bottom nav */}
+        <BottomNav onMoreClick={() => setSidebarOpen(true)} />
 
-      <ConnectionStatus />
+        <ConnectionStatus />
 
-      <style>{`
-        @media (max-width: 768px) {
-          aside.admin-sidebar {
-            transform: translateX(-100%) !important;
-            width: 260px !important;
+        <style>{`
+          @media (max-width: 768px) {
+            .admin-hamburger {
+              display: flex !important;
+            }
+            .admin-main {
+              margin-left: 0 !important;
+              padding: 16px !important;
+              padding-top: 56px !important;
+              padding-bottom: 80px !important;
+            }
           }
-          aside.admin-sidebar.open {
-            transform: translateX(0) !important;
+          @media (min-width: 769px) {
+            .admin-hamburger {
+              display: none !important;
+            }
           }
-          button[onclick*="setSidebarOpen"] {
-            display: block !important;
-          }
-          main.admin-main {
-            margin-left: 0 !important;
-            width: 100% !important;
-            overflow-x: hidden !important;
-          }
-        }
-      `}</style>
-    </div>
+        `}</style>
+      </div>
+    </ToastProvider>
   );
 }
