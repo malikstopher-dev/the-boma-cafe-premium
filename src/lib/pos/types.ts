@@ -12,7 +12,8 @@ export type OrderEventType =
 export type Station = 'kitchen' | 'bar'
 
 export interface OrderItemInput {
-  menu_item_id: string
+  menu_item_id?: string
+  bar_item_id?: string
   quantity: number
   selected_size?: string
   selected_add_ons?: string[]

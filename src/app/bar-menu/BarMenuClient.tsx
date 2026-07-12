@@ -7,6 +7,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import OptimizedHero from '@/components/ui/OptimizedHero';
 import { getBarMenuItemImage } from '@/lib/barImages';
+import { useCart } from '@/lib/cart';
 import styles from './BarMenu.module.css';
 
 interface BarItem {
@@ -17,6 +18,7 @@ interface BarItem {
   glass?: number;
   shot?: number;
   price?: string;
+  availableForPickup?: boolean;
 }
 
 interface BarCategory {
@@ -159,8 +161,27 @@ function CategorySection({ category, onSelectItem }: { category: BarCategory; on
   );
 }
 
-function ItemModal({ item, categoryName, onClose }: { item: BarItem; categoryName: string; onClose: () => void }) {
+function ItemModal({ item, categoryName, onClose, onAddToCart }: { item: BarItem; categoryName: string; onClose: () => void; onAddToCart: (item: BarItem, categoryName: string, size: string, quantity: number) => void }) {
   const itemImage = getBarMenuItemImage(item.name, categoryName);
+  const [selectedSize, setSelectedSize] = useState<string>('')
+  const [quantity, setQuantity] = useState(1)
+  const [added, setAdded] = useState(false)
+
+  const sizes = [
+    { key: 'bottle', label: 'Bottle', price: item.bottle },
+    { key: 'glass', label: 'Glass', price: item.glass },
+    { key: 'single', label: 'Single', price: item.single },
+    { key: 'shot', label: 'Shot', price: item.shot },
+  ].filter(s => s.price != null && s.price > 0)
+
+  const hasSizes = sizes.length > 0
+  const displayPrice = hasSizes
+    ? sizes.find(s => s.key === selectedSize)?.price ?? sizes[0]?.price ?? 0
+    : 0
+
+  useEffect(() => {
+    if (hasSizes && !selectedSize) setSelectedSize(sizes[0].key)
+  }, [hasSizes, selectedSize])
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -171,6 +192,12 @@ function ItemModal({ item, categoryName, onClose }: { item: BarItem; categoryNam
       document.body.style.overflow = '';
     };
   }, [onClose]);
+
+  const handleAdd = () => {
+    onAddToCart(item, categoryName, selectedSize, quantity)
+    setAdded(true)
+    setTimeout(() => setAdded(false), 1500)
+  }
 
   return (
     <motion.div
@@ -204,18 +231,69 @@ function ItemModal({ item, categoryName, onClose }: { item: BarItem; categoryNam
         )}
         <div className={styles.modalContent}>
           <h3 className={styles.modalName}>{item.name}</h3>
+
+          {/* Size selector */}
+          {hasSizes && (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+              {sizes.map(s => (
+                <button
+                  key={s.key}
+                  onClick={() => setSelectedSize(s.key)}
+                  style={{
+                    padding: '8px 16px', borderRadius: 8,
+                    border: `2px solid ${selectedSize === s.key ? '#f59e0b' : 'rgba(255,255,255,0.15)'}`,
+                    background: selectedSize === s.key ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.05)',
+                    color: selectedSize === s.key ? '#f59e0b' : 'rgba(255,255,255,0.7)',
+                    fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {s.label} — R{s.price}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Price display */}
           <div className={styles.modalPrices}>
             {item.price ? (
               <span className={styles.modalPriceValue}>{item.price}</span>
             ) : (
-              <>
-                {item.bottle && <span className={styles.modalPriceTag}><span className={styles.modalPriceLabel}>Bottle</span><span className={styles.modalPriceValue}>R{item.bottle}</span></span>}
-                {item.glass && <span className={styles.modalPriceTag}><span className={styles.modalPriceLabel}>Glass</span><span className={styles.modalPriceValue}>R{item.glass}</span></span>}
-                {item.single && <span className={styles.modalPriceTag}><span className={styles.modalPriceLabel}>Single</span><span className={styles.modalPriceValue}>R{item.single}</span></span>}
-                {item.shot && <span className={styles.modalPriceTag}><span className={styles.modalPriceLabel}>Shot</span><span className={styles.modalPriceValue}>R{item.shot}</span></span>}
-              </>
+              <span style={{ fontSize: 24, fontWeight: 700, color: '#f59e0b' }}>
+                R{displayPrice}
+              </span>
             )}
           </div>
+
+          {/* Quantity + Add to Order */}
+          {!item.price && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 0, border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8 }}>
+                <button
+                  onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                  style={{ padding: '8px 14px', background: 'transparent', border: 'none', color: '#fff', fontSize: 18, cursor: 'pointer' }}
+                >−</button>
+                <span style={{ padding: '8px 12px', fontSize: 16, fontWeight: 700, minWidth: 24, textAlign: 'center' }}>{quantity}</span>
+                <button
+                  onClick={() => setQuantity(q => q + 1)}
+                  style={{ padding: '8px 14px', background: 'transparent', border: 'none', color: '#fff', fontSize: 18, cursor: 'pointer' }}
+                >+</button>
+              </div>
+              <button
+                onClick={handleAdd}
+                style={{
+                  flex: 1, padding: '12px 20px', borderRadius: 8,
+                  border: 'none',
+                  background: added ? '#10b981' : '#f59e0b',
+                  color: added ? '#fff' : '#000',
+                  fontSize: 16, fontWeight: 700, cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {added ? '✓ Added!' : `Add to Order — R${displayPrice * quantity}`}
+              </button>
+            </div>
+          )}
         </div>
       </motion.div>
     </motion.div>
@@ -229,9 +307,10 @@ export default function BarMenuClient() {
   const [isMobile, setIsMobile] = useState(false);
   const [modalItem, setModalItem] = useState<{ item: BarItem; categoryName: string } | null>(null);
   const filterRowRef = useRef<HTMLDivElement>(null);
+  const { addItem, openCart } = useCart();
 
   useEffect(() => {
-    fetch('/api/bar/public', { cache: 'no-cache' })
+    fetch('/api/bar/public')
       .then(r => r.json())
       .then(data => {
         if (!data?.categories || !data?.items) return;
@@ -246,6 +325,7 @@ export default function BarMenuClient() {
             glass: item.glassPrice || undefined,
             shot: item.shotPrice || undefined,
             price: item.price || undefined,
+            availableForPickup: item.availableForPickup !== false,
           });
         }
         const cats: BarCategory[] = data.categories.map((c: any) => ({
@@ -316,6 +396,26 @@ export default function BarMenuClient() {
   const handleCloseModal = useCallback(() => {
     setModalItem(null);
   }, []);
+
+  const handleAddToCart = useCallback((item: BarItem, categoryName: string, size: string, quantity: number) => {
+    const priceField = size as keyof BarItem
+    const price = Number(item[priceField]) || 0
+    const cartId = `${item.id}-${size}-${Date.now()}`
+    for (let i = 0; i < quantity; i++) {
+      addItem({
+        id: i === 0 ? cartId : `${cartId}-${i}`,
+        barItemId: item.id,
+        name: `${item.name}${size ? ` (${size})` : ''}`,
+        price,
+        quantity: 1,
+        category: categoryName,
+        selectedSize: size,
+        station: 'bar',
+        availableForPickup: item.availableForPickup !== false,
+      } as any)
+    }
+    openCart()
+  }, [addItem, openCart]);
 
   return (
     <>
@@ -516,6 +616,7 @@ export default function BarMenuClient() {
             item={modalItem.item}
             categoryName={modalItem.categoryName}
             onClose={handleCloseModal}
+            onAddToCart={handleAddToCart}
           />
         )}
       </AnimatePresence>

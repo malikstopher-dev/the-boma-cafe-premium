@@ -26,7 +26,6 @@ export default function CartButton() {
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
     phone: '',
-    orderType: 'pickup' as OrderType,
     requestedTime: '',
     notes: '',
     tableNumber: '',
@@ -42,6 +41,8 @@ export default function CartButton() {
   const isCartOpen = cartCtx?.isCartOpen ?? false
   const openCart = cartCtx?.openCart ?? (() => {})
   const closeCart = cartCtx?.closeCart ?? (() => {})
+  const orderType = cartCtx?.orderType ?? 'pickup'
+  const setOrderType = cartCtx?.setOrderType ?? (() => {})
 
   useEffect(() => {
     setIsClient(true)
@@ -54,7 +55,6 @@ export default function CartButton() {
     const errs: FieldErrors = {}
     const name = customerInfo?.name ?? ''
     const phone = customerInfo?.phone ?? ''
-    const orderType = customerInfo?.orderType ?? 'pickup'
     const tableNumber = customerInfo?.tableNumber ?? ''
     const deliveryAddress = customerInfo?.deliveryAddress ?? ''
 
@@ -88,9 +88,17 @@ export default function CartButton() {
       }
     }
 
+    // Pickup restriction: Hot Beverages, DRNK Freezos, Milkshakes, Cocktails, Ice Cream cannot be picked up
+    if (orderType === 'pickup') {
+      const restrictedItems = items.filter((item: any) => item.station === 'bar' && item.availableForPickup === false)
+      if (restrictedItems.length > 0) {
+        errs.items = `${restrictedItems.map((i: any) => i.name).join(', ')} cannot be picked up. Please switch to delivery or dine-in, or remove them.`
+      }
+    }
+
     setFieldErrors(errs)
     return Object.keys(errs).length === 0
-  }, [customerInfo, items.length])
+  }, [customerInfo, items.length, orderType])
 
   const submitOrder = useCallback(async (): Promise<string> => {
     const now = Date.now()
@@ -104,7 +112,8 @@ export default function CartButton() {
       : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 
     const itemsPayload = items.map(item => ({
-      menu_item_id: item?.menuItemId || item?.id || '',
+      ...(item?.menuItemId ? { menu_item_id: item.menuItemId } : {}),
+      ...(item?.barItemId ? { bar_item_id: item.barItemId } : {}),
       quantity: item?.quantity ?? 1,
       ...(item?.station ? { station: item.station } : {}),
       ...(item?.selectedSize ? { selected_size: item.selectedSize } : {}),
@@ -115,7 +124,7 @@ export default function CartButton() {
 
     const cName = customerInfo?.name?.trim() || 'Guest'
     const cPhone = customerInfo?.phone?.trim() || 'No phone'
-    const cOrderType = customerInfo?.orderType ?? 'pickup'
+    const cOrderType = orderType
     const cTableNumber = customerInfo?.tableNumber?.trim() ?? ''
     const cDeliveryAddress = customerInfo?.deliveryAddress?.trim() ?? ''
     const cRequestedTime = customerInfo?.requestedTime || 'ASAP'
@@ -162,7 +171,7 @@ export default function CartButton() {
     setOrderRef('')
     setOrderError('')
     setFieldErrors({})
-    setCustomerInfo({ name: '', phone: '', orderType: 'pickup', requestedTime: '', notes: '', tableNumber: '', deliveryAddress: '' })
+    setCustomerInfo({ name: '', phone: '', requestedTime: '', notes: '', tableNumber: '', deliveryAddress: '' })
   }, [clearCart, closeCart])
 
   const addItem = cartCtx?.addItem ?? (() => {})
@@ -218,7 +227,7 @@ export default function CartButton() {
 
       const cName = customerInfo?.name ?? ''
       const cPhone = customerInfo?.phone ?? ''
-      const cOrderType = customerInfo?.orderType ?? 'pickup'
+      const cOrderType = orderType
       const cRequestedTime = customerInfo?.requestedTime ?? ''
       const cNotes = customerInfo?.notes ?? ''
       const cTableNumber = customerInfo?.tableNumber ?? ''
@@ -237,7 +246,7 @@ export default function CartButton() {
       window.open(url, '_blank')
 
       clearCart()
-      setCustomerInfo({ name: '', phone: '', orderType: 'pickup', requestedTime: '', notes: '', tableNumber: '', deliveryAddress: '' })
+      setCustomerInfo({ name: '', phone: '', requestedTime: '', notes: '', tableNumber: '', deliveryAddress: '' })
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to save order'
       setOrderError(msg)
@@ -260,7 +269,7 @@ export default function CartButton() {
       setOrderRef(ref)
 
       clearCart()
-      setCustomerInfo({ name: '', phone: '', orderType: 'pickup', requestedTime: '', notes: '', tableNumber: '', deliveryAddress: '' })
+      setCustomerInfo({ name: '', phone: '', requestedTime: '', notes: '', tableNumber: '', deliveryAddress: '' })
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to save order'
       setOrderError(msg)
@@ -443,27 +452,27 @@ export default function CartButton() {
                     <div className={styles.toggleRow}>
                       <button
                         type="button"
-                        onClick={() => setCustomerInfo(prev => ({ ...prev, orderType: 'pickup' }))}
-                        className={`${styles.toggleBtn} ${customerInfo?.orderType === 'pickup' ? styles.toggleBtnActive : ''}`}
+                        onClick={() => setOrderType('pickup')}
+                        className={`${styles.toggleBtn} ${orderType === 'pickup' ? styles.toggleBtnActive : ''}`}
                       >
                         🏪 Pickup
                       </button>
                       <button
                         type="button"
-                        onClick={() => setCustomerInfo(prev => ({ ...prev, orderType: 'delivery' }))}
-                        className={`${styles.toggleBtn} ${customerInfo?.orderType === 'delivery' ? styles.toggleBtnActive : ''}`}
+                        onClick={() => setOrderType('delivery')}
+                        className={`${styles.toggleBtn} ${orderType === 'delivery' ? styles.toggleBtnActive : ''}`}
                       >
                         🚚 Delivery
                       </button>
                       <button
                         type="button"
-                        onClick={() => setCustomerInfo(prev => ({ ...prev, orderType: 'dine-in' }))}
-                        className={`${styles.toggleBtn} ${customerInfo?.orderType === 'dine-in' ? styles.toggleBtnActive : ''}`}
+                        onClick={() => setOrderType('dine-in')}
+                        className={`${styles.toggleBtn} ${orderType === 'dine-in' ? styles.toggleBtnActive : ''}`}
                       >
                         🍽️ Dine-in
                       </button>
                     </div>
-                    {customerInfo?.orderType === 'delivery' && (
+                    {orderType === 'delivery' && (
                       <div>
                         <input
                           type="text"
@@ -478,7 +487,7 @@ export default function CartButton() {
                         {fieldErrors.deliveryAddress && <span className={styles.fieldError}>{fieldErrors.deliveryAddress}</span>}
                       </div>
                     )}
-                    {customerInfo?.orderType === 'dine-in' && (
+                    {orderType === 'dine-in' && (
                       <div>
                         <input
                           type="text"

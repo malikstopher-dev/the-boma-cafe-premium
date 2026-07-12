@@ -21,6 +21,7 @@ interface BarItem {
   price: string | null;
   order: number;
   isAvailable: boolean;
+  availableForPickup: boolean;
 }
 
 export default function AdminBarMenu() {
@@ -43,6 +44,7 @@ export default function AdminBarMenu() {
     shotPrice: '',
     price: '',
     isAvailable: true,
+    availableForPickup: true,
   });
 
   const loadData = async () => {
@@ -67,7 +69,7 @@ export default function AdminBarMenu() {
   };
 
   const resetItemForm = () => {
-    setItemForm({ name: '', categoryId: '', bottle: '', singlePrice: '', glassPrice: '', shotPrice: '', price: '', isAvailable: true });
+    setItemForm({ name: '', categoryId: '', bottle: '', singlePrice: '', glassPrice: '', shotPrice: '', price: '', isAvailable: true, availableForPickup: true });
     setEditingItem(null);
     setShowItemForm(false);
   };
@@ -149,6 +151,7 @@ export default function AdminBarMenu() {
         shotPrice: itemForm.shotPrice ? Number(itemForm.shotPrice) : null,
         price: itemForm.price || null,
         isAvailable: itemForm.isAvailable,
+        availableForPickup: itemForm.availableForPickup,
       };
       if (editingItem) {
         payload.id = editingItem.id;
@@ -206,6 +209,7 @@ export default function AdminBarMenu() {
       shotPrice: item.shotPrice?.toString() || '',
       price: item.price || '',
       isAvailable: item.isAvailable,
+      availableForPickup: item.availableForPickup !== false,
     });
     setShowItemForm(true);
   };
@@ -292,6 +296,10 @@ export default function AdminBarMenu() {
             <div style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <input type="checkbox" id="isAvail" checked={itemForm.isAvailable} onChange={e => setItemForm({...itemForm, isAvailable: e.target.checked})} />
               <label htmlFor="isAvail">Available</label>
+            </div>
+            <div style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <input type="checkbox" id="availPickup" checked={itemForm.availableForPickup} onChange={e => setItemForm({...itemForm, availableForPickup: e.target.checked})} />
+              <label htmlFor="availPickup">Available for Pickup (uncheck to block pickup orders for this item)</label>
             </div>
             <div style={{ gridColumn: 'span 2', display: 'flex', gap: '0.75rem' }}>
               <button type="submit" className="btn btn-primary">Save</button>

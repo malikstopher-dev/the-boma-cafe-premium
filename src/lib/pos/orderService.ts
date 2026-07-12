@@ -88,8 +88,8 @@ async function enrichItems(items: OrderItemInput[]): Promise<{
   const enriched: EnrichedItem[] = []
   let total = 0
 
-  const foodIds = items.filter(i => i.station !== 'bar').map(i => i.menu_item_id)
-  const barIds = items.filter(i => i.station === 'bar').map(i => i.menu_item_id)
+  const foodIds = items.filter(i => i.station !== 'bar' && i.menu_item_id).map(i => i.menu_item_id!)
+  const barIds = items.filter(i => i.station === 'bar').map(i => i.bar_item_id || i.menu_item_id).filter(Boolean) as string[]
   const [menuMap, barMap] = await Promise.all([
     foodIds.length > 0 ? getMenuItemsByIds(foodIds) : Promise.resolve(new Map<string, DbMenuItem>()),
     barIds.length > 0 ? getBarItemsByIds(barIds) : Promise.resolve(new Map<string, BarDbItem>()),
@@ -97,7 +97,8 @@ async function enrichItems(items: OrderItemInput[]): Promise<{
 
   for (const item of items) {
     if (item.station === 'bar') {
-      const row = barMap.get(item.menu_item_id)
+      const barId = item.bar_item_id || item.menu_item_id
+      const row = barId ? barMap.get(barId) : undefined
       if (!row) {
         return { enriched: [], total: 0, error: `Bar item not found: ${item.menu_item_id}` }
       }

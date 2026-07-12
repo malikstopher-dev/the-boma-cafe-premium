@@ -100,8 +100,10 @@ export function validateOrder(input: unknown): ValidationResult {
         continue
       }
       const it = item as Record<string, unknown>
-      if (!it.menu_item_id || typeof it.menu_item_id !== 'string') {
-        errors.push({ field: `items[${i}].menu_item_id`, message: `Item ${i + 1} is missing a menu item ID` })
+      const hasMenuItemId = it.menu_item_id && typeof it.menu_item_id === 'string'
+      const hasBarItemId = it.bar_item_id && typeof it.bar_item_id === 'string'
+      if (!hasMenuItemId && !hasBarItemId) {
+        errors.push({ field: `items[${i}].id`, message: `Item ${i + 1} is missing a menu item ID` })
       }
       if (typeof it.quantity !== 'number' || it.quantity < 1) {
         errors.push({ field: `items[${i}].quantity`, message: `Item ${i + 1} must have quantity of at least 1` })

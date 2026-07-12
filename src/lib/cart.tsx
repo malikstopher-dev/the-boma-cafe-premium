@@ -1,10 +1,12 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import type { OrderType } from '@/lib/pos/types';
 
 interface CartItem {
   id: string;
   menuItemId?: string;
+  barItemId?: string;
   name: string;
   price: number;
   quantity: number;
@@ -22,8 +24,10 @@ interface CartItem {
 interface CartContextType {
   items: CartItem[];
   isCartOpen: boolean;
+  orderType: OrderType;
   openCart: () => void;
   closeCart: () => void;
+  setOrderType: (type: OrderType) => void;
   addItem: (item: CartItem) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
@@ -36,6 +40,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [orderType, setOrderType] = useState<OrderType>('pickup');
 
   const openCart = () => setIsCartOpen(true);
   const closeCart = () => setIsCartOpen(false);
@@ -44,8 +49,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem('boma_cart');
     if (stored) {
       try {
-        setItems(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) setItems(parsed);
       } catch (e) {}
+    }
+    const storedType = localStorage.getItem('boma_order_type');
+    if (storedType === 'pickup' || storedType === 'delivery' || storedType === 'dine-in') {
+      setOrderType(storedType);
     }
   }, []);
 
@@ -54,6 +64,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('boma_cart', JSON.stringify(items));
     } catch { /* storage full or unavailable — persistence loss is non-critical */ }
   }, [items]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('boma_order_type', orderType);
+    } catch {}
+  }, [orderType]);
 
   const addItem = (item: CartItem) => {
     setItems(prev => {
@@ -82,7 +98,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ items, isCartOpen, openCart, closeCart, addItem, removeItem, updateQuantity, clearCart, total }}>
+    <CartContext.Provider value={{ items, isCartOpen, orderType, openCart, closeCart, setOrderType, addItem, removeItem, updateQuantity, clearCart, total }}>
       {children}
     </CartContext.Provider>
   );

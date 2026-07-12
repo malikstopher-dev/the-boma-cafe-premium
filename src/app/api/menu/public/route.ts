@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getAdminClient } from '@/lib/supabase';
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
+
+function safeJsonParse(str: string | null): any[] | null {
+  if (!str) return null
+  try { return JSON.parse(str) } catch { return null }
+}
 
 export async function GET() {
   try {
@@ -9,7 +14,7 @@ export async function GET() {
 
     const [categoriesRes, itemsRes] = await Promise.all([
       client.from('menu_categories').select('id,name,description,order_index,is_active,is_bar').order('order_index', { ascending: true }),
-      client.from('menu_items').select('id,category_id,name,description,price,image,sizes,add_ons,options,is_available,is_featured,is_on_promo,promo_badge,order_index').order('order_index', { ascending: true }),
+      client.from('menu_items').select('id,category_id,name,description,price,image,sizes,add_ons,options,is_available,is_featured,is_on_promo,promo_badge,order_index,available_for_all_order_types').eq('is_available', true).order('order_index', { ascending: true }),
     ]);
 
     if (categoriesRes.error) throw categoriesRes.error;
@@ -26,38 +31,32 @@ export async function GET() {
         order: c.order_index,
       }));
 
-    const menuItems = (itemsRes.data || [])
-      .filter((m: any) => m.is_available)
-      .map((item: any) => {
-        let sizes = null;
-        let addOns = null;
-        let options = null;
-        try { sizes = item.sizes ? JSON.parse(item.sizes) : null; } catch { sizes = null; }
-        try { addOns = item.add_ons ? JSON.parse(item.add_ons) : null; } catch { addOns = null; }
-        try { options = item.options ? JSON.parse(item.options) : null; } catch { options = null; }
-        return {
-          id: item.id,
-          categoryId: item.category_id,
-          name: item.name,
-          description: item.description,
-          price: Number(item.price) || 0,
-          image: item.image,
-          sizes: sizes ? sizes.map((s: any) => ({ ...s, price: Number(s.price) })) : null,
-          addOns: addOns ? addOns.map((a: any) => ({ ...a, price: Number(a.price) })) : null,
-          options,
-          isAvailable: item.is_available,
-          isFeatured: item.is_featured,
-          isOnPromo: item.is_on_promo,
-          promoBadge: item.promo_badge,
-          order: item.order_index,
-        };
-      });
-
-    return NextResponse.json({ categories, menuItems }, {
-      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+    const menuItems = (itemsRes.data || []).map((item: any) => {
+      const sizes = safeJsonParse(item.sizes)
+      const addOns = safeJsonParse(item.add_ons)
+      const options = safeJsonParse(item.options)
+      return {
+        id: item.id,
+        categoryId: item.category_id,
+        name: item.name,
+        description: item.description,
+        price: Number(item.price) || 0,
+        image: item.image,
+        sizes: sizes ? sizes.map((s: any) => ({ ...s, price: Number(s.price) })) : null,
+        addOns: addOns ? addOns.map((a: any) => ({ ...a, price: Number(a.price) })) : null,
+        options,
+        isAvailable: item.is_available,
+        isFeatured: item.is_featured,
+        isOnPromo: item.is_on_promo,
+        promoBadge: item.promo_badge,
+        availableForAllOrderTypes: item.available_for_all_order_types !== false,
+        order: item.order_index,
+      };
     });
+
+    return NextResponse.json({ categories, menuItems });
   } catch (error) {
     console.error('Error reading public menu:', error);
-    return NextResponse.json({ error: 'Failed to read menu' }, { status: 500, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } });
+    return NextResponse.json({ error: 'Failed to read menu' }, { status: 500 });
   }
 }

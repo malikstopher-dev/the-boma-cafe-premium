@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAdminClient } from '@/lib/supabase';
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export async function GET() {
   try {
@@ -9,7 +9,7 @@ export async function GET() {
 
     const [categoriesRes, itemsRes] = await Promise.all([
       client.from('bar_categories').select('id,name,order_index,is_active').order('order_index', { ascending: true }).filter('is_active', 'eq', true),
-      client.from('bar_items').select('id,category_id,name,bottle,single_price,glass_price,shot_price,price,order_index,is_available').order('order_index', { ascending: true }).filter('is_available', 'eq', true),
+      client.from('bar_items').select('id,category_id,name,bottle,single_price,glass_price,shot_price,price,order_index,is_available,available_for_pickup').order('order_index', { ascending: true }).filter('is_available', 'eq', true),
     ]);
 
     if (categoriesRes.error) throw categoriesRes.error;
@@ -32,14 +32,13 @@ export async function GET() {
       shotPrice: i.shot_price ? Number(i.shot_price) : null,
       price: i.price,
       isAvailable: i.is_available,
+      availableForPickup: i.available_for_pickup !== false,
       order: i.order_index,
     }));
 
-    return NextResponse.json({ categories, items }, {
-      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
-    });
+    return NextResponse.json({ categories, items });
   } catch (error) {
     console.error('Error reading public bar menu:', error);
-    return NextResponse.json({ error: 'Failed to read bar menu' }, { status: 500, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } });
+    return NextResponse.json({ error: 'Failed to read bar menu' }, { status: 500 });
   }
 }
