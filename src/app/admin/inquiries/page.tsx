@@ -55,8 +55,8 @@ export default function AdminInquiries() {
               background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 12, padding: 20,
               borderLeft: msg.is_read ? '1px solid #E5E7EB' : '4px solid #0F766E',
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ flex: 1, minWidth: 200 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                     <span style={{ fontSize: 15, fontWeight: 600, color: '#0F172A' }}>{msg.name}</span>
                     {!msg.is_read && <Badge variant="accent">New</Badge>}

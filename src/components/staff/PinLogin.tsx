@@ -117,11 +117,11 @@ export default function PinLogin({ role, title = 'Sign In', icon = '👤', onSuc
   }
 
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: t.colors.bg.primary, padding: 24 }}>
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', background: t.colors.bg.primary, padding: '24px 24px 40px', overflowY: 'auto', paddingBottom: 'env(safe-area-inset-bottom, 40px)' }}>
       <style>{`@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }`}</style>
 
       {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: 32 }}>
+      <div style={{ textAlign: 'center', marginBottom: 24, flexShrink: 0 }}>
         <div style={{ fontSize: 56, marginBottom: 12 }}>{icon}</div>
         <h1 style={{ fontSize: 28, fontWeight: t.typography.fontWeight.bold, color: t.colors.text.primary, margin: 0, fontFamily: t.typography.fontFamily }}>{title}</h1>
         <p style={{ color: t.colors.text.muted, fontSize: 14, marginTop: 8 }}>Select your name and enter PIN</p>

@@ -8,7 +8,7 @@ export async function GET() {
     const client = getAdminClient();
 
     const [categoriesRes, itemsRes] = await Promise.all([
-      client.from('menu_categories').select('id,name,description,order_index,is_active').order('order_index', { ascending: true }),
+      client.from('menu_categories').select('id,name,description,order_index,is_active,is_bar').order('order_index', { ascending: true }),
       client.from('menu_items').select('id,category_id,name,description,price,image,sizes,add_ons,options,is_available,is_featured,is_on_promo,promo_badge,order_index').order('order_index', { ascending: true }),
     ]);
 
@@ -22,6 +22,7 @@ export async function GET() {
         name: c.name,
         description: c.description,
         isActive: c.is_active,
+        isBar: c.is_bar === true,
         order: c.order_index,
       }));
 

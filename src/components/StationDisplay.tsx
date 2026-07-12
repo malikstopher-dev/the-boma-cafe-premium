@@ -166,11 +166,24 @@ export default function StationDisplay({ station, title, icon, primaryColor, log
   }, [soundOn, apiUrl])
 
   useEffect(() => {
-    fetch('/api/admin/auth')
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 8000)
+
+    fetch('/api/admin/auth', { signal: controller.signal })
       .then(r => r.json())
-      .then(data => { if (data.authenticated) setAuthed(true); else setShowPasswordGate(true) })
-      .catch(() => setShowPasswordGate(true))
+      .then(data => {
+        clearTimeout(timeout)
+        if (data.authenticated) setAuthed(true)
+        else { setShowPasswordGate(true); setAuthExpired(true) }
+      })
+      .catch(() => {
+        clearTimeout(timeout)
+        setShowPasswordGate(true)
+        setAuthExpired(true)
+      })
       .finally(() => setCheckingCookie(false))
+
+    return () => { clearTimeout(timeout); controller.abort() }
   }, [])
 
   useEffect(() => {

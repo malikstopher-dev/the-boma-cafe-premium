@@ -9,11 +9,13 @@ import EmptyState from '@/components/admin/design-system/EmptyState'
 import ConfirmDialog from '@/components/admin/design-system/ConfirmDialog'
 import { useToast } from '@/components/admin/design-system/Toast'
 
-interface Waiter { id: string; name: string; active: boolean; created_at: string }
+interface Waiter { id: string; name: string; employee_id: string | null; active: boolean; created_at: string }
 
 export default function WaitersPage() {
   const [waiters, setWaiters] = useState<Waiter[]>([])
   const [newName, setNewName] = useState('')
+  const [newEmployeeId, setNewEmployeeId] = useState('')
+  const [newPin, setNewPin] = useState('')
   const [editId, setEditId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
   const [search, setSearch] = useState('')
@@ -37,12 +39,18 @@ export default function WaitersPage() {
 
   const addWaiter = async () => {
     const name = newName.trim()
-    if (!name) return
+    const employeeId = newEmployeeId.trim()
+    const pin = newPin.trim()
+    if (!name) { showError('Name is required'); return }
+    if (!employeeId) { showError('Employee ID is required'); return }
+    if (!pin || pin.length < 4 || pin.length > 6 || !/^\d+$/.test(pin)) { showError('PIN must be 4-6 digits'); return }
     if (waiters.some(w => w.name.toLowerCase() === name.toLowerCase())) { showError('Name already exists'); return }
+    if (waiters.some(w => w.employee_id === employeeId)) { showError('Employee ID already exists'); return }
     setIsLoading(true)
     try {
-      const res = await fetch('/api/waiters', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) })
-      if (res.ok) { setNewName(''); await loadWaiters(); success('Waiter added') }
+      const res = await fetch('/api/waiters', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, employee_id: employeeId, pin }) })
+      if (res.ok) { setNewName(''); setNewEmployeeId(''); setNewPin(''); await loadWaiters(); success('Waiter added') }
+      else { const data = await res.json().catch(() => ({})); showError(data.error || 'Failed to add waiter') }
     } catch { showError('Failed to add waiter') }
     finally { setIsLoading(false) }
   }
@@ -76,8 +84,10 @@ export default function WaitersPage() {
     <div style={{ maxWidth: 640 }}>
       <PageHeader title="Waiters" description={`${waiters.filter(w => w.active).length} on duty · ${waiters.length} total`} />
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        <div style={{ flex: 1 }}><Input placeholder="Add waiter name..." value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === 'Enter' && addWaiter()} /></div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 8, marginBottom: 16 }}>
+        <Input placeholder="Employee ID (e.g. W003)" value={newEmployeeId} onChange={e => setNewEmployeeId(e.target.value.toUpperCase())} onKeyDown={e => e.key === 'Enter' && addWaiter()} />
+        <Input placeholder="Name" value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === 'Enter' && addWaiter()} />
+        <Input placeholder="PIN (4-6 digits)" type="password" value={newPin} onChange={e => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))} onKeyDown={e => e.key === 'Enter' && addWaiter()} />
         <Button variant="primary" onClick={addWaiter} loading={isLoading}>+ Add</Button>
       </div>
 
@@ -109,7 +119,9 @@ export default function WaitersPage() {
                 ) : (
                   <>
                     <span style={{ fontWeight: 600, color: '#0F172A', fontSize: 14, display: 'block' }}>{w.name}</span>
-                    <span style={{ fontSize: 11, color: '#94A3B8' }}>Added {new Date(w.created_at).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                    <span style={{ fontSize: 11, color: '#94A3B8' }}>
+                      {w.employee_id ? `${w.employee_id} · ` : ''}Added {new Date(w.created_at).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </span>
                   </>
                 )}
               </div>

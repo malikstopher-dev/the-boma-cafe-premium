@@ -29,15 +29,22 @@ const LOAD_MORE_COUNT = 24;
 const DRINK_CATEGORIES = [
   'Cold Beverages',
   'Hot Beverages',
+  'Beverages',
+  'Drinks',
   'Milkshakes',
+  'Milkshake',
   'Classic Cocktails',
   'Non-Alcoholic Cocktails',
   'Soft Drinks',
   'Juices',
+  'Juice',
   'DRNK',
+  'DRNK Freezos',
   'Freezos',
   'Smoothies',
   'Mocktails',
+  'Ice Cream & Chocolate Sauce',
+  'Ice Cream',
 ];
 
 const HOT_DRINK_CATEGORIES = [
@@ -209,6 +216,8 @@ export default function MenuPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
+  const [categoryIsBar, setCategoryIsBar] = useState<Record<string, boolean>>({});
+  const [categoryNameIsBar, setCategoryNameIsBar] = useState<Record<string, boolean>>({});
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [cmsLoaded, setCmsLoaded] = useState(false);
   const [showUpsellModal, setShowUpsellModal] = useState(false);
@@ -244,9 +253,13 @@ export default function MenuPage() {
         const data = await res.json();
         if (!data.categories || !data.menuItems) throw new Error('Invalid response');
         const categoriesMap: Record<string, string> = {};
+        const categoryIsBar: Record<string, boolean> = {};
+        const categoryNameIsBar: Record<string, boolean> = {};
         const mappedCategories = data.categories.map((c: any) => {
           categoriesMap[c.id] = c.name;
-          return { ...c, isActive: c.isActive };
+          categoryIsBar[c.id] = c.isBar === true;
+          categoryNameIsBar[c.name.toLowerCase()] = c.isBar === true;
+          return { ...c, isActive: c.isActive, isBar: c.isBar === true };
         });
         const mappedItems = data.menuItems.map((item: any) => {
           const price = parseFloat(String(item.price || '0').replace(/[^0-9.]/g, '')) || 0;
@@ -260,6 +273,8 @@ export default function MenuPage() {
           };
         });
         setCategories(mappedCategories);
+        setCategoryIsBar(categoryIsBar);
+        setCategoryNameIsBar(categoryNameIsBar);
         setMenuItems(mappedItems);
         setCmsLoaded(true);
       } catch (error) {
@@ -319,7 +334,7 @@ export default function MenuPage() {
     const finalPrice = calculateItemTotal(item, selectedSize, selectedAddOns);
     const sizeDisplay = selectedSize ? ` (${selectedSize})` : '';
     const addOnsDisplay = (selectedAddOns?.length || 0) > 0 ? ` + ${selectedAddOns.join(', ')}` : '';
-    const isBar = BAR_CATEGORIES.some(c => item.category?.toLowerCase().includes(c.toLowerCase()));
+    const isBar = categoryNameIsBar[item.category?.toLowerCase() || ''] === true || BAR_CATEGORIES.some(c => item.category?.toLowerCase().includes(c.toLowerCase()));
     
     addItem({
       id: `${item.id}${selectedSize ? `-${selectedSize.replace(/\s/g, '')}` : ''}${(selectedAddOns?.length || 0) > 0 ? `-${selectedAddOns.length}extras` : ''}-${Date.now()}`,
@@ -342,7 +357,7 @@ export default function MenuPage() {
     const finalPrice = calculateItemTotal(item, selectedSize, selectedAddOns);
     const sizeDisplay = selectedSize ? ` (${selectedSize})` : '';
     const addOnsDisplay = (selectedAddOns?.length || 0) > 0 ? ` + ${selectedAddOns.join(', ')}` : '';
-    const isBar = BAR_CATEGORIES.some(c => item.category?.toLowerCase().includes(c.toLowerCase()));
+    const isBar = categoryNameIsBar[item.category?.toLowerCase() || ''] === true || BAR_CATEGORIES.some(c => item.category?.toLowerCase().includes(c.toLowerCase()));
     
     addItem({
       id: `${item.id}${selectedSize ? `-${selectedSize.replace(/\s/g, '')}` : ''}${(selectedAddOns?.length || 0) > 0 ? `-${selectedAddOns.length}extras` : ''}-${Date.now()}`,
