@@ -67,6 +67,8 @@ function roleMatches(transitionRole: Role, checkRole: Role | undefined): boolean
   if (checkRole === 'either') return true
   if (transitionRole === checkRole) return true
   if (transitionRole === 'foh' && checkRole === 'admin') return true
+  if (transitionRole === 'kitchen' && checkRole === 'admin') return true
+  if (transitionRole === 'bar' && checkRole === 'admin') return true
   return false
 }
 

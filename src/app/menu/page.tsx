@@ -342,6 +342,7 @@ export default function MenuPage() {
     const finalPrice = calculateItemTotal(item, selectedSize, selectedAddOns);
     const sizeDisplay = selectedSize ? ` (${selectedSize})` : '';
     const addOnsDisplay = (selectedAddOns?.length || 0) > 0 ? ` + ${selectedAddOns.join(', ')}` : '';
+    const isBar = BAR_CATEGORIES.some(c => item.category?.toLowerCase().includes(c.toLowerCase()));
     
     addItem({
       id: `${item.id}${selectedSize ? `-${selectedSize.replace(/\s/g, '')}` : ''}${(selectedAddOns?.length || 0) > 0 ? `-${selectedAddOns.length}extras` : ''}-${Date.now()}`,
@@ -351,7 +352,8 @@ export default function MenuPage() {
       quantity: 1,
       category: item.category,
       selectedSize,
-      selectedAddOns
+      selectedAddOns,
+      station: isBar ? 'bar' : 'kitchen',
     });
   };
 
