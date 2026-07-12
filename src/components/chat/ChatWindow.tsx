@@ -13,6 +13,7 @@ interface ChatMessage {
   message_type: 'text' | 'voice' | 'system'
   voice_url: string | null
   voice_duration: number | null
+  read_at: string | null
   created_at: string
 }
 
@@ -47,6 +48,16 @@ export default function ChatWindow({ conversationId, currentUserId, currentUserN
     }
     loadMessages()
   }, [conversationId])
+
+  // Mark messages as read on mount
+  useEffect(() => {
+    if (!currentUserId) return
+    fetch('/api/staff/messages', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ conversation_id: conversationId, user_id: currentUserId }),
+    }).catch(() => {})
+  }, [conversationId, currentUserId])
 
   // Realtime subscription
   useEffect(() => {

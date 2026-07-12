@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // For each conversation, get last message separately
+  // For each conversation, get last message and unread count
   const conversations = await Promise.all(
     (data || []).map(async (conv) => {
       const { data: msgs } = await getAdminClient()
@@ -39,7 +39,19 @@ export async function GET(request: NextRequest) {
         .eq('conversation_id', conv.id)
         .order('created_at', { ascending: false })
         .limit(1)
-      return { ...conv, last_message: msgs?.[0] || null }
+
+      let unread_count = 0
+      if (userId) {
+        const { count } = await getAdminClient()
+          .from('staff_messages')
+          .select('id', { count: 'exact', head: true })
+          .eq('conversation_id', conv.id)
+          .neq('sender_id', userId)
+          .is('read_at', null)
+        unread_count = count || 0
+      }
+
+      return { ...conv, last_message: msgs?.[0] || null, unread_count }
     })
   )
 

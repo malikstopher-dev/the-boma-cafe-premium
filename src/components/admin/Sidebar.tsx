@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { createBrowserClient } from '@/lib/supabase'
 import styles from './Sidebar.module.css'
 
 interface NavItem {
@@ -75,8 +76,40 @@ interface SidebarProps {
 
 export default function Sidebar({ open, onClose, onLogout }: SidebarProps) {
   const pathname = usePathname()
+  const [unreadCount, setUnreadCount] = useState(0)
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
+
+  // Fetch unread message count
+  useEffect(() => {
+    const fetchUnread = async () => {
+      try {
+        const sessionRes = await fetch('/api/staff/session')
+        if (!sessionRes.ok) return
+        const session = await sessionRes.json()
+        if (!session.authenticated) return
+
+        const res = await fetch(`/api/staff/conversations?user_id=${session.staff.id}`)
+        if (res.ok) {
+          const conversations = await res.json()
+          const total = conversations.reduce((sum: number, c: any) => sum + (c.unread_count || 0), 0)
+          setUnreadCount(total)
+        }
+      } catch { /* ignore */ }
+    }
+    fetchUnread()
+
+    // Realtime subscription for new messages
+    const supabase = createBrowserClient()
+    const channel = supabase
+      .channel('sidebar-unread')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'staff_messages' }, () => {
+        fetchUnread()
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [])
 
   return (
     <>
@@ -107,6 +140,15 @@ export default function Sidebar({ open, onClose, onLogout }: SidebarProps) {
                 >
                   <span className={styles.navIcon}>{item.icon}</span>
                   <span className={styles.navLabel}>{item.label}</span>
+                  {item.href === '/admin/messages' && unreadCount > 0 && (
+                    <span style={{
+                      marginLeft: 'auto', padding: '1px 6px', borderRadius: 9999,
+                      background: '#ef4444', color: '#fff', fontSize: 10, fontWeight: 700,
+                      minWidth: 16, textAlign: 'center',
+                    }}>
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
                 </Link>
               ))}
             </div>

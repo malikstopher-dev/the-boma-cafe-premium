@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { conversation_id, sender_id, message, message_type, voice_url } = body
+    const { conversation_id, sender_id, message, message_type, voice_url, voice_duration } = body
 
     if (!conversation_id || !sender_id) {
       return NextResponse.json({ error: 'conversation_id and sender_id required' }, { status: 400 })
@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
         message: message || null,
         message_type: message_type || 'text',
         voice_url: voice_url || null,
+        voice_duration: voice_duration || null,
       })
       .select()
       .single()
@@ -83,6 +84,33 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(data)
+  } catch {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  const role = await getRequestRole(request)
+  if (!role) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  try {
+    const body = await request.json()
+    const { conversation_id, user_id } = body
+
+    if (!conversation_id || !user_id) {
+      return NextResponse.json({ error: 'conversation_id and user_id required' }, { status: 400 })
+    }
+
+    const { error } = await getAdminClient()
+      .from('staff_messages')
+      .update({ read_at: new Date().toISOString() })
+      .eq('conversation_id', conversation_id)
+      .neq('sender_id', user_id)
+      .is('read_at', null)
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    return NextResponse.json({ success: true })
   } catch {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   }

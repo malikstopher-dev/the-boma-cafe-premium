@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
+import { createBrowserClient } from '@/lib/supabase'
 
 const FcmRegistration = dynamic(() => import('@/components/staff/FcmRegistration'), { ssr: false })
 
@@ -41,6 +42,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
   const [role, setRole] = useState<string | null>(null)
   const [authed, setAuthed] = useState(false)
   const [checking, setChecking] = useState(true)
+  const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
     fetch('/api/admin/auth')
@@ -59,6 +61,37 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
       }
     })()
   }, [pathname])
+
+  // Fetch unread message count
+  useEffect(() => {
+    if (!authed) return
+    const fetchUnread = async () => {
+      try {
+        const sessionRes = await fetch('/api/staff/session')
+        if (!sessionRes.ok) return
+        const session = await sessionRes.json()
+        if (!session.authenticated) return
+
+        const res = await fetch(`/api/staff/conversations?user_id=${session.staff.id}`)
+        if (res.ok) {
+          const conversations = await res.json()
+          const total = conversations.reduce((sum: number, c: any) => sum + (c.unread_count || 0), 0)
+          setUnreadCount(total)
+        }
+      } catch { /* ignore */ }
+    }
+    fetchUnread()
+
+    const supabase = createBrowserClient()
+    const channel = supabase
+      .channel('staff-nav-unread')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'staff_messages' }, () => {
+        fetchUnread()
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [authed])
 
   const handleLogout = async () => {
     // Clear local state before redirect
@@ -119,10 +152,25 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
         <div style={{ display: 'flex', background: 'var(--pos-surface)', borderTop: '1px solid var(--pos-border)', flexShrink: 0, paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
           {nav.map(item => {
             const active = pathname === item.href || (item.href === '/admin/kitchen' && pathname === '/staff/kitchen') || (item.href === '/admin/bar' && pathname === '/staff/bar')
+            const showBadge = item.href === '/staff/messages' && unreadCount > 0
             return (
               <button key={item.label} onClick={() => router.push(item.href)}
-                style={{ flex: 1, padding: '0.5rem 0.25rem', border: 'none', background: 'transparent', color: active ? 'var(--pos-amber)' : 'var(--pos-text-dim)', cursor: 'pointer', fontSize: '0.65rem', fontWeight: active ? 700 : 500, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', transition: 'color 0.15s', minHeight: '56px', justifyContent: 'center', fontFamily: 'var(--pos-font)' }}>
-                <span style={{ fontSize: '1.2rem' }}>{item.icon}</span>
+                style={{ flex: 1, padding: '0.5rem 0.25rem', border: 'none', background: 'transparent', color: active ? 'var(--pos-amber)' : 'var(--pos-text-dim)', cursor: 'pointer', fontSize: '0.65rem', fontWeight: active ? 700 : 500, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', transition: 'color 0.15s', minHeight: '56px', justifyContent: 'center', fontFamily: 'var(--pos-font)', position: 'relative' }}>
+                <span style={{ fontSize: '1.2rem', position: 'relative' }}>
+                  {item.icon}
+                  {showBadge && (
+                    <span style={{
+                      position: 'absolute', top: -4, right: -8,
+                      padding: '0 4px', borderRadius: 9999,
+                      background: '#ef4444', color: '#fff',
+                      fontSize: 9, fontWeight: 700, minWidth: 14, height: 14,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      lineHeight: 1,
+                    }}>
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </span>
                 <span>{item.label}</span>
               </button>
             )
