@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getBarCategories, getBarItems } from '@/lib/cms-supabase';
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   try {
     const [categories, items] = await Promise.all([getBarCategories(), getBarItems()]);

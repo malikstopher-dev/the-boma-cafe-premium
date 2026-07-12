@@ -3,6 +3,8 @@ import { revalidatePath } from 'next/cache';
 import { getAnnouncement, saveAnnouncement } from '@/lib/cms-supabase';
 import { requireAdminOrKitchen } from '@/lib/auth/requireRole';
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   const authError = await requireAdminOrKitchen(request)
   if (authError) return authError

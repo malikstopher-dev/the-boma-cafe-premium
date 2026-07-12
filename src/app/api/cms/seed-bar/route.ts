@@ -5,6 +5,8 @@ import { getAdminClient } from '@/lib/supabase';
 import { barCategories } from '@/app/bar-menu/barMenuData';
 import { randomUUID } from 'crypto';
 
+export const dynamic = 'force-dynamic'
+
 async function seedBarData() {
   const client = await getAdminClient()
   const now = new Date().toISOString()

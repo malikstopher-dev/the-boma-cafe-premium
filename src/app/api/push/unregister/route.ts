@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient } from '@/lib/supabase'
 import { getRequestRole } from '@/lib/auth/requireRole'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   const role = await getRequestRole(request)
   if (!role) {

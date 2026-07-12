@@ -3,6 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import { requireAdminOrKitchen } from '@/lib/auth/requireRole';
 
+export const dynamic = 'force-dynamic'
+
 const VALID_FOLDERS = ['events', 'food', 'venue', 'people', 'promotions'];
 
 export async function POST(request: NextRequest) {

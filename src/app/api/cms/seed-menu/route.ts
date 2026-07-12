@@ -5,6 +5,8 @@ import { getAdminClient } from '@/lib/supabase';
 import { defaultCategories, defaultMenuItems } from '@/data/defaultData';
 import { randomUUID } from 'crypto';
 
+export const dynamic = 'force-dynamic'
+
 async function seedDefaultData() {
   const client = await getAdminClient()
   const now = new Date().toISOString()

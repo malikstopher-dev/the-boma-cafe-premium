@@ -2688,7 +2688,7 @@ export const defaultPromotions: Promotion[] = [
     updatedAt: new Date().toISOString()
   },
   {
-    id: '2',
+    id: '3',
     title: 'Family Meal Deal',
     description: 'Family of 4 special - 2 mains, 2 sides, 4 drinks at only R450',
     validFrom: '2026-04-01',

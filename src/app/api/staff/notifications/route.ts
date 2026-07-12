@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient } from '@/lib/supabase'
 import { getRequestRole } from '@/lib/auth/requireRole'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   const role = await getRequestRole(request)
   if (!role) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

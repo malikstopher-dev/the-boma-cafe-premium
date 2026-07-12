@@ -3,6 +3,8 @@ import { getAdminClient } from '@/lib/supabase'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { logOrderEvent } from '@/lib/pos/orderService'
 
+export const dynamic = 'force-dynamic'
+
 const STATUS_LABELS: Record<string, string> = {
   pending: 'New',
   confirmed: 'Accepted',

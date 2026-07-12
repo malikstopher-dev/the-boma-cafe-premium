@@ -4,6 +4,8 @@ import { requireAdmin } from '@/lib/auth/requireRole';
 import { getAdminClient } from '@/lib/supabase';
 import { randomUUID } from 'crypto';
 
+export const dynamic = 'force-dynamic'
+
 const SEED_IMAGES: Record<string, { url: string; alt: string }[]> = {
   events: [
     { url: '/gallery/events/1777009767026-134-2000x1125.jpeg', alt: 'Event celebration' },

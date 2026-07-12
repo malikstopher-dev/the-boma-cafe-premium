@@ -4,6 +4,8 @@ import { requireAdmin } from '@/lib/auth/requireRole'
 import { uploadFile, deleteFile, generateStoragePath, getAssetUrl, VALID_MODULES, ALLOWED_MIME_TYPES } from '@/lib/storage'
 import { randomUUID } from 'crypto'
 
+export const dynamic = 'force-dynamic'
+
 async function supabase() {
   return getAdminClient()
 }

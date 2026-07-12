@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient } from '@/lib/supabase'
 import { requireAdmin } from '@/lib/auth/requireRole'
 
+export const dynamic = 'force-dynamic'
+
 const NO_CACHE = { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
 
 export async function GET(request: NextRequest) {
