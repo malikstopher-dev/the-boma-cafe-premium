@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { createHash } from 'node:crypto'
+import { createHash, timingSafeEqual } from 'node:crypto'
 
 const ADMIN_COOKIE = 'boma_admin_auth'
 const KITCHEN_COOKIE = 'boma_kitchen_auth'
@@ -17,6 +17,14 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || ''
 const KITCHEN_PASSWORD = process.env.KITCHEN_PASSWORD || ''
 const WAITER_PASSWORD = process.env.WAITER_PASSWORD || ''
 const BAR_PASSWORD = process.env.BAR_PASSWORD || ''
+
+function timingSafeCompare(a: string, b: string): boolean {
+  if (typeof a !== 'string' || typeof b !== 'string') return false
+  const bufA = Buffer.from(a)
+  const bufB = Buffer.from(b)
+  if (bufA.length !== bufB.length) return false
+  return timingSafeEqual(bufA, bufB)
+}
 
 export function expectedCookieValue(role: Role): string {
   const secret = role === 'admin' ? ADMIN_PASSWORD : role === 'kitchen' ? KITCHEN_PASSWORD : role === 'waiter' ? WAITER_PASSWORD : BAR_PASSWORD
@@ -43,10 +51,10 @@ export async function getSession(): Promise<Session | null> {
   const bar = cookieStore.get(BAR_COOKIE)
 
   // Highest precedence: admin → kitchen → bar → waiter
-  if (admin?.value && admin.value === expectedCookieValue('admin')) return { role: 'admin' }
-  if (kitchen?.value && kitchen.value === expectedCookieValue('kitchen')) return { role: 'kitchen' }
-  if (bar?.value && bar.value === expectedCookieValue('bar')) return { role: 'bar' }
-  if (waiter?.value && waiter.value === expectedCookieValue('waiter')) return { role: 'waiter' }
+  if (admin?.value && timingSafeCompare(admin.value, expectedCookieValue('admin'))) return { role: 'admin' }
+  if (kitchen?.value && timingSafeCompare(kitchen.value, expectedCookieValue('kitchen'))) return { role: 'kitchen' }
+  if (bar?.value && timingSafeCompare(bar.value, expectedCookieValue('bar'))) return { role: 'bar' }
+  if (waiter?.value && timingSafeCompare(waiter.value, expectedCookieValue('waiter'))) return { role: 'waiter' }
 
   return null
 }

@@ -16,6 +16,18 @@ async function hashSHA256(input: string): Promise<string> {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
+function timingSafeCompare(a: string, b: string): boolean {
+  if (typeof a !== 'string' || typeof b !== 'string') return false
+  const bufA = new TextEncoder().encode(a)
+  const bufB = new TextEncoder().encode(b)
+  if (bufA.length !== bufB.length) return false
+  let diff = 0
+  for (let i = 0; i < bufA.length; i++) {
+    diff |= bufA[i] ^ bufB[i]
+  }
+  return diff === 0
+}
+
 type AuthResult = { role: 'admin' | 'kitchen' | 'waiter' | 'bar' } | null
 
 async function verifyRole(request: NextRequest): Promise<AuthResult> {
@@ -28,22 +40,22 @@ async function verifyRole(request: NextRequest): Promise<AuthResult> {
 
   if (adminCookie?.value) {
     const expected = await hashSHA256(`admin:${ADMIN_PASSWORD}`)
-    if (adminCookie.value === expected) return { role: 'admin' }
+    if (timingSafeCompare(adminCookie.value, expected)) return { role: 'admin' }
   }
 
   if (kitchenCookie?.value) {
     const expected = await hashSHA256(`kitchen:${KITCHEN_PASSWORD}`)
-    if (kitchenCookie.value === expected) return { role: 'kitchen' }
+    if (timingSafeCompare(kitchenCookie.value, expected)) return { role: 'kitchen' }
   }
 
   if (barCookie?.value) {
     const expected = await hashSHA256(`bar:${BAR_PASSWORD}`)
-    if (barCookie.value === expected) return { role: 'bar' }
+    if (timingSafeCompare(barCookie.value, expected)) return { role: 'bar' }
   }
 
   if (waiterCookie?.value) {
     const expected = await hashSHA256(`waiter:${WAITER_PASSWORD}`)
-    if (waiterCookie.value === expected) return { role: 'waiter' }
+    if (timingSafeCompare(waiterCookie.value, expected)) return { role: 'waiter' }
   }
 
   return null
@@ -59,6 +71,8 @@ function roleScope(role: string): string {
 const PROTECTED_API_PREFIXES = ['/api/admin/', '/api/cms/', '/api/waiters/', '/api/gallery/', '/api/upload/', '/api/supabase/']
 
 const PUBLIC_API_EXCEPTIONS = ['/api/cms/public', '/api/waiters/active', '/api/menu/public', '/api/track-order', '/api/receipt/verify']
+
+const PUBLIC_SUPABASE_POST_ROUTES = ['/api/supabase/orders', '/api/supabase/contact', '/api/supabase/bookings']
 
 function isProtectedApiPath(pathname: string): boolean {
   return PROTECTED_API_PREFIXES.some(prefix => pathname.startsWith(prefix))
@@ -142,8 +156,8 @@ export async function middleware(request: NextRequest) {
   // /api/admin/auth POST (login) and GET (logout/session check) — allow unauthenticated
   if (pathname === '/api/admin/auth' && (request.method === 'POST' || request.method === 'GET')) return NextResponse.next()
 
-  // Allow public POST to supabase endpoints (public website order/book/contact forms)
-  if (pathname.startsWith('/api/supabase/') && request.method === 'POST') return NextResponse.next()
+  // Allow public POST to specific supabase endpoints (public website order/book/contact forms)
+  if (pathname.startsWith('/api/supabase/') && request.method === 'POST' && PUBLIC_SUPABASE_POST_ROUTES.some(p => pathname.startsWith(p))) return NextResponse.next()
 
   const auth = await verifyRole(request)
   if (!auth) {

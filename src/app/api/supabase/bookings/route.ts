@@ -3,6 +3,8 @@ import { getAdminClient } from '@/lib/supabase'
 import { requireAdminOrKitchen } from '@/lib/auth/requireRole'
 import { checkRateLimit } from '@/lib/rate-limit'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   const authError = await requireAdminOrKitchen(request)
   if (authError) return authError
@@ -18,7 +20,7 @@ export async function GET(request: NextRequest) {
     .range(offset, offset + limit - 1)
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to load bookings' }, { status: 500 })
   }
 
   return NextResponse.json(data)
@@ -53,7 +55,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to create booking' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true, booking: data }, { status: 201 })
@@ -75,13 +77,25 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Booking ID required' }, { status: 400 })
     }
 
+    const ALLOWED_PATCH_FIELDS = ['name', 'phone', 'email', 'booking_date', 'booking_time', 'guests', 'notes', 'status']
+    const updates: Record<string, unknown> = {}
+    for (const key of ALLOWED_PATCH_FIELDS) {
+      if (key in body) {
+        updates[key] = body[key]
+      }
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
+    }
+
     const { error } = await getAdminClient()
       .from('bookings')
-      .update(body)
+      .update(updates)
       .eq('id', id)
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to update booking' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
@@ -107,7 +121,7 @@ export async function DELETE(request: NextRequest) {
     .eq('id', id)
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to delete booking' }, { status: 500 })
   }
 
   return NextResponse.json({ success: true })

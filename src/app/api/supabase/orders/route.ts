@@ -8,6 +8,8 @@ import { createOrder, splitAndCreateOrders, getSiblingOrders, logOrderEvent } fr
 import type { OrderEventType } from '@/lib/pos/types'
 import { notifyOrderCreated, notifyOrderConfirmed, notifyOrderRejected, notifyOrderPreparing, notifyOrderReady } from '@/lib/notifications/push'
 
+export const dynamic = 'force-dynamic'
+
 const ALLOWED_PATCH_FIELDS = new Set([
   'customer_name', 'phone', 'order_type', 'requested_time', 'status',
   'items_json', 'table_number', 'delivery_address',
@@ -188,7 +190,11 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     const msg = (err as Error)?.message ?? String(err)
     console.error('order POST error:', msg)
-    return NextResponse.json({ error: msg }, { status: 400 })
+    // Sanitize error message for client response
+    const clientMsg = msg.includes('duplicate') || msg.includes('unique')
+      ? 'Duplicate order detected'
+      : 'Failed to create order'
+    return NextResponse.json({ error: clientMsg }, { status: 400 })
   }
 }
 

@@ -139,11 +139,18 @@ export async function GET() {
     env: {
       allWebVarsPresent: hasAllFirebaseWeb,
       adminCredentialsPresent: hasAdminCreds,
-      missingKeys,
-      checks: envChecks,
     },
-    firebase: firebaseAdminStatus,
-    serviceWorker: serviceWorkerStatus,
-    database: databaseStatus,
+    firebase: {
+      app: firebaseAdminStatus.app,
+      messaging: firebaseAdminStatus.messaging,
+    },
+    serviceWorker: {
+      reachable: serviceWorkerStatus.reachable,
+      status: serviceWorkerStatus.status,
+    },
+    database: {
+      tableExists: databaseStatus.tableExists,
+      subscriptions: databaseStatus.subscriptions,
+    },
   })
 }

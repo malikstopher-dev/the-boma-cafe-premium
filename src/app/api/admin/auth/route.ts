@@ -1,15 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getSession, expectedCookieValue } from '@/lib/auth';
-import { createHash } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
+import { checkRateLimit } from '@/lib/rate-limit';
+
+export const dynamic = 'force-dynamic'
 
 const ADMIN_COOKIE = 'boma_admin_auth';
 const KITCHEN_COOKIE = 'boma_kitchen_auth';
 const WAITER_COOKIE = 'boma_waiter_auth';
 const BAR_COOKIE = 'boma_bar_auth';
 
+const VALID_ROLES = ['admin', 'kitchen', 'waiter', 'bar'] as const;
+
+function timingSafeCompare(a: string, b: string): boolean {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
+
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || 'unknown';
+    if (!checkRateLimit(`login:${ip}`, 10)) {
+      return NextResponse.json({ error: 'Too many login attempts. Try again later.' }, { status: 429 });
+    }
+
     const body = await request.json();
     const { password, role, action } = body;
 
@@ -27,7 +45,7 @@ export async function POST(request: NextRequest) {
       if (!waiterPassword) {
         return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
       }
-      if (password !== waiterPassword) {
+      if (!password || !timingSafeCompare(password, waiterPassword)) {
         return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
       }
       const cookieStore = await cookies();
@@ -50,7 +68,7 @@ export async function POST(request: NextRequest) {
       if (!barPassword) {
         return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
       }
-      if (password !== barPassword) {
+      if (!password || !timingSafeCompare(password, barPassword)) {
         return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
       }
       const cookieStore = await cookies();
@@ -73,7 +91,7 @@ export async function POST(request: NextRequest) {
       if (!kitchenPassword) {
         return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
       }
-      if (password !== kitchenPassword) {
+      if (!password || !timingSafeCompare(password, kitchenPassword)) {
         return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
       }
       const cookieStore = await cookies();
@@ -96,7 +114,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
-    if (password === adminPassword) {
+    if (password && timingSafeCompare(password, adminPassword)) {
       const cookieStore = await cookies();
       // Clear conflicting cookies when logging in as admin
       cookieStore.set(KITCHEN_COOKIE, '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: 0, path: '/' });

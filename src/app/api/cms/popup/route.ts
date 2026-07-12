@@ -3,6 +3,8 @@ import { revalidatePath } from 'next/cache';
 import { getPopup, savePopup } from '@/lib/cms-supabase';
 import { requireAdminOrKitchen } from '@/lib/auth/requireRole';
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   const authError = await requireAdminOrKitchen(request)
   if (authError) return authError
@@ -33,7 +35,6 @@ export async function POST(request: NextRequest) {
     }
   } catch (error: any) {
     console.error('Full error saving popup:', error);
-    const message = error.message || 'Unknown error occurred';
-    return NextResponse.json({ error: `Failed to save popup: ${message}` }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to save popup' }, { status: 500 });
   }
 }

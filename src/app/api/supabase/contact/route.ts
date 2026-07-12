@@ -3,6 +3,8 @@ import { getAdminClient } from '@/lib/supabase'
 import { requireAdminOrKitchen } from '@/lib/auth/requireRole'
 import { checkRateLimit } from '@/lib/rate-limit'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   const authError = await requireAdminOrKitchen(request)
   if (authError) return authError
@@ -18,7 +20,7 @@ export async function GET(request: NextRequest) {
     .range(offset, offset + limit - 1)
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to load messages' }, { status: 500 })
   }
 
   return NextResponse.json(data)
@@ -49,7 +51,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to send message' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true, contact_message: data }, { status: 201 })
@@ -75,7 +77,7 @@ export async function PATCH(request: NextRequest) {
     .eq('id', id)
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to mark message read' }, { status: 500 })
   }
 
   return NextResponse.json({ success: true })
@@ -98,7 +100,7 @@ export async function DELETE(request: NextRequest) {
     .eq('id', id)
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to delete message' }, { status: 500 })
   }
 
   return NextResponse.json({ success: true })
