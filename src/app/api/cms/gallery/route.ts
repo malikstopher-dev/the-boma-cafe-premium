@@ -3,6 +3,8 @@ import { revalidatePath } from 'next/cache';
 import { getGallery, saveGalleryItem, deleteGalleryItem, getGalleryBoards } from '@/lib/cms-supabase';
 import { requireAdminOrKitchen } from '@/lib/auth/requireRole';
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   const authError = await requireAdminOrKitchen(request)
   if (authError) return authError
@@ -25,6 +27,7 @@ export async function POST(request: NextRequest) {
     const item = await request.json();
     const saved = await saveGalleryItem(item);
     revalidatePath('/gallery');
+    revalidatePath('/');
     return NextResponse.json({ success: true, data: saved });
   } catch (error) {
     console.error('Error saving gallery item:', error);
@@ -40,6 +43,7 @@ export async function PUT(request: NextRequest) {
     const item = await request.json();
     const saved = await saveGalleryItem(item);
     revalidatePath('/gallery');
+    revalidatePath('/');
     return NextResponse.json({ success: true, data: saved });
   } catch (error) {
     console.error('Error saving gallery item:', error);
@@ -58,6 +62,7 @@ export async function PATCH(request: NextRequest) {
         await saveGalleryItem(item);
       }
       revalidatePath('/gallery');
+      revalidatePath('/');
       return NextResponse.json({ success: true });
     }
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
@@ -78,6 +83,7 @@ export async function DELETE(request: NextRequest) {
     if (id) {
       const result = await deleteGalleryItem(id);
       revalidatePath('/gallery');
+      revalidatePath('/');
       return NextResponse.json({ success: result });
     }
     

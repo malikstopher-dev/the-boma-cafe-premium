@@ -3,6 +3,8 @@ import { revalidatePath } from 'next/cache';
 import { getPromotions, savePromotion, deletePromotion } from '@/lib/cms-supabase';
 import { requireAdminOrKitchen } from '@/lib/auth/requireRole';
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   const authError = await requireAdminOrKitchen(request)
   if (authError) return authError
@@ -24,6 +26,7 @@ export async function POST(request: NextRequest) {
     const promotion = await request.json();
     const saved = await savePromotion(promotion);
     revalidatePath('/promotions');
+    revalidatePath('/');
     return NextResponse.json({ success: true, data: saved });
   } catch (error) {
     console.error('Error saving promotion:', error);
@@ -39,6 +42,7 @@ export async function PUT(request: NextRequest) {
     const promotion = await request.json();
     const saved = await savePromotion(promotion);
     revalidatePath('/promotions');
+    revalidatePath('/');
     return NextResponse.json({ success: true, data: saved });
   } catch (error) {
     console.error('Error saving promotion:', error);
@@ -57,6 +61,7 @@ export async function PATCH(request: NextRequest) {
         await savePromotion(promo);
       }
       revalidatePath('/promotions');
+      revalidatePath('/');
       return NextResponse.json({ success: true });
     }
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
@@ -77,6 +82,7 @@ export async function DELETE(request: NextRequest) {
     if (id) {
       await deletePromotion(id);
       revalidatePath('/promotions');
+      revalidatePath('/');
       return NextResponse.json({ success: true });
     }
     

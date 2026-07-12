@@ -3,6 +3,8 @@ import { revalidatePath } from 'next/cache';
 import { getBarCategories, saveBarCategory, deleteBarCategory, getBarItems, saveBarItem, deleteBarItem } from '@/lib/cms-supabase';
 import { requireAdminOrKitchen } from '@/lib/auth/requireRole';
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   const authError = await requireAdminOrKitchen(request)
   if (authError) return authError
@@ -27,6 +29,7 @@ export async function POST(request: NextRequest) {
     if (body.name !== undefined && !body.categoryId) {
       const category = await saveBarCategory(body);
       revalidatePath('/bar-menu');
+      revalidatePath('/');
       return NextResponse.json({ success: true, data: category });
     }
 
@@ -34,6 +37,7 @@ export async function POST(request: NextRequest) {
     if (body.categoryId !== undefined) {
       const item = await saveBarItem(body);
       revalidatePath('/bar-menu');
+      revalidatePath('/');
       return NextResponse.json({ success: true, data: item });
     }
 
@@ -55,6 +59,7 @@ export async function PUT(request: NextRequest) {
     if ((body.id && body.name !== undefined) && !body.categoryId) {
       const category = await saveBarCategory(body);
       revalidatePath('/bar-menu');
+      revalidatePath('/');
       return NextResponse.json({ success: true, data: category });
     }
 
@@ -62,6 +67,7 @@ export async function PUT(request: NextRequest) {
     if (body.categoryId !== undefined) {
       const item = await saveBarItem(body);
       revalidatePath('/bar-menu');
+      revalidatePath('/');
       return NextResponse.json({ success: true, data: item });
     }
 
@@ -84,12 +90,14 @@ export async function DELETE(request: NextRequest) {
     if (id) {
       await deleteBarCategory(id);
       revalidatePath('/bar-menu');
+      revalidatePath('/');
       return NextResponse.json({ success: true });
     }
 
     if (itemId) {
       await deleteBarItem(itemId);
       revalidatePath('/bar-menu');
+      revalidatePath('/');
       return NextResponse.json({ success: true });
     }
 
