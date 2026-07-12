@@ -80,6 +80,14 @@ export default function CartButton() {
       errs.deliveryAddress = 'Delivery address is required'
     }
 
+    // Bar items (drinks) cannot be delivered
+    if (orderType === 'delivery') {
+      const barItems = items.filter((item: any) => item.station === 'bar')
+      if (barItems.length > 0) {
+        errs.items = `Drinks cannot be delivered (${barItems.map((i: any) => i.name).join(', ')}). Please switch to pickup or remove drinks.`
+      }
+    }
+
     setFieldErrors(errs)
     return Object.keys(errs).length === 0
   }, [customerInfo, items.length])

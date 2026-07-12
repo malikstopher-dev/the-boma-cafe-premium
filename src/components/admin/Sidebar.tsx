@@ -53,6 +53,7 @@ const navGroups: NavGroup[] = [
   {
     label: 'People',
     items: [
+      { label: 'Messages', icon: '💬', href: '/admin/messages' },
       { label: 'Inquiries', icon: '✉️', href: '/admin/inquiries' },
       { label: 'Waiters', icon: '👤', href: '/admin/waiters' },
     ],
