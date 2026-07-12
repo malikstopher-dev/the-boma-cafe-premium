@@ -36,6 +36,10 @@ export interface Order {
   cancellation_reason: string | null
   station: 'kitchen' | 'bar' | null
   parent_order_id: string | null
+  estimated_prep_minutes: number | null
+  prep_started_at: string | null
+  estimated_ready_at: string | null
+  actual_ready_at: string | null
 }
 
 export interface ContactMessage {

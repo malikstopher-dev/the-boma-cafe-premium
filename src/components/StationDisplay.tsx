@@ -8,6 +8,8 @@ import OrderTypeBadge from '@/components/pos/OrderTypeBadge'
 import Timer from '@/components/pos/Timer'
 import CountBadge from '@/components/pos/CountBadge'
 import CancelModal from '@/components/pos/CancelModal'
+import PrepTimeSelector from '@/components/pos/PrepTimeSelector'
+import PrepTimeCountdown from '@/components/pos/PrepTimeCountdown'
 import { posTokens as t } from '@/components/pos/DesignSystem'
 
 export interface StationDisplayProps {
@@ -35,6 +37,10 @@ interface Order {
   created_at: string
   preparation_time_minutes: number | null
   source?: string
+  estimated_prep_minutes: number | null
+  prep_started_at: string | null
+  estimated_ready_at: string | null
+  actual_ready_at: string | null
 }
 
 const READY_CLEANUP_MS = 5 * 60 * 1000
@@ -105,6 +111,10 @@ export default function StationDisplay({ station, title, icon, primaryColor, log
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null)
   const [cancelOrderRef, setCancelOrderRef] = useState<string>('')
   const [cancelling, setCancelling] = useState(false)
+  const [prepSelectorOpen, setPrepSelectorOpen] = useState(false)
+  const [prepSelectorOrderId, setPrepSelectorOrderId] = useState<string | null>(null)
+  const [prepSelectorRef, setPrepSelectorRef] = useState<string>('')
+  const [prepSelectorLoading, setPrepSelectorLoading] = useState(false)
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const cardErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prevIdsRef = useRef<Set<string>>(new Set())
@@ -260,13 +270,31 @@ export default function StationDisplay({ station, title, icon, primaryColor, log
     setUpdating(id)
     try {
       const body: Record<string, any> = { status }
-      if (prepTimeMinutes !== undefined) body.preparation_time_minutes = prepTimeMinutes
+      if (prepTimeMinutes !== undefined) {
+        body.preparation_time_minutes = prepTimeMinutes
+        body.estimated_prep_minutes = prepTimeMinutes
+      }
+      if (status === 'ready') {
+        body.actual_ready_at = new Date().toISOString()
+      }
       const res = await fetch(`/api/supabase/orders?id=${id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
       })
       if (res.ok) {
         setCardErrors(prev => { const n = { ...prev }; delete n[id]; return n })
-        setOrders(prev => prev.map(o => o.id === id ? { ...o, status, preparation_time_minutes: prepTimeMinutes ?? o.preparation_time_minutes } : o))
+        setOrders(prev => prev.map(o => {
+          if (o.id !== id) return o
+          const updated = { ...o, status, preparation_time_minutes: prepTimeMinutes ?? o.preparation_time_minutes }
+          if (prepTimeMinutes !== undefined) {
+            updated.estimated_prep_minutes = prepTimeMinutes
+            updated.prep_started_at = new Date().toISOString()
+            updated.estimated_ready_at = new Date(Date.now() + prepTimeMinutes * 60 * 1000).toISOString()
+          }
+          if (status === 'ready') {
+            updated.actual_ready_at = new Date().toISOString()
+          }
+          return updated
+        }))
       } else {
         const errData = await res.json().catch(() => ({}))
         showError(errData?.error || `Failed to update order (${res.status})`)
@@ -307,6 +335,32 @@ export default function StationDisplay({ station, title, icon, primaryColor, log
     setCancelModalOpen(true)
   }
 
+  const openPrepSelector = (id: string, ref: string) => {
+    setPrepSelectorOrderId(id)
+    setPrepSelectorRef(ref)
+    setPrepSelectorOpen(true)
+  }
+
+  const handlePrepTimeSelect = async (minutes: number) => {
+    if (!prepSelectorOrderId) return
+    setPrepSelectorLoading(true)
+    await updateStatus(prepSelectorOrderId, 'preparing', minutes)
+    setPrepSelectorLoading(false)
+    setPrepSelectorOpen(false)
+    setPrepSelectorOrderId(null)
+    setPrepSelectorRef('')
+  }
+
+  const handlePrepTimeSkip = async () => {
+    if (!prepSelectorOrderId) return
+    setPrepSelectorLoading(true)
+    await updateStatus(prepSelectorOrderId, 'preparing')
+    setPrepSelectorLoading(false)
+    setPrepSelectorOpen(false)
+    setPrepSelectorOrderId(null)
+    setPrepSelectorRef('')
+  }
+
   const safeDisplayOrders = Array.isArray(displayOrders) ? displayOrders : []
   const pending = safeDisplayOrders.filter(o => o.status === 'pending')
   const confirmed = safeDisplayOrders.filter(o => o.status === 'confirmed')
@@ -329,14 +383,14 @@ export default function StationDisplay({ station, title, icon, primaryColor, log
       if (!col || col.length === 0) return
       const order = col[focusedIdx]
       if (!order || updating === order.id) return
-      if (e.key === '1' && order.status === 'confirmed') { updateStatus(order.id, 'preparing'); return }
-      if (e.key === '1' && order.status === 'pending' && order.source === 'waiter') { updateStatus(order.id, 'preparing'); return }
+      const displayRef = order.order_ref || `#${order.id.slice(0, 8).toUpperCase()}`
+      if (e.key === '1' && (order.status === 'confirmed' || (order.status === 'pending' && order.source === 'waiter'))) { openPrepSelector(order.id, displayRef); return }
       if (e.key === '2' && order.status === 'preparing') { updateStatus(order.id, 'ready'); return }
       if (e.key === '3' && order.status === 'packing') { updateStatus(order.id, 'ready'); return }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [authed, focusedCol, focusedIdx, orders, updating, prepTimeInputs])
+  }, [authed, focusedCol, focusedIdx, orders, updating, prepTimeInputs, openPrepSelector])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -506,7 +560,7 @@ export default function StationDisplay({ station, title, icon, primaryColor, log
         {columnData.map((col, colIdx) => (
           <Column key={col.key} col={col} colIdx={colIdx} focusedCol={isMobile ? mobileTab : focusedCol} focusedIdx={focusedIdx}
             orders={col.items} updating={updating} updateStatus={updateStatus} prepTimeInputs={prepTimeInputs} setPrepTimeInputs={setPrepTimeInputs}
-            cardErrors={cardErrors} readyTimesRef={readyTimesRef} station={station} isMobile={false} openCancelModal={openCancelModal} primaryColor={primaryColor} />
+            cardErrors={cardErrors} readyTimesRef={readyTimesRef} station={station} isMobile={false} openCancelModal={openCancelModal} openPrepSelector={openPrepSelector} primaryColor={primaryColor} />
         ))}
       </div>}
 
@@ -515,9 +569,19 @@ export default function StationDisplay({ station, title, icon, primaryColor, log
         <div className="pos-kanban-mobile" style={{ flex: 1, flexDirection: 'column', overflow: 'hidden', background: activeColData.bg }}>
           <Column col={activeColData} colIdx={activeCol} focusedCol={activeCol} focusedIdx={0}
             orders={activeColData.items} updating={updating} updateStatus={updateStatus} prepTimeInputs={prepTimeInputs} setPrepTimeInputs={setPrepTimeInputs}
-            cardErrors={cardErrors} readyTimesRef={readyTimesRef} station={station} isMobile={true} openCancelModal={openCancelModal} primaryColor={primaryColor} />
+            cardErrors={cardErrors} readyTimesRef={readyTimesRef} station={station} isMobile={true} openCancelModal={openCancelModal} openPrepSelector={openPrepSelector} primaryColor={primaryColor} />
         </div>
       )}
+
+      <PrepTimeSelector
+        open={prepSelectorOpen}
+        station={station}
+        orderRef={prepSelectorRef}
+        onSelect={handlePrepTimeSelect}
+        onSkip={handlePrepTimeSkip}
+        onClose={() => { setPrepSelectorOpen(false); setPrepSelectorOrderId(null); setPrepSelectorRef('') }}
+        loading={prepSelectorLoading}
+      />
 
       <CancelModal open={cancelModalOpen} onClose={() => { setCancelModalOpen(false); setCancelOrderId(null); setCancelOrderRef('') }}
         onConfirm={cancelOrder} orderRef={cancelOrderRef} loading={cancelling} />
@@ -526,7 +590,7 @@ export default function StationDisplay({ station, title, icon, primaryColor, log
 }
 
 /* ── Column sub-component ── */
-function Column({ col, colIdx, focusedCol, focusedIdx, orders, updating, updateStatus, prepTimeInputs, setPrepTimeInputs, cardErrors, readyTimesRef, station, isMobile, openCancelModal, primaryColor }: {
+function Column({ col, colIdx, focusedCol, focusedIdx, orders, updating, updateStatus, prepTimeInputs, setPrepTimeInputs, cardErrors, readyTimesRef, station, isMobile, openCancelModal, openPrepSelector, primaryColor }: {
   col: typeof COLUMNS[number] & { items: Order[] }
   colIdx: number
   focusedCol: number
@@ -541,6 +605,7 @@ function Column({ col, colIdx, focusedCol, focusedIdx, orders, updating, updateS
   station: string
   isMobile: boolean
   openCancelModal: (id: string, ref: string) => void
+  openPrepSelector: (id: string, ref: string) => void
   primaryColor: string
 }) {
   const isActive = colIdx === focusedCol
@@ -570,7 +635,7 @@ function Column({ col, colIdx, focusedCol, focusedIdx, orders, updating, updateS
         {col.items.map((order, idx) => (
           <OrderCard key={order.id} order={order} col={col} colIdx={colIdx} focusedCol={focusedCol} focusedIdx={idx}
             updating={updating} updateStatus={updateStatus} prepTimeInputs={prepTimeInputs} setPrepTimeInputs={setPrepTimeInputs}
-            cardErrors={cardErrors} readyTimesRef={readyTimesRef} station={station} isMobile={isMobile} openCancelModal={openCancelModal} primaryColor={primaryColor} />
+            cardErrors={cardErrors} readyTimesRef={readyTimesRef} station={station} isMobile={isMobile} openCancelModal={openCancelModal} openPrepSelector={openPrepSelector} primaryColor={primaryColor} />
         ))}
       </div>
     </div>
@@ -578,7 +643,7 @@ function Column({ col, colIdx, focusedCol, focusedIdx, orders, updating, updateS
 }
 
 /* ── Order Card sub-component ── */
-function OrderCard({ order, col, colIdx, focusedCol, focusedIdx, updating, updateStatus, prepTimeInputs, setPrepTimeInputs, cardErrors, readyTimesRef, station, isMobile, openCancelModal, primaryColor }: {
+function OrderCard({ order, col, colIdx, focusedCol, focusedIdx, updating, updateStatus, prepTimeInputs, setPrepTimeInputs, cardErrors, readyTimesRef, station, isMobile, openCancelModal, openPrepSelector, primaryColor }: {
   order: Order
   col: typeof COLUMNS[number]
   colIdx: number
@@ -593,6 +658,7 @@ function OrderCard({ order, col, colIdx, focusedCol, focusedIdx, updating, updat
   station: string
   isMobile: boolean
   openCancelModal: (id: string, ref: string) => void
+  openPrepSelector: (id: string, ref: string) => void
   primaryColor: string
 }) {
   const isFocused = colIdx === focusedCol
@@ -622,7 +688,16 @@ function OrderCard({ order, col, colIdx, focusedCol, focusedIdx, updating, updat
       {/* Row 1: Ref + Timer */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6, paddingLeft: 6 }}>
         <span style={{ fontSize: isMobile ? t.typography.fontSize.lg : t.typography.fontSize.xl, fontWeight: t.typography.fontWeight.extrabold, fontFamily: t.typography.fontFamilyMono, color: t.colors.text.primary, lineHeight: 1.2 }}>{displayRef}</span>
-        <Timer startTime={order.created_at} targetMinutes={station === 'bar' ? 5 : 15} size="sm" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Timer startTime={order.created_at} targetMinutes={station === 'bar' ? 5 : 15} size="sm" />
+          <PrepTimeCountdown
+            estimatedReadyAt={order.estimated_ready_at}
+            prepStartedAt={order.prep_started_at}
+            estimatedPrepMinutes={order.estimated_prep_minutes}
+            status={order.status}
+            size="sm"
+          />
+        </div>
       </div>
 
       {/* Row 2: Badges */}
@@ -691,7 +766,7 @@ function OrderCard({ order, col, colIdx, focusedCol, focusedIdx, updating, updat
       {/* Action buttons */}
       <div style={{ paddingLeft: 6 }}>
         {order.status === 'pending' && order.source === 'waiter' && (
-          <button onClick={() => updateStatus(order.id, 'preparing')} disabled={updating === order.id}
+          <button onClick={() => openPrepSelector(order.id, displayRef)} disabled={updating === order.id}
             style={{
               width: '100%', padding: isMobile ? 14 : 12, border: 'none', borderRadius: t.radius.md,
               background: t.colors.accent.purple, color: '#fff',
@@ -714,15 +789,12 @@ function OrderCard({ order, col, colIdx, focusedCol, focusedIdx, updating, updat
         )}
         {order.status === 'confirmed' && (
           <>
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6 }}>
-              <input type="number" min="1" max="999" placeholder="Prep time (min)"
-                value={prepTimeInputs[order.id] || ''}
-                onChange={e => { e.stopPropagation(); setPrepTimeInputs(prev => ({ ...prev, [order.id]: e.target.value })) }}
-                onKeyDown={e => { if (e.key === 'Enter') { const mins = prepTimeInputs[order.id] ? parseInt(prepTimeInputs[order.id]) : undefined; if (mins) updateStatus(order.id, order.status, mins) } }}
-                style={{ flex: 1, padding: '6px 8px', borderRadius: t.radius.sm, border: `1px solid ${t.colors.border.default}`, background: 'rgba(255,255,255,0.08)', color: t.colors.text.primary, fontSize: t.typography.fontSize.sm, fontWeight: t.typography.fontWeight.semibold, textAlign: 'center', outline: 'none', fontFamily: t.typography.fontFamily }} />
-              {order.preparation_time_minutes && <span style={{ fontSize: t.typography.fontSize.xs, color: t.colors.text.dim, whiteSpace: 'nowrap' }}>Current: {order.preparation_time_minutes}m</span>}
-            </div>
-            <button onClick={() => updateStatus(order.id, 'preparing')} disabled={updating === order.id}
+            {order.preparation_time_minutes && (
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6, paddingLeft: 6 }}>
+                <span style={{ fontSize: t.typography.fontSize.xs, color: t.colors.text.dim }}>Est: {order.preparation_time_minutes}m</span>
+              </div>
+            )}
+            <button onClick={() => openPrepSelector(order.id, displayRef)} disabled={updating === order.id}
               style={{
                 width: '100%', padding: isMobile ? 14 : 12, border: 'none', borderRadius: t.radius.md,
                 background: t.colors.accent.purple, color: '#fff',

@@ -6,11 +6,13 @@ import StatusBadge from '@/components/pos/StatusBadge'
 import StationBadge from '@/components/pos/StationBadge'
 import PosButton from '@/components/pos/PosButton'
 import Timer from '@/components/pos/Timer'
+import PrepTimeCountdown from '@/components/pos/PrepTimeCountdown'
 
 interface Order {
   id: string; order_ref: string | null; customer_name: string; status: string; station: string | null
   waiter_name: string | null; table_number: string | null; created_at: string; items_json: string
   total?: number; cancellation_reason?: string | null; parent_order_id?: string | null; source?: string
+  estimated_prep_minutes: number | null; prep_started_at: string | null; estimated_ready_at: string | null; actual_ready_at: string | null
 }
 
 type FilterStatus = 'all' | 'active' | 'ready' | 'served'
@@ -151,7 +153,16 @@ export default function WaiterOrdersPage() {
                       <span style={{ fontFamily: 'var(--pos-font-mono)', fontSize: '0.75rem', color: 'var(--pos-text-dim)' }}>{order.order_ref}</span>
                       <StatusBadge status={order.status as any} size="sm" />
                     </div>
-                    <Timer startTime={order.created_at} targetMinutes={15} size="sm" />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <Timer startTime={order.created_at} targetMinutes={15} size="sm" />
+                      <PrepTimeCountdown
+                        estimatedReadyAt={order.estimated_ready_at}
+                        prepStartedAt={order.prep_started_at}
+                        estimatedPrepMinutes={order.estimated_prep_minutes}
+                        status={order.status}
+                        size="sm"
+                      />
+                    </div>
                   </div>
 
                   {items.length > 0 && (

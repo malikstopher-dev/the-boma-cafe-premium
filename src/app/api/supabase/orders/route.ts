@@ -16,6 +16,7 @@ const ALLOWED_PATCH_FIELDS = new Set([
   'payment_status', 'payment_confirmed_at', 'payment_confirmed_by',
   'waiter_name', 'payment_method', 'preparation_time_minutes',
   'cancellation_reason',
+  'estimated_prep_minutes', 'prep_started_at', 'estimated_ready_at', 'actual_ready_at',
 ])
 
 export async function GET(request: NextRequest) {
@@ -325,6 +326,22 @@ export async function PATCH(request: NextRequest) {
         paymentRequiredForTransition(updateBody.status)
       ) {
         return NextResponse.json({ error: 'Payment must be confirmed before dispatching this order.' }, { status: 400 })
+      }
+
+      // ── Auto-set prep time fields on status transitions ──
+      if (updateBody.status === 'preparing' && currentStatus !== 'preparing') {
+        if (!updateBody.prep_started_at) {
+          updateBody.prep_started_at = new Date().toISOString()
+        }
+        if (updateBody.estimated_prep_minutes && !updateBody.estimated_ready_at) {
+          const startTime = new Date(updateBody.prep_started_at).getTime()
+          updateBody.estimated_ready_at = new Date(startTime + updateBody.estimated_prep_minutes * 60 * 1000).toISOString()
+        }
+      }
+      if (updateBody.status === 'ready' && currentStatus !== 'ready') {
+        if (!updateBody.actual_ready_at) {
+          updateBody.actual_ready_at = new Date().toISOString()
+        }
       }
 
       // ── Sibling check when marking ready/completed ──
