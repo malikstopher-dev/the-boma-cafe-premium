@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getInquiries, saveInquiry, markInquiryRead } from '@/lib/cms-supabase';
 import { requireAdminOrKitchen } from '@/lib/auth/requireRole';
+import { getAdminClient } from '@/lib/supabase';
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   const authError = await requireAdminOrKitchen(request)
@@ -28,9 +31,18 @@ export async function POST(request: NextRequest) {
         await markInquiryRead(id);
         return NextResponse.json({ success: true });
       }
+      return NextResponse.json({ error: 'ID required' }, { status: 400 });
     }
     
     if (body.action === 'delete') {
+      const id = body.id;
+      if (!id) {
+        return NextResponse.json({ error: 'ID required' }, { status: 400 });
+      }
+      const { error } = await getAdminClient().from('contact_messages').delete().eq('id', id);
+      if (error) {
+        return NextResponse.json({ error: 'Failed to delete inquiry' }, { status: 500 });
+      }
       return NextResponse.json({ success: true });
     }
     

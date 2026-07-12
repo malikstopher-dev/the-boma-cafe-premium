@@ -3,7 +3,14 @@ import fs from 'fs';
 import path from 'path';
 import { requireAdminOrKitchen } from '@/lib/auth/requireRole';
 
+export const dynamic = 'force-dynamic'
+
 const VALID_FOLDERS = ['events', 'food', 'venue', 'people', 'promotions'];
+
+function sanitizeFilename(name: string): string {
+  // Strip path separators and null bytes to prevent traversal
+  return name.replace(/[/\\:*?"<>|\x00]/g, '').replace(/\.\./g, '').trim();
+}
 
 export async function DELETE(
   request: NextRequest,
@@ -12,13 +19,24 @@ export async function DELETE(
   const authError = await requireAdminOrKitchen(request)
   if (authError) return authError
 
-  const { folder, filename } = params;
+  const { folder, filename: rawFilename } = params;
+  const filename = sanitizeFilename(rawFilename);
 
   if (!VALID_FOLDERS.includes(folder)) {
     return NextResponse.json({ error: 'Invalid folder' }, { status: 400 });
   }
 
-  const filePath = path.join(process.cwd(), 'public', 'gallery', folder, filename);
+  if (!filename || filename !== rawFilename) {
+    return NextResponse.json({ error: 'Invalid filename' }, { status: 400 });
+  }
+
+  const galleryDir = path.join(process.cwd(), 'public', 'gallery', folder);
+  const filePath = path.join(galleryDir, filename);
+
+  // Verify resolved path is within the gallery directory
+  if (!filePath.startsWith(galleryDir)) {
+    return NextResponse.json({ error: 'Invalid path' }, { status: 400 });
+  }
 
   try {
     if (fs.existsSync(filePath)) {

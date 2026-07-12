@@ -31,6 +31,8 @@ function camelToSnake(obj: any): any {
   return result
 }
 
+// camelToSnake is unused — kept for potential future use
+
 // --- Settings ---
 
 export async function getAllSettings(): Promise<Record<string, any>> {
@@ -82,19 +84,9 @@ export async function setSetting(key: string, value: any): Promise<boolean> {
 // --- Menu Categories ---
 
 export async function getCategories(): Promise<any[]> {
-  console.log("cms-supabase.getCategories() — querying menu_categories")
   const client = await supabase()
-  console.log("cms-supabase.getCategories() — got admin client")
   const { data, error } = await client.from('menu_categories').select('*').order('order_index', { ascending: true })
-  console.log("cms-supabase.getCategories() — query done, error:", error, "data count:", data?.length)
-  if (error) {
-    console.error("cms-supabase.getCategories() — Supabase error:", error)
-    console.error("cms-supabase.getCategories() — error.code:", (error as any)?.code)
-    console.error("cms-supabase.getCategories() — error.message:", (error as any)?.message)
-    console.error("cms-supabase.getCategories() — error.details:", (error as any)?.details)
-    console.error("cms-supabase.getCategories() — error.hint:", (error as any)?.hint)
-    throw error
-  }
+  if (error) throw error
   return (data || []).map(c => ({
     ...snakeToCamel(c),
     id: c.id,
@@ -137,22 +129,16 @@ export async function deleteCategory(id: string): Promise<boolean> {
 // --- Menu Items ---
 
 export async function getMenuItems(): Promise<any[]> {
-  console.log("cms-supabase.getMenuItems() — querying menu_items")
   const client = await supabase()
-  console.log("cms-supabase.getMenuItems() — got admin client")
   const { data, error } = await client.from('menu_items').select('*').order('order_index', { ascending: true })
-  console.log("cms-supabase.getMenuItems() — query done, error:", error, "data count:", data?.length)
-  if (error) {
-    console.error("cms-supabase.getMenuItems() — Supabase error:", error)
-    console.error("cms-supabase.getMenuItems() — error.code:", (error as any)?.code)
-    console.error("cms-supabase.getMenuItems() — error.message:", (error as any)?.message)
-    console.error("cms-supabase.getMenuItems() — error.details:", (error as any)?.details)
-    console.error("cms-supabase.getMenuItems() — error.hint:", (error as any)?.hint)
-    throw error
-  }
+  if (error) throw error
   return (data || []).map(item => {
-    const sizes = item.sizes ? JSON.parse(item.sizes) : null;
-    const addOns = item.add_ons ? JSON.parse(item.add_ons) : null;
+    let sizes = null;
+    let addOns = null;
+    let options = null;
+    try { sizes = item.sizes ? JSON.parse(item.sizes) : null; } catch { sizes = null; }
+    try { addOns = item.add_ons ? JSON.parse(item.add_ons) : null; } catch { addOns = null; }
+    try { options = item.options ? JSON.parse(item.options) : null; } catch { options = null; }
     return {
       ...snakeToCamel(item),
       id: item.id,
@@ -163,7 +149,7 @@ export async function getMenuItems(): Promise<any[]> {
       isOnPromo: item.is_on_promo,
       sizes: sizes ? sizes.map((s: any) => ({ ...s, price: Number(s.price) })) : null,
       addOns: addOns ? addOns.map((a: any) => ({ ...a, price: Number(a.price) })) : null,
-      options: item.options ? JSON.parse(item.options) : null,
+      options,
     };
   })
 }
@@ -210,16 +196,20 @@ export async function deleteMenuItem(id: string): Promise<boolean> {
 export async function getEvents(): Promise<any[]> {
   const { data, error } = await (await supabase()).from('events').select('*').order('order_index', { ascending: true })
   if (error) throw error
-  return (data || []).map(e => ({
-    ...snakeToCamel(e),
-    id: e.id,
-    isFeatured: e.status === 'featured',
-    isUpcoming: e.status === 'upcoming',
-    showOnHomepage: e.show_on_homepage,
-    visible: e.visible !== false,
-    ctaLabel: e.cta_label || 'Book Now',
-    galleryImages: e.gallery_images ? JSON.parse(e.gallery_images) : [],
-  }))
+  return (data || []).map(e => {
+    let galleryImages: string[] = [];
+    try { galleryImages = e.gallery_images ? JSON.parse(e.gallery_images) : []; } catch { galleryImages = []; }
+    return {
+      ...snakeToCamel(e),
+      id: e.id,
+      isFeatured: e.status === 'featured',
+      isUpcoming: e.status === 'upcoming',
+      showOnHomepage: e.show_on_homepage,
+      visible: e.visible !== false,
+      ctaLabel: e.cta_label || 'Book Now',
+      galleryImages,
+    }
+  })
 }
 
 export async function saveEvent(event: any): Promise<any> {
@@ -404,6 +394,8 @@ export async function getGalleryBoards(): Promise<any[]> {
 export async function getPopup(): Promise<any> {
   const { data, error } = await (await supabase()).from('popup').select('*').limit(1).maybeSingle()
   if (error || !data) return null
+  let activeDays: number[] = [6, 0];
+  try { activeDays = data.active_days ? JSON.parse(data.active_days) : [6, 0]; } catch { activeDays = [6, 0]; }
   return {
     ...snakeToCamel(data),
     id: data.id,
@@ -411,7 +403,7 @@ export async function getPopup(): Promise<any> {
     showOncePerSession: data.show_once_per_session,
     startTime: data.start_time || '09:30',
     endTime: data.end_time || '12:30',
-    activeDays: data.active_days ? JSON.parse(data.active_days) : [6, 0],
+    activeDays,
     adultPrice: data.adult_price || 'R89',
     kidsPrice: data.kids_price || 'R45',
   }

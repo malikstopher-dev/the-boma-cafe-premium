@@ -3,6 +3,8 @@ import { revalidatePath } from 'next/cache';
 import { getCategories, saveCategory, deleteCategory, getMenuItems, saveMenuItem, deleteMenuItem } from '@/lib/cms-supabase';
 import { requireAdminOrKitchen } from '@/lib/auth/requireRole';
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   const authError = await requireAdminOrKitchen(request)
   if (authError) return authError
@@ -12,59 +14,40 @@ export async function GET(request: NextRequest) {
   const errors: Record<string, any> = {};
 
   try {
-    console.log("GET /api/cms/menu — calling getCategories()");
     categories = await getCategories();
-    console.log("GET /api/cms/menu — getCategories() returned, count:", categories?.length);
   } catch (error: any) {
-    console.error("GET /api/cms/menu — categories error");
-    console.error("error.message:", error?.message);
-    console.error("error.code:", error?.code);
-    console.error("error.details:", error?.details);
-    console.error("error.hint:", error?.hint);
-    console.error("error.stack:", error?.stack);
     errors.categories = {
       message: error?.message || String(error),
       code: error?.code || null,
-      details: error?.details || null,
-      hint: error?.hint || null,
     };
   }
 
   try {
-    console.log("GET /api/cms/menu — calling getMenuItems()");
     items = await getMenuItems();
-    console.log("GET /api/cms/menu — getMenuItems() returned, count:", items?.length);
   } catch (error: any) {
-    console.error("GET /api/cms/menu — items error");
-    console.error("error.message:", error?.message);
-    console.error("error.code:", error?.code);
-    console.error("error.details:", error?.details);
-    console.error("error.hint:", error?.hint);
-    console.error("error.stack:", error?.stack);
     errors.items = {
       message: error?.message || String(error),
       code: error?.code || null,
-      details: error?.details || null,
-      hint: error?.hint || null,
     };
   }
 
   if (Object.keys(errors).length > 0) {
-    console.log("GET /api/cms/menu — partial or complete failure, returning errors:", JSON.stringify(errors, null, 2));
+    const hasCategories = categories && categories.length > 0;
+    const hasItems = items && items.length > 0;
+    const status = (hasCategories || hasItems) ? 200 : 500;
     return NextResponse.json(
       {
-        error: "Failed to read menu",
+        error: status === 500 ? 'Failed to read menu' : 'Partial failure reading menu',
         errors,
         categories: categories || [],
         items: items || [],
         categoriesCount: categories?.length || 0,
         itemsCount: items?.length || 0,
       },
-      { status: 200 }
+      { status }
     );
   }
 
-  console.log("GET /api/cms/menu — returning success, categories:", categories.length, "items:", items.length);
   return NextResponse.json({ categories, menuItems: items });
 }
 
@@ -79,6 +62,7 @@ export async function POST(request: NextRequest) {
     if (body.name !== undefined && !body.categoryId) {
       const category = await saveCategory(body);
       revalidatePath('/menu');
+      revalidatePath('/');
       return NextResponse.json({ success: true, data: category });
     }
     
@@ -86,6 +70,7 @@ export async function POST(request: NextRequest) {
     if (body.categoryId !== undefined) {
       const item = await saveMenuItem(body);
       revalidatePath('/menu');
+      revalidatePath('/');
       return NextResponse.json({ success: true, data: item });
     }
     
@@ -107,6 +92,7 @@ export async function PUT(request: NextRequest) {
     if ((body.id && body.name !== undefined) && !body.categoryId) {
       const category = await saveCategory(body);
       revalidatePath('/menu');
+      revalidatePath('/');
       return NextResponse.json({ success: true, data: category });
     }
     
@@ -114,6 +100,7 @@ export async function PUT(request: NextRequest) {
     if (body.categoryId !== undefined) {
       const item = await saveMenuItem(body);
       revalidatePath('/menu');
+      revalidatePath('/');
       return NextResponse.json({ success: true, data: item });
     }
     
@@ -136,12 +123,14 @@ export async function DELETE(request: NextRequest) {
     if (id) {
       await deleteCategory(id);
       revalidatePath('/menu');
+      revalidatePath('/');
       return NextResponse.json({ success: true });
     }
     
     if (itemId) {
       await deleteMenuItem(itemId);
       revalidatePath('/menu');
+      revalidatePath('/');
       return NextResponse.json({ success: true });
     }
     
