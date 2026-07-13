@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminClient } from '@/lib/supabase'
-import { requireAdminOrKitchenOrBar, requireAdmin, getRequestRole } from '@/lib/auth/requireRole'
+import { requireAuthenticated, requireAdmin, getRequestRole } from '@/lib/auth/requireRole'
 import { canTransition, requiresPaymentConfirmation, paymentRequiredForTransition } from '@/lib/order-state-machine'
 import { checkRateLimit, checkRateLimitByWaiter } from '@/lib/rate-limit'
 import { validateOrder, sanitizeOrderInput } from '@/lib/pos/validateOrder'
@@ -20,7 +20,7 @@ const ALLOWED_PATCH_FIELDS = new Set([
 ])
 
 export async function GET(request: NextRequest) {
-  const authError = await requireAdminOrKitchenOrBar(request)
+  const authError = await requireAuthenticated(request)
   if (authError) return authError
 
   const { searchParams } = new URL(request.url)

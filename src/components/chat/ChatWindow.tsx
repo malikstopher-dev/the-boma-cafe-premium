@@ -29,6 +29,7 @@ export default function ChatWindow({ conversationId, currentUserId, currentUserN
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Load messages
@@ -59,9 +60,26 @@ export default function ChatWindow({ conversationId, currentUserId, currentUserN
     }).catch(() => {})
   }, [conversationId, currentUserId])
 
-  // Realtime subscription
+  // Realtime subscription with polling fallback
   useEffect(() => {
     const supabase = createBrowserClient()
+    let pollInterval: ReturnType<typeof setInterval> | null = null
+
+    const loadMessages = async () => {
+      try {
+        const res = await fetch(`/api/staff/messages?conversation_id=${conversationId}&limit=100`)
+        if (res.ok) {
+          const data = await res.json()
+          setMessages(prev => {
+            const existingIds = new Set(prev.map(m => m.id))
+            const newMsgs = data.filter((m: ChatMessage) => !existingIds.has(m.id))
+            if (newMsgs.length === 0) return prev
+            return [...prev, ...newMsgs]
+          })
+        }
+      } catch { /* ignore */ }
+    }
+
     const channel = supabase
       .channel(`chat-${conversationId}`)
       .on('postgres_changes', {
@@ -71,11 +89,22 @@ export default function ChatWindow({ conversationId, currentUserId, currentUserN
         filter: `conversation_id=eq.${conversationId}`,
       }, (payload) => {
         const newMsg = payload.new as ChatMessage
-        setMessages(prev => [...prev, newMsg])
+        setMessages(prev => {
+          if (prev.some(m => m.id === newMsg.id)) return prev
+          return [...prev, newMsg]
+        })
       })
-      .subscribe()
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          // Fallback to polling if Realtime fails
+          pollInterval = setInterval(loadMessages, 3000)
+        }
+      })
 
-    return () => { supabase.removeChannel(channel) }
+    return () => {
+      if (channel) supabase.removeChannel(channel)
+      if (pollInterval) clearInterval(pollInterval)
+    }
   }, [conversationId])
 
   // Auto-scroll to bottom
@@ -97,7 +126,16 @@ export default function ChatWindow({ conversationId, currentUserId, currentUserN
           message_type: 'text',
         }),
       })
-      if (!res.ok) console.error('Failed to send message')
+      if (res.ok) {
+        const msg = await res.json()
+        // Optimistic: add to local state immediately
+        setMessages(prev => {
+          if (prev.some(m => m.id === msg.id)) return prev
+          return [...prev, msg]
+        })
+      } else {
+        console.error('Failed to send message')
+      }
     } catch (err) {
       console.error('Failed to send message:', err)
     } finally {
@@ -108,10 +146,10 @@ export default function ChatWindow({ conversationId, currentUserId, currentUserN
   // Upload voice and send
   const handleSendVoice = useCallback(async (blob: Blob, duration: number) => {
     setSending(true)
+    setError(null)
     try {
       // Upload voice file to Supabase Storage
       const fileName = `voice-${Date.now()}.webm`
-      const filePath = `voice-notes/${conversationId}/${fileName}`
 
       const uploadRes = await fetch('/api/staff/voice-upload', {
         method: 'POST',
@@ -124,21 +162,27 @@ export default function ChatWindow({ conversationId, currentUserId, currentUserN
       })
 
       if (!uploadRes.ok) {
-        console.error('Failed to get upload URL')
+        const errData = await uploadRes.json().catch(() => ({}))
+        setError(errData.error || 'Failed to upload voice note')
         return
       }
 
       const { upload_url, public_url } = await uploadRes.json()
 
       // Upload the actual file
-      await fetch(upload_url, {
+      const fileUploadRes = await fetch(upload_url, {
         method: 'PUT',
         headers: { 'Content-Type': 'audio/webm' },
         body: blob,
       })
 
+      if (!fileUploadRes.ok) {
+        setError('Failed to upload voice file')
+        return
+      }
+
       // Send message with voice URL
-      await fetch('/api/staff/messages', {
+      const msgRes = await fetch('/api/staff/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -149,8 +193,20 @@ export default function ChatWindow({ conversationId, currentUserId, currentUserN
           voice_duration: duration,
         }),
       })
+
+      if (msgRes.ok) {
+        const msg = await msgRes.json()
+        setMessages(prev => {
+          if (prev.some(m => m.id === msg.id)) return prev
+          return [...prev, msg]
+        })
+      } else {
+        const errData = await msgRes.json().catch(() => ({}))
+        setError(errData.error || 'Failed to send voice message')
+      }
     } catch (err) {
       console.error('Failed to send voice:', err)
+      setError('Voice upload failed — check connection')
     } finally {
       setSending(false)
     }
@@ -181,6 +237,18 @@ export default function ChatWindow({ conversationId, currentUserId, currentUserN
           </div>
         </div>
       </div>
+
+      {/* Error banner */}
+      {error && (
+        <div onClick={() => setError(null)} style={{
+          padding: '6px 16px', background: 'rgba(239,68,68,0.12)',
+          borderBottom: '1px solid rgba(239,68,68,0.25)',
+          color: '#fca5a5', fontSize: 13, textAlign: 'center',
+          cursor: 'pointer', flexShrink: 0,
+        }}>
+          {error} (tap to dismiss)
+        </div>
+      )}
 
       {/* Messages */}
       <div style={{
