@@ -13,7 +13,7 @@ export default function BackButton() {
         padding: '0.4rem 0.75rem', borderRadius: '8px',
         border: '1px solid var(--beige-dark)', background: 'var(--white)',
         color: 'var(--text-light)', fontSize: '0.85rem', fontWeight: 500,
-        cursor: 'pointer', marginBottom: '1rem',
+        cursor: 'pointer',
         transition: 'all 0.15s',
       }}
       onMouseEnter={e => { (e.target as HTMLButtonElement).style.borderColor = 'var(--warm)'; (e.target as HTMLButtonElement).style.color = 'var(--warm)' }}

@@ -666,15 +666,21 @@ export default function OrdersPOS() {
 
   return (
     <>
-    <BackButton />
     <div style={{
-      height: '100vh',
+      position: 'fixed', top: 12, left: 12, zIndex: 100,
+    }}>
+      <BackButton />
+    </div>
+    <div style={{
+      height: '100dvh',
+      paddingTop: 60,
       display: 'flex',
       flexDirection: 'column',
       background: '#0f0f1a',
       color: '#fff',
       fontFamily: "'Inter', -apple-system, sans-serif",
       overflow: 'hidden',
+      boxSizing: 'border-box',
     }}>
       {(connectionError || authExpired) && (
         <div style={{ padding: '0.5rem 1.5rem', background: 'rgba(239,68,68,0.15)', borderBottom: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5', fontSize: '0.85rem', textAlign: 'center', flexShrink: 0 }}>
