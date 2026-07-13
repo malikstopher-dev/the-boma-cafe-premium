@@ -32,6 +32,7 @@ export default function CartButton() {
     notes: '',
     tableNumber: '',
     deliveryAddress: '',
+    waiterName: '',
   })
   const [orderRef, setOrderRef] = useState('')
   const [pendingSync, setPendingSync] = useState(0)
@@ -129,6 +130,7 @@ export default function CartButton() {
     const cOrderType = orderType
     const cTableNumber = customerInfo?.tableNumber?.trim() ?? ''
     const cDeliveryAddress = customerInfo?.deliveryAddress?.trim() ?? ''
+    const cWaiterName = customerInfo?.waiterName?.trim() ?? ''
     const cRequestedTime = customerInfo?.requestedTime || 'ASAP'
 
     const payload = {
@@ -139,6 +141,7 @@ export default function CartButton() {
       idempotency_key: idempotencyKey,
       items: itemsPayload,
       ...(cOrderType === 'dine-in' && cTableNumber ? { table_number: cTableNumber } : {}),
+      ...(cOrderType === 'dine-in' && cWaiterName ? { waiter_name: cWaiterName } : {}),
       ...(cOrderType === 'delivery' && cDeliveryAddress ? { delivery_address: cDeliveryAddress } : {}),
     }
 
@@ -173,7 +176,7 @@ export default function CartButton() {
     setOrderRef('')
     setOrderError('')
     setFieldErrors({})
-    setCustomerInfo({ name: '', phone: '', requestedTime: '', notes: '', tableNumber: '', deliveryAddress: '' })
+    setCustomerInfo({ name: '', phone: '', requestedTime: '', notes: '', tableNumber: '', deliveryAddress: '', waiterName: '' })
   }, [clearCart, closeCart])
 
   const addItem = cartCtx?.addItem ?? (() => {})
@@ -248,7 +251,7 @@ export default function CartButton() {
       window.open(url, '_blank')
 
       clearCart()
-      setCustomerInfo({ name: '', phone: '', requestedTime: '', notes: '', tableNumber: '', deliveryAddress: '' })
+      setCustomerInfo({ name: '', phone: '', requestedTime: '', notes: '', tableNumber: '', deliveryAddress: '', waiterName: '' })
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to save order'
       setOrderError(msg)
@@ -271,7 +274,7 @@ export default function CartButton() {
       setOrderRef(ref)
 
       clearCart()
-      setCustomerInfo({ name: '', phone: '', requestedTime: '', notes: '', tableNumber: '', deliveryAddress: '' })
+      setCustomerInfo({ name: '', phone: '', requestedTime: '', notes: '', tableNumber: '', deliveryAddress: '', waiterName: '' })
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to save order'
       setOrderError(msg)
@@ -457,21 +460,21 @@ export default function CartButton() {
                     <div className={styles.toggleRow}>
                       <button
                         type="button"
-                        onClick={() => setOrderType('pickup')}
+                        onClick={() => { setOrderType('pickup'); setOrderError(''); setFieldErrors({}) }}
                         className={`${styles.toggleBtn} ${orderType === 'pickup' ? styles.toggleBtnActive : ''}`}
                       >
                         🏪 Pickup
                       </button>
                       <button
                         type="button"
-                        onClick={() => setOrderType('delivery')}
+                        onClick={() => { setOrderType('delivery'); setOrderError(''); setFieldErrors({}) }}
                         className={`${styles.toggleBtn} ${orderType === 'delivery' ? styles.toggleBtnActive : ''}`}
                       >
                         🚚 Delivery
                       </button>
                       <button
                         type="button"
-                        onClick={() => setOrderType('dine-in')}
+                        onClick={() => { setOrderType('dine-in'); setOrderError(''); setFieldErrors({}) }}
                         className={`${styles.toggleBtn} ${orderType === 'dine-in' ? styles.toggleBtnActive : ''}`}
                       >
                         🍽️ Dine-in
@@ -493,19 +496,32 @@ export default function CartButton() {
                       </div>
                     )}
                     {orderType === 'dine-in' && (
-                      <div>
-                        <input
-                          type="text"
-                          placeholder="Table number *"
-                          value={customerInfo?.tableNumber ?? ''}
-                          onChange={e => {
-                            setCustomerInfo(prev => ({ ...prev, tableNumber: e.target.value }))
-                            if (fieldErrors.tableNumber) setFieldErrors(prev => ({ ...prev, tableNumber: undefined }))
-                          }}
-                          className={`${styles.input} ${fieldErrors.tableNumber ? styles.inputError : ''}`}
-                        />
-                        {fieldErrors.tableNumber && <span className={styles.fieldError}>{fieldErrors.tableNumber}</span>}
-                      </div>
+                      <>
+                        <div>
+                          <input
+                            type="text"
+                            placeholder="Table number *"
+                            value={customerInfo?.tableNumber ?? ''}
+                            onChange={e => {
+                              setCustomerInfo(prev => ({ ...prev, tableNumber: e.target.value }))
+                              if (fieldErrors.tableNumber) setFieldErrors(prev => ({ ...prev, tableNumber: undefined }))
+                            }}
+                            className={`${styles.input} ${fieldErrors.tableNumber ? styles.inputError : ''}`}
+                          />
+                          {fieldErrors.tableNumber && <span className={styles.fieldError}>{fieldErrors.tableNumber}</span>}
+                        </div>
+                        <div>
+                          <input
+                            type="text"
+                            placeholder="Waiter name (optional)"
+                            value={customerInfo?.waiterName ?? ''}
+                            onChange={e => {
+                              setCustomerInfo(prev => ({ ...prev, waiterName: e.target.value }))
+                            }}
+                            className={styles.input}
+                          />
+                        </div>
+                      </>
                     )}
                     <input
                       type="text"

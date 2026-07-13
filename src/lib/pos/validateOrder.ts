@@ -76,8 +76,9 @@ export function validateOrder(input: unknown): ValidationResult {
     if (!body.table_number || typeof body.table_number !== 'string' || !body.table_number.trim()) {
       errors.push({ field: 'table_number', message: 'Table number is required for dine-in orders' })
     }
-    if (!body.waiter_name || typeof body.waiter_name !== 'string' || !body.waiter_name.trim()) {
-      errors.push({ field: 'waiter_name', message: 'Waiter name is required for dine-in orders' })
+    // waiter_name only required when the order comes from the waiter POS
+    if (body.source === 'waiter' && (!body.waiter_name || typeof body.waiter_name !== 'string' || !body.waiter_name.trim())) {
+      errors.push({ field: 'waiter_name', message: 'Waiter name is required for waiter orders' })
     }
   }
 

@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import dynamic from 'next/dynamic';
 import Sidebar, { BottomNav } from '@/components/admin/Sidebar';
 import { ToastProvider } from '@/components/admin/design-system';
+import { useIncomingMessageNotifications, MessageToastContainer, type IncomingToast } from '@/components/chat/MessageNotifications';
 
 const ConnectionStatus = dynamic(() => import('@/components/ui/ConnectionStatus'), { ssr: false });
 
@@ -17,6 +18,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [toasts, setToasts] = useState<IncomingToast[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string>('');
+
+  // Incoming message notifications (sound + popup toast)
+  const handleNewMessage = useCallback((toast: IncomingToast) => {
+    setToasts(prev => [toast, ...prev].slice(0, 3))
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== toast.id))
+    }, 5000)
+  }, [])
+
+  useIncomingMessageNotifications({
+    currentUserId,
+    soundEnabled: true,
+    onNewMessage: handleNewMessage,
+  })
+
+  const dismissToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id))
+  }, [])
+
+  const handleToastClick = useCallback((conversationId: string) => {
+    router.push(`/admin/messages?conv=${conversationId}`)
+  }, [router])
 
   // Auth redirect
   useEffect(() => {
@@ -74,7 +99,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <ToastProvider>
         <div style={{ minHeight: '100vh', background: '#0F1115', paddingTop: 60 }}>
           {children}
-          <ConnectionStatus />
+        <ConnectionStatus />
+        <MessageToastContainer toasts={toasts} onDismiss={dismissToast} onClick={handleToastClick} />
+          <MessageToastContainer toasts={toasts} onDismiss={dismissToast} onClick={handleToastClick} />
 
           {/* Floating nav overlay for full-width POS pages */}
           <div style={{

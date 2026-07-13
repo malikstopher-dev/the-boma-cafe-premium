@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { createBrowserClient } from '@/lib/supabase'
+import { useIncomingMessageNotifications, MessageToastContainer, type IncomingToast } from '@/components/chat/MessageNotifications'
 
 const FcmRegistration = dynamic(() => import('@/components/staff/FcmRegistration'), { ssr: false })
 
@@ -43,6 +44,8 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
   const [authed, setAuthed] = useState(false)
   const [checking, setChecking] = useState(true)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [currentUserTextId, setCurrentUserTextId] = useState<string>('')
+  const [toasts, setToasts] = useState<IncomingToast[]>([])
 
   useEffect(() => {
     fetch('/api/admin/auth')
@@ -93,6 +96,39 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
     return () => { supabase.removeChannel(channel) }
   }, [authed])
 
+  // Get current user text id for incoming message filter
+  useEffect(() => {
+    if (!authed) return
+    fetch('/api/staff/session').then(r => r.json()).then(data => {
+      if (data.authenticated) {
+        setCurrentUserTextId(data.staff.employee_id || data.staff.id)
+      }
+    }).catch(() => {})
+  }, [authed])
+
+  // Incoming message notifications (sound + popup toast)
+  const handleNewMessage = useCallback((toast: IncomingToast) => {
+    setToasts(prev => [toast, ...prev].slice(0, 3))
+    // Auto-dismiss after 5s
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== toast.id))
+    }, 5000)
+  }, [])
+
+  useIncomingMessageNotifications({
+    currentUserId: currentUserTextId,
+    soundEnabled: true,
+    onNewMessage: handleNewMessage,
+  })
+
+  const dismissToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id))
+  }, [])
+
+  const handleToastClick = useCallback((conversationId: string) => {
+    router.push(`/staff/messages?conv=${conversationId}`)
+  }, [router])
+
   const handleLogout = async () => {
     // Clear local state before redirect
     localStorage.removeItem('boma_waiter_name');
@@ -125,6 +161,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--pos-bg)', color: 'var(--pos-text)', display: 'flex', flexDirection: 'column', fontFamily: 'var(--pos-font)', overflow: 'hidden', maxHeight: '100dvh' }}>
       <FcmRegistration />
+      <MessageToastContainer toasts={toasts} onDismiss={dismissToast} onClick={handleToastClick} />
 
       {/* Top bar */}
       {authed && !isLoginPage && !isInstallPage && (
