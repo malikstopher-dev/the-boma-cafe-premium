@@ -1,14 +1,22 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
 const ADMIN_COOKIE = 'boma_admin_auth'
 const KITCHEN_COOKIE = 'boma_kitchen_auth'
 const WAITER_COOKIE = 'boma_waiter_auth'
 const BAR_COOKIE = 'boma_bar_auth'
+const STAFF_SESSION_COOKIE = 'boma_staff_session'
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD
 const KITCHEN_PASSWORD = process.env.KITCHEN_PASSWORD
 const WAITER_PASSWORD = process.env.WAITER_PASSWORD
 const BAR_PASSWORD = process.env.BAR_PASSWORD
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
+
+const SESSION_DURATION_MS = 8 * 60 * 60 * 1000 // 8 hours
+const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000 // 30 minutes
 
 async function hashSHA256(input: string): Promise<string> {
   const data = new TextEncoder().encode(input)
@@ -37,7 +45,9 @@ async function verifyRole(request: NextRequest): Promise<AuthResult> {
   const kitchenCookie = request.cookies.get(KITCHEN_COOKIE)
   const waiterCookie = request.cookies.get(WAITER_COOKIE)
   const barCookie = request.cookies.get(BAR_COOKIE)
+  const staffSessionCookie = request.cookies.get(STAFF_SESSION_COOKIE)
 
+  // Check password-based cookies first (legacy admin auth)
   if (adminCookie?.value) {
     const expected = await hashSHA256(`admin:${ADMIN_PASSWORD}`)
     if (timingSafeCompare(adminCookie.value, expected)) return { role: 'admin' }
@@ -58,6 +68,39 @@ async function verifyRole(request: NextRequest): Promise<AuthResult> {
     if (timingSafeCompare(waiterCookie.value, expected)) return { role: 'waiter' }
   }
 
+  // Fallback: check PIN-based staff session cookie
+  if (staffSessionCookie?.value && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+    try {
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, { auth: { persistSession: false } })
+      const { data, error } = await supabase
+        .from('staff_sessions')
+        .select('id, staff_id, role, signed_out_at, expires_at, last_active_at')
+        .eq('id', staffSessionCookie.value)
+        .is('signed_out_at', null)
+        .maybeSingle()
+
+      if (!error && data) {
+        const now = new Date()
+        const expiresAt = new Date(data.expires_at)
+        const lastActive = new Date(data.last_active_at)
+
+        // Check hard expiry and inactivity
+        if (now > expiresAt || (now.getTime() - lastActive.getTime()) > INACTIVITY_TIMEOUT_MS) {
+          // Session expired — clear cookie
+          const response = NextResponse.next()
+          response.cookies.delete(STAFF_SESSION_COOKIE)
+          return null
+        }
+
+        // Valid session — return role
+        const role = data.role as 'admin' | 'kitchen' | 'waiter' | 'bar'
+        return { role }
+      }
+    } catch {
+      // Session validation failed — continue to return null
+    }
+  }
+
   return null
 }
 
@@ -68,9 +111,9 @@ function roleScope(role: string): string {
   return 'waiter:orders'
 }
 
-const PROTECTED_API_PREFIXES = ['/api/admin/', '/api/cms/', '/api/waiters/', '/api/gallery/', '/api/upload/', '/api/supabase/']
+const PROTECTED_API_PREFIXES = ['/api/admin/', '/api/cms/', '/api/waiters/', '/api/gallery/', '/api/upload/', '/api/supabase/', '/api/staff/']
 
-const PUBLIC_API_EXCEPTIONS = ['/api/cms/public', '/api/waiters/active', '/api/menu/public', '/api/track-order', '/api/receipt/verify']
+const PUBLIC_API_EXCEPTIONS = ['/api/cms/public', '/api/waiters/active', '/api/menu/public', '/api/track-order', '/api/receipt/verify', '/api/staff/pin-login', '/api/staff/list', '/api/staff/session']
 
 const PUBLIC_SUPABASE_POST_ROUTES = ['/api/supabase/orders', '/api/supabase/contact', '/api/supabase/bookings']
 
@@ -178,5 +221,6 @@ export const config = {
     '/api/gallery/:path*',
     '/api/upload/:path*',
     '/api/supabase/:path*',
+    '/api/staff/:path*',
   ],
 }

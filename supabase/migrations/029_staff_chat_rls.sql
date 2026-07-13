@@ -1,6 +1,7 @@
 -- ============================================================
 -- Migration 029: Staff Chat RLS — Member-Scoped Policies
--- Replaces USING(true) with proper access control
+-- Replaces overly-permissive USING(true) policies from
+-- migrations 001 and 027 with proper access control.
 -- ============================================================
 
 -- Enable RLS on all staff chat tables
@@ -10,16 +11,38 @@ ALTER TABLE staff_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE staff_notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE staff_profiles ENABLE ROW LEVEL SECURITY;
 
--- Drop existing overly-permissive policies
-DROP POLICY IF EXISTS "Allow all for authenticated" ON staff_conversations;
-DROP POLICY IF EXISTS "Allow all for authenticated" ON staff_conversation_members;
-DROP POLICY IF EXISTS "Allow all for authenticated" ON staff_messages;
-DROP POLICY IF EXISTS "Allow all for authenticated" ON staff_notifications;
-DROP POLICY IF EXISTS "Allow all for authenticated" ON staff_profiles;
+-- ============================================================
+-- Drop existing permissive policies from migration 001_staff_system.sql
+-- ============================================================
+
+-- staff_profiles policies (from 001)
+DROP POLICY IF EXISTS "Staff can read all profiles" ON staff_profiles;
+DROP POLICY IF EXISTS "Staff can insert own profile" ON staff_profiles;
+DROP POLICY IF EXISTS "Staff can update own profile" ON staff_profiles;
+
+-- staff_profiles policies (from 027 — same names, idempotent)
+DROP POLICY IF EXISTS "Staff can read all profiles" ON staff_profiles;
+DROP POLICY IF EXISTS "Staff can insert own profile" ON staff_profiles;
+DROP POLICY IF EXISTS "Staff can update own profile" ON staff_profiles;
+
+-- staff_conversations policies (from 001)
+DROP POLICY IF EXISTS "Members can view conversations" ON staff_conversations;
+DROP POLICY IF EXISTS "Members can create conversations" ON staff_conversations;
+
+-- staff_conversation_members policies (from 001)
+DROP POLICY IF EXISTS "Members can view members" ON staff_conversation_members;
+DROP POLICY IF EXISTS "Members can add members" ON staff_conversation_members;
+
+-- staff_messages policies (from 001)
+DROP POLICY IF EXISTS "Members can read messages" ON staff_messages;
+DROP POLICY IF EXISTS "Members can send messages" ON staff_messages;
+
+-- staff_notifications policies (from 001)
+DROP POLICY IF EXISTS "Users can view own notifications" ON staff_notifications;
+DROP POLICY IF EXISTS "Users can update own notifications" ON staff_notifications;
 
 -- ============================================================
 -- staff_profiles: All authenticated staff can read profiles
--- Only own profile can be updated
 -- ============================================================
 CREATE POLICY "staff_profiles_select" ON staff_profiles
   FOR SELECT USING (true);
