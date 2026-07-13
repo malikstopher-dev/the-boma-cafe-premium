@@ -42,6 +42,28 @@ DROP POLICY IF EXISTS "Users can view own notifications" ON staff_notifications;
 DROP POLICY IF EXISTS "Users can update own notifications" ON staff_notifications;
 
 -- ============================================================
+-- Drop new policy names (in case migration was partially applied before)
+-- ============================================================
+
+DROP POLICY IF EXISTS "staff_profiles_select" ON staff_profiles;
+DROP POLICY IF EXISTS "staff_profiles_insert" ON staff_profiles;
+DROP POLICY IF EXISTS "staff_profiles_update" ON staff_profiles;
+
+DROP POLICY IF EXISTS "staff_conversations_select" ON staff_conversations;
+DROP POLICY IF EXISTS "staff_conversations_insert" ON staff_conversations;
+
+DROP POLICY IF EXISTS "staff_conversation_members_select" ON staff_conversation_members;
+DROP POLICY IF EXISTS "staff_conversation_members_insert" ON staff_conversation_members;
+
+DROP POLICY IF EXISTS "staff_messages_select" ON staff_messages;
+DROP POLICY IF EXISTS "staff_messages_insert" ON staff_messages;
+DROP POLICY IF EXISTS "staff_messages_update" ON staff_messages;
+
+DROP POLICY IF EXISTS "staff_notifications_select" ON staff_notifications;
+DROP POLICY IF EXISTS "staff_notifications_insert" ON staff_notifications;
+DROP POLICY IF EXISTS "staff_notifications_update" ON staff_notifications;
+
+-- ============================================================
 -- staff_profiles: All authenticated staff can read profiles
 -- ============================================================
 CREATE POLICY "staff_profiles_select" ON staff_profiles
