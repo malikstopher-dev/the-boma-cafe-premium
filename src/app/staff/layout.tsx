@@ -143,7 +143,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
       )}
 
       {/* Content */}
-      <div style={{ flex: 1, overflow: 'auto', WebkitOverflowScrolling: 'touch' }}>
+      <div style={{ flex: 1, minHeight: 0, overflow: 'auto', WebkitOverflowScrolling: 'touch' }}>
         {children}
       </div>
 

@@ -316,10 +316,10 @@ export default function WaiterPage() {
       )}
 
       {/* Content */}
-      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {/* Tables tab */}
         {tab === 'tables' && (
-          <div style={{ flex: 1, padding: 16, overflowY: 'auto' }}>
+          <div style={{ flex: 1, minHeight: 0, padding: 16, overflowY: 'auto' }}>
             <h2 style={{ fontSize: t.typography.fontSize.xl, fontWeight: t.typography.fontWeight.extrabold, margin: '0 0 12px' }}>Select Table</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
               {Array.from({ length: 20 }, (_, i) => i + 1).map(n => (

@@ -80,7 +80,7 @@ export async function validateSession(sessionToken: string): Promise<StaffSessio
   const { data, error } = await getAdminClient()
     .from('staff_sessions')
     .select('*')
-    .eq('session_token', sessionToken)
+    .eq('id', sessionToken)
     .is('signed_out_at', null)
     .maybeSingle()
 
@@ -106,7 +106,7 @@ export async function validateSession(sessionToken: string): Promise<StaffSessio
   await getAdminClient()
     .from('staff_sessions')
     .update({ last_active_at: now.toISOString() })
-    .eq('session_token', sessionToken)
+    .eq('id', sessionToken)
 
   // Get staff profile for employee_id
   const { data: profile } = await getAdminClient()
@@ -130,7 +130,7 @@ export async function endSession(sessionToken: string, reason: string = 'user_lo
   const { data } = await getAdminClient()
     .from('staff_sessions')
     .select('staff_id')
-    .eq('session_token', sessionToken)
+    .eq('id', sessionToken)
     .maybeSingle()
 
   await getAdminClient()
@@ -139,7 +139,7 @@ export async function endSession(sessionToken: string, reason: string = 'user_lo
       signed_out_at: new Date().toISOString(),
       signed_out_reason: reason,
     })
-    .eq('session_token', sessionToken)
+    .eq('id', sessionToken)
 
   if (data?.staff_id) {
     await getAdminClient()
@@ -152,13 +152,13 @@ export async function endSession(sessionToken: string, reason: string = 'user_lo
 export async function endAllSessionsForStaff(staffId: string, reason: string = 'security'): Promise<void> {
   const { data: sessions } = await getAdminClient()
     .from('staff_sessions')
-    .select('session_token')
+    .select('id')
     .eq('staff_id', staffId)
     .is('signed_out_at', null)
 
   if (sessions) {
     for (const session of sessions) {
-      await endSession(session.session_token, reason)
+      await endSession(session.id, reason)
     }
   }
 }

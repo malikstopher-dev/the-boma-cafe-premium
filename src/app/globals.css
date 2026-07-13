@@ -1037,9 +1037,10 @@ input, textarea, select {
 
 /* Events Section on Homepage - 3 columns to 1 */
 @media (max-width: 768px) {
-  /* Events grid - homepage - 3 columns to 1 */
+  /* Events grid - homepage - 3 columns to 1
+     Scoped to .section to prevent matching unrelated 3-column grids (e.g. PinKeypad) */
   .section > div > div[style*="gridTemplateColumns: repeat(3"],
-  [style*="grid-template-columns: repeat(3, 1fr)"] {
+  .section [style*="grid-template-columns: repeat(3, 1fr)"] {
     grid-template-columns: 1fr !important;
     gap: 1rem !important;
   }
@@ -1063,9 +1064,10 @@ input, textarea, select {
     overflow: visible !important;
   }
   
-  /* Promotions grid - homepage - 2 columns to 1 */
+  /* Promotions grid - homepage - 2 columns to 1
+     Scoped to .section to prevent matching unrelated 2-column grids */
   .section > div > div[style*="gridTemplateColumns: repeat(2"],
-  [style*="grid-template-columns: repeat(2, 1fr)"] {
+  .section [style*="grid-template-columns: repeat(2, 1fr)"] {
     grid-template-columns: 1fr !important;
     gap: 1rem !important;
   }
@@ -1140,9 +1142,10 @@ input, textarea, select {
     max-width: 100% !important;
   }
   
-  /* Promotions page all promotions grid - 2 columns to 1 */
-  [style*="gridTemplateColumns: repeat(2, 1fr)"],
-  [style*="grid-template-columns: repeat(2, 1fr)"] {
+  /* Promotions page all promotions grid - 2 columns to 1
+     Scoped to .section to prevent matching unrelated 2-column grids */
+  .section [style*="gridTemplateColumns: repeat(2, 1fr)"],
+  .section [style*="grid-template-columns: repeat(2, 1fr)"] {
     grid-template-columns: 1fr !important;
     gap: 1rem !important;
   }

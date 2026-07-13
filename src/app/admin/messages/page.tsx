@@ -15,6 +15,7 @@ interface StaffProfile {
 export default function AdminMessagesPage() {
   const [staffProfiles, setStaffProfiles] = useState<Record<string, { name: string; role: string }>>({})
   const [currentUserId, setCurrentUserId] = useState<string>('')
+  const [currentUserTextId, setCurrentUserTextId] = useState<string>('')
   const [currentUserName, setCurrentUserName] = useState<string>('')
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null)
   const [showNewChat, setShowNewChat] = useState(false)
@@ -31,6 +32,7 @@ export default function AdminMessagesPage() {
           const data = await res.json()
           if (data.authenticated) {
             setCurrentUserId(data.staff.id)
+            setCurrentUserTextId(data.staff.employee_id || data.staff.id)
             setCurrentUserName(data.staff.name)
           }
         }
@@ -50,7 +52,7 @@ export default function AdminMessagesPage() {
           const list: StaffProfile[] = []
           for (const s of data.staff || []) {
             profiles[s.id] = { name: s.name, role: s.role }
-            list.push({ id: s.id, user_id: s.id, name: s.name, role: s.role })
+            list.push({ id: s.id, user_id: s.user_id || s.employee_id || s.id, name: s.name, role: s.role })
           }
           setStaffProfiles(profiles)
           setStaffList(list)
@@ -67,7 +69,11 @@ export default function AdminMessagesPage() {
       return
     }
 
-    const memberIds = [currentUserId, ...selectedStaff]
+    // Use user_id (TEXT) for conversation membership, not id (UUID)
+    const selectedStaffUserIds = staffList
+      .filter(s => selectedStaff.includes(s.id))
+      .map(s => s.user_id)
+    const memberIds = [currentUserTextId, ...selectedStaffUserIds]
     try {
       const res = await fetch('/api/staff/conversations', {
         method: 'POST',
@@ -104,56 +110,77 @@ export default function AdminMessagesPage() {
                 color: '#0F766E', fontSize: 13, fontWeight: 600, cursor: 'pointer',
               }}
             >
-              {showNewChat ? '← Back' : '+ New Chat'}
+              {showNewChat ? '← New Chat' : '💬 My Conversations'}
             </button>
           </div>
 
           {showNewChat ? (
-            /* New chat form */
-            <div style={{ flex: 1, overflowY: 'auto', padding: 12 }}>
-              <p style={{ fontSize: 13, color: '#94A3B8', marginBottom: 12 }}>Select staff to chat with:</p>
-              {staffList.filter(s => s.id !== currentUserId).map(staff => (
-                <label key={staff.id} style={{
-                  display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
-                  borderRadius: 8, cursor: 'pointer',
-                  background: selectedStaff.includes(staff.id) ? '#ECFDF5' : 'transparent',
-                  marginBottom: 4,
-                }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedStaff.includes(staff.id)}
-                    onChange={e => {
-                      if (e.target.checked) setSelectedStaff(prev => [...prev, staff.id])
-                      else setSelectedStaff(prev => prev.filter(id => id !== staff.id))
-                    }}
-                  />
-                  <span style={{ fontSize: 14 }}>{staff.name}</span>
-                  <span style={{ fontSize: 11, color: '#94A3B8' }}>{staff.role}</span>
-                </label>
-              ))}
-              <button
-                onClick={handleCreateConversation}
-                disabled={selectedStaff.length === 0}
-                style={{
-                  width: '100%', marginTop: 12, padding: '10px 16px', borderRadius: 8,
-                  border: 'none', background: selectedStaff.length > 0 ? '#0F766E' : '#E5E7EB',
-                  color: selectedStaff.length > 0 ? '#fff' : '#94A3B8',
-                  fontSize: 14, fontWeight: 600, cursor: selectedStaff.length > 0 ? 'pointer' : 'default',
-                }}
-              >
-                Start Chat
-              </button>
-            </div>
-          ) : (
             /* Conversation list */
             <div style={{ flex: 1, overflowY: 'auto' }}>
-              {currentUserId && (
+              {currentUserTextId && (
                 <ConversationList
-                  currentUserId={currentUserId}
+                  currentUserId={currentUserTextId}
                   staffProfiles={staffProfiles}
                   onSelect={setSelectedConversation}
                   selectedId={selectedConversation || undefined}
                 />
+              )}
+            </div>
+          ) : (
+            /* Staff list (default — click to start a conversation) */
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              {staffList.filter(s => s.id !== currentUserId).length === 0 ? (
+                <div style={{ padding: 32, textAlign: 'center', color: '#94A3B8' }}>
+                  <div style={{ fontSize: 32, marginBottom: 8 }}>👥</div>
+                  <p>No staff found</p>
+                </div>
+              ) : (
+                staffList
+                  .filter(s => s.id !== currentUserId)
+                  .map(staff => (
+                    <button
+                      key={staff.id}
+                      onClick={async () => {
+                        // Create or open a 1-on-1 conversation with this staff member
+                        const memberIds = [currentUserTextId, staff.user_id]
+                        try {
+                          const res = await fetch('/api/staff/conversations', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ member_ids: memberIds }),
+                          })
+                          if (res.ok) {
+                            const conv = await res.json()
+                            setSelectedConversation(conv.id)
+                            setShowNewChat(false)
+                          }
+                        } catch {
+                          showError('Failed to create conversation')
+                        }
+                      }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 12,
+                        padding: '12px 16px', border: 'none', background: 'transparent',
+                        borderBottom: '1px solid #F1F3F7', cursor: 'pointer',
+                        textAlign: 'left', width: '100%',
+                      }}
+                    >
+                      <div style={{
+                        width: 40, height: 40, borderRadius: '50%',
+                        background: '#ECFDF5', color: '#0F766E',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 16, fontWeight: 700,
+                      }}>
+                        {staff.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: '#0F172A' }}>
+                          {staff.name}
+                        </div>
+                        <div style={{ fontSize: 12, color: '#94A3B8' }}>{staff.role}</div>
+                      </div>
+                    </button>
+                  ))
               )}
             </div>
           )}
@@ -161,10 +188,10 @@ export default function AdminMessagesPage() {
 
         {/* Right: Chat window */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          {selectedConversation && currentUserId ? (
+          {selectedConversation && currentUserTextId ? (
             <ChatWindow
               conversationId={selectedConversation}
-              currentUserId={currentUserId}
+              currentUserId={currentUserTextId}
               currentUserName={currentUserName}
               staffProfiles={staffProfiles}
               onClose={() => setSelectedConversation(null)}

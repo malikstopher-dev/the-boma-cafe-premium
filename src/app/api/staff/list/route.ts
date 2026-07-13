@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
   let query = getAdminClient()
     .from('staff_profiles')
-    .select('id, employee_id, name, role, pin_hash, on_duty, online, last_seen')
+    .select('id, user_id, employee_id, name, role, pin_hash, on_duty, online, last_seen')
     .order('name')
 
   if (role) {
@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
 
   const staff = (data || []).map(s => ({
     id: s.id,
+    user_id: s.user_id,
     employee_id: s.employee_id,
     name: s.name,
     role: s.role,

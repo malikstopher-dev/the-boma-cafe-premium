@@ -13,6 +13,7 @@ interface StaffProfile {
 export default function StaffMessagesPage() {
   const [staffProfiles, setStaffProfiles] = useState<Record<string, { name: string; role: string }>>({})
   const [currentUserId, setCurrentUserId] = useState<string>('')
+  const [currentUserTextId, setCurrentUserTextId] = useState<string>('')
   const [currentUserName, setCurrentUserName] = useState<string>('')
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null)
   const [showNewChat, setShowNewChat] = useState(false)
@@ -30,6 +31,7 @@ export default function StaffMessagesPage() {
           const data = await res.json()
           if (data.authenticated && data.staff) {
             setCurrentUserId(data.staff.id)
+            setCurrentUserTextId(data.staff.employee_id || data.staff.id)
             setCurrentUserName(data.staff.name)
           }
         }
@@ -50,7 +52,7 @@ export default function StaffMessagesPage() {
           const list: StaffProfile[] = []
           for (const s of data.staff || []) {
             profiles[s.id] = { name: s.name, role: s.role }
-            list.push({ id: s.id, user_id: s.id, name: s.name, role: s.role })
+            list.push({ id: s.id, user_id: s.user_id || s.employee_id || s.id, name: s.name, role: s.role })
           }
           setStaffProfiles(profiles)
           setStaffList(list)
@@ -67,7 +69,11 @@ export default function StaffMessagesPage() {
       return
     }
 
-    const memberIds = [currentUserId, ...selectedStaff]
+    // Use user_id (TEXT) for conversation membership
+    const selectedStaffUserIds = staffList
+      .filter(s => selectedStaff.includes(s.id))
+      .map(s => s.user_id)
+    const memberIds = [currentUserTextId, ...selectedStaffUserIds]
     try {
       const res = await fetch('/api/staff/conversations', {
         method: 'POST',
@@ -93,7 +99,7 @@ export default function StaffMessagesPage() {
     )
   }
 
-  if (!currentUserId) {
+  if (!currentUserTextId) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60dvh', color: 'rgba(255,255,255,0.4)', padding: '2rem', textAlign: 'center' }}>
         <div>
@@ -167,9 +173,9 @@ export default function StaffMessagesPage() {
           </div>
         ) : (
           <div style={{ flex: 1, overflowY: 'auto' }}>
-            {currentUserId && (
+            {currentUserTextId && (
               <ConversationList
-                currentUserId={currentUserId}
+                currentUserId={currentUserTextId}
                 staffProfiles={staffProfiles}
                 onSelect={setSelectedConversation}
                 selectedId={selectedConversation || undefined}
@@ -180,7 +186,7 @@ export default function StaffMessagesPage() {
       </div>
 
       {/* Right: Chat window */}
-      {selectedConversation && currentUserId && (
+      {selectedConversation && currentUserTextId && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           <div style={{ padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             <button
@@ -194,7 +200,7 @@ export default function StaffMessagesPage() {
           <div style={{ flex: 1, overflow: 'hidden' }}>
             <ChatWindow
               conversationId={selectedConversation}
-              currentUserId={currentUserId}
+              currentUserId={currentUserTextId}
               currentUserName={currentUserName}
               staffProfiles={staffProfiles}
               onClose={() => setSelectedConversation(null)}
