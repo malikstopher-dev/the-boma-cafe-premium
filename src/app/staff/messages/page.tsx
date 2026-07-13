@@ -50,7 +50,7 @@ export default function StaffMessagesPage() {
     loadUser()
   }, [])
 
-  // Load staff profiles
+  // Load staff profiles + role-based virtual contacts
   useEffect(() => {
     const loadProfiles = async () => {
       try {
@@ -59,8 +59,21 @@ export default function StaffMessagesPage() {
           const data = await res.json()
           const profiles: Record<string, { name: string; role: string }> = {}
           const list: StaffProfile[] = []
+
+          // Add role-based virtual contacts so staff can message admin/kitchen/bar
+          const roleContacts: StaffProfile[] = [
+            { id: 'role-admin-001', user_id: 'ADMIN', name: '🛡️ Admin', role: 'admin' },
+            { id: 'role-kitchen-001', user_id: 'KITCHEN', name: '👨‍🍳 Kitchen', role: 'kitchen' },
+            { id: 'role-bar-001', user_id: 'BAR', name: '🍸 Bar', role: 'bar' },
+            { id: 'role-waiter-001', user_id: 'WAITER', name: '📋 Waiter Station', role: 'waiter' },
+          ]
+          for (const rc of roleContacts) {
+            profiles[rc.user_id] = { name: rc.name, role: rc.role }
+            profiles[rc.id] = { name: rc.name, role: rc.role }
+            list.push(rc)
+          }
+
           for (const s of data.staff || []) {
-            // Key by all possible IDs so ConversationList can look up by any of them
             profiles[s.id] = { name: s.name, role: s.role }
             if (s.user_id && s.user_id !== s.id) profiles[s.user_id] = { name: s.name, role: s.role }
             if (s.employee_id && s.employee_id !== s.id) profiles[s.employee_id] = { name: s.name, role: s.role }

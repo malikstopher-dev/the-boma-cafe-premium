@@ -93,18 +93,21 @@ export default function VoiceRecorder({ onRecordingComplete, onCancel, maxDurati
 
   if (!recording) {
     return (
-      <button
-        onClick={startRecording}
-        style={{
-          width: 48, height: 48, borderRadius: '50%',
-          border: '2px solid #EF4444', background: 'rgba(239,68,68,0.1)',
-          color: '#EF4444', fontSize: 20, cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}
-        title="Record voice message"
-      >
-        🎤
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button
+          onClick={startRecording}
+          style={{
+            width: 48, height: 48, borderRadius: '50%',
+            border: '2px solid #EF4444', background: 'rgba(239,68,68,0.1)',
+            color: '#EF4444', fontSize: 20, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+          title="Record voice message"
+        >
+          🎤
+        </button>
+        <span style={{ fontSize: 13, color: '#94A3B8' }}>Tap to record</span>
+      </div>
     )
   }
 
@@ -138,18 +141,18 @@ export default function VoiceRecorder({ onRecordingComplete, onCancel, maxDurati
       {/* Max duration indicator */}
       <span style={{ fontSize: 11, color: '#94A3B8' }}>/ {formatDuration(maxDuration)}</span>
 
-      {/* Stop button */}
+      {/* Stop/Send button */}
       <button
         onClick={stopRecording}
         style={{
           width: 36, height: 36, borderRadius: '50%',
-          border: 'none', background: '#EF4444', color: '#fff',
+          border: 'none', background: '#10B981', color: '#fff',
           fontSize: 16, cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}
-        title="Stop and send"
+        title="Stop and send voice message"
       >
-        ■
+        ➤
       </button>
 
       {/* Cancel button */}
@@ -161,7 +164,7 @@ export default function VoiceRecorder({ onRecordingComplete, onCancel, maxDurati
           color: '#EF4444', fontSize: 14, cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}
-        title="Cancel"
+        title="Cancel recording"
       >
         ✕
       </button>
