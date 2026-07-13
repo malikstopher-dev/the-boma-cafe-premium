@@ -68,43 +68,60 @@ CREATE TABLE IF NOT EXISTS staff_notifications (
 -- ============================================================
 
 DO $$ BEGIN
-  -- employee_id
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'staff_profiles' AND column_name = 'employee_id') THEN
     ALTER TABLE staff_profiles ADD COLUMN employee_id TEXT UNIQUE;
   END IF;
-  -- pin_hash
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'staff_profiles' AND column_name = 'pin_hash') THEN
     ALTER TABLE staff_profiles ADD COLUMN pin_hash TEXT;
   END IF;
-  -- pin_salt
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'staff_profiles' AND column_name = 'pin_salt') THEN
     ALTER TABLE staff_profiles ADD COLUMN pin_salt TEXT;
   END IF;
-  -- pin_set_at
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'staff_profiles' AND column_name = 'pin_set_at') THEN
     ALTER TABLE staff_profiles ADD COLUMN pin_set_at TIMESTAMPTZ;
   END IF;
-  -- pin_expires_at
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'staff_profiles' AND column_name = 'pin_expires_at') THEN
     ALTER TABLE staff_profiles ADD COLUMN pin_expires_at TIMESTAMPTZ;
   END IF;
-  -- failed_attempts
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'staff_profiles' AND column_name = 'failed_attempts') THEN
     ALTER TABLE staff_profiles ADD COLUMN failed_attempts INTEGER DEFAULT 0;
   END IF;
-  -- locked_until
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'staff_profiles' AND column_name = 'locked_until') THEN
     ALTER TABLE staff_profiles ADD COLUMN locked_until TIMESTAMPTZ;
   END IF;
-  -- last_login_at
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'staff_profiles' AND column_name = 'last_login_at') THEN
     ALTER TABLE staff_profiles ADD COLUMN last_login_at TIMESTAMPTZ;
   END IF;
-  -- device_id
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'staff_profiles' AND column_name = 'device_id') THEN
     ALTER TABLE staff_profiles ADD COLUMN device_id TEXT;
   END IF;
-  -- session_started_at
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'staff_profiles' AND column_name = 'session_started_at') THEN
     ALTER TABLE staff_profiles ADD COLUMN session_started_at TIMESTAMPTZ;
   END IF;
@@ -143,9 +160,15 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'staff_sessions' AND policyname = 'Staff can read all sessions') THEN
     CREATE POLICY "Staff can read all sessions" ON staff_sessions FOR SELECT USING (true);
   END IF;
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'staff_sessions' AND policyname = 'Staff can insert sessions') THEN
     CREATE POLICY "Staff can insert sessions" ON staff_sessions FOR INSERT WITH CHECK (true);
   END IF;
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'staff_sessions' AND policyname = 'Staff can update sessions') THEN
     CREATE POLICY "Staff can update sessions" ON staff_sessions FOR UPDATE USING (true);
   END IF;
@@ -178,9 +201,15 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'shifts' AND policyname = 'Staff can read all shifts') THEN
     CREATE POLICY "Staff can read all shifts" ON shifts FOR SELECT USING (true);
   END IF;
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'shifts' AND policyname = 'Staff can insert shifts') THEN
     CREATE POLICY "Staff can insert shifts" ON shifts FOR INSERT WITH CHECK (true);
   END IF;
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'shifts' AND policyname = 'Staff can update shifts') THEN
     CREATE POLICY "Staff can update shifts" ON shifts FOR UPDATE USING (true);
   END IF;
@@ -216,6 +245,9 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'staff_audit_log' AND policyname = 'Staff can read all audit log') THEN
     CREATE POLICY "Staff can read all audit log" ON staff_audit_log FOR SELECT USING (true);
   END IF;
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'staff_audit_log' AND policyname = 'Staff can insert audit log') THEN
     CREATE POLICY "Staff can insert audit log" ON staff_audit_log FOR INSERT WITH CHECK (true);
   END IF;
@@ -242,6 +274,9 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'manager_approvals' AND policyname = 'Staff can read all manager approvals') THEN
     CREATE POLICY "Staff can read all manager approvals" ON manager_approvals FOR SELECT USING (true);
   END IF;
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'manager_approvals' AND policyname = 'Staff can insert manager approvals') THEN
     CREATE POLICY "Staff can insert manager approvals" ON manager_approvals FOR INSERT WITH CHECK (true);
   END IF;
@@ -255,9 +290,15 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'staff_id') THEN
     ALTER TABLE orders ADD COLUMN staff_id UUID REFERENCES staff_profiles(id);
   END IF;
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'created_by_employee_id') THEN
     ALTER TABLE orders ADD COLUMN created_by_employee_id TEXT;
   END IF;
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'updated_by_employee_id') THEN
     ALTER TABLE orders ADD COLUMN updated_by_employee_id TEXT;
   END IF;
@@ -294,9 +335,15 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'staff_profiles' AND policyname = 'Staff can read all profiles') THEN
     CREATE POLICY "Staff can read all profiles" ON staff_profiles FOR SELECT USING (true);
   END IF;
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'staff_profiles' AND policyname = 'Staff can insert own profile') THEN
     CREATE POLICY "Staff can insert own profile" ON staff_profiles FOR INSERT WITH CHECK (true);
   END IF;
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'staff_profiles' AND policyname = 'Staff can update own profile') THEN
     CREATE POLICY "Staff can update own profile" ON staff_profiles FOR UPDATE USING (true);
   END IF;
@@ -309,6 +356,9 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'staff_conversations' AND policyname = 'Members can view conversations') THEN
     CREATE POLICY "Members can view conversations" ON staff_conversations FOR SELECT USING (true);
   END IF;
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'staff_conversations' AND policyname = 'Members can create conversations') THEN
     CREATE POLICY "Members can create conversations" ON staff_conversations FOR INSERT WITH CHECK (true);
   END IF;
@@ -321,6 +371,9 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'staff_conversation_members' AND policyname = 'Members can view members') THEN
     CREATE POLICY "Members can view members" ON staff_conversation_members FOR SELECT USING (true);
   END IF;
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'staff_conversation_members' AND policyname = 'Members can add members') THEN
     CREATE POLICY "Members can add members" ON staff_conversation_members FOR INSERT WITH CHECK (true);
   END IF;
@@ -333,6 +386,9 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'staff_messages' AND policyname = 'Members can read messages') THEN
     CREATE POLICY "Members can read messages" ON staff_messages FOR SELECT USING (true);
   END IF;
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'staff_messages' AND policyname = 'Members can send messages') THEN
     CREATE POLICY "Members can send messages" ON staff_messages FOR INSERT WITH CHECK (true);
   END IF;
@@ -345,6 +401,9 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'staff_notifications' AND policyname = 'Users can view own notifications') THEN
     CREATE POLICY "Users can view own notifications" ON staff_notifications FOR SELECT USING (true);
   END IF;
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'staff_notifications' AND policyname = 'Users can update own notifications') THEN
     CREATE POLICY "Users can update own notifications" ON staff_notifications FOR UPDATE USING (true);
   END IF;
