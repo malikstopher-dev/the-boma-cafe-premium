@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { usePathname } from 'next/navigation'
 import { useCart } from '@/lib/cart'
 import { formatWhatsAppUrl, generateOrderMessage, BUSINESS_INFO } from '@/lib/whatsappConfig'
 import { enqueueOrder, syncPendingOrders } from '@/lib/offline-queue'
@@ -18,6 +19,7 @@ interface FieldErrors {
 const SUBMISSION_COOLDOWN_MS = 3000
 
 export default function CartButton() {
+  const pathname = usePathname()
   const cartCtx = useCart()
   const [isClient, setIsClient] = useState(false)
   const [isOrderSubmitting, setIsOrderSubmitting] = useState(false)
@@ -279,6 +281,9 @@ export default function CartButton() {
   }
 
   const showOrderSuccess = !!orderRef && items.length === 0
+
+  // Hide on staff/admin/waiter pages (they have their own POS)
+  if (pathname.startsWith('/staff') || pathname.startsWith('/admin') || pathname.startsWith('/waiter')) return null
 
   return (
     <>

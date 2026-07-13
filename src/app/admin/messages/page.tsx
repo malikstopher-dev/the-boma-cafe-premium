@@ -34,6 +34,15 @@ export default function AdminMessagesPage() {
             setCurrentUserId(data.staff.id)
             setCurrentUserTextId(data.staff.employee_id || data.staff.id)
             setCurrentUserName(data.staff.name)
+
+            // Add role-based virtual users to profiles so conversation names resolve
+            const roleProfiles: Record<string, { name: string; role: string }> = {
+              ADMIN: { name: 'Admin', role: 'admin' },
+              KITCHEN: { name: 'Kitchen', role: 'kitchen' },
+              BAR: { name: 'Bar', role: 'bar' },
+              WAITER: { name: 'Waiter', role: 'waiter' },
+            }
+            setStaffProfiles(prev => ({ ...roleProfiles, ...prev }))
           }
         }
       } catch { /* ignore */ }
@@ -51,7 +60,10 @@ export default function AdminMessagesPage() {
           const profiles: Record<string, { name: string; role: string }> = {}
           const list: StaffProfile[] = []
           for (const s of data.staff || []) {
+            // Key by all possible IDs so ConversationList can look up by any of them
             profiles[s.id] = { name: s.name, role: s.role }
+            if (s.user_id && s.user_id !== s.id) profiles[s.user_id] = { name: s.name, role: s.role }
+            if (s.employee_id && s.employee_id !== s.id) profiles[s.employee_id] = { name: s.name, role: s.role }
             list.push({ id: s.id, user_id: s.user_id || s.employee_id || s.id, name: s.name, role: s.role })
           }
           setStaffProfiles(profiles)

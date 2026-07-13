@@ -5,35 +5,60 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateSession, endSession } from '@/lib/staff/session'
 import { logAuthAudit } from '@/lib/staff/audit'
+import { getSession } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
+// Stable virtual IDs for password-based staff (bar/kitchen/admin)
+// These are deterministic so conversations persist across sessions.
+const ROLE_SESSION_MAP: Record<string, { staffId: string; employeeId: string; name: string }> = {
+  admin:   { staffId: 'role-admin-001',   employeeId: 'ADMIN',   name: 'Admin' },
+  kitchen: { staffId: 'role-kitchen-001', employeeId: 'KITCHEN', name: 'Kitchen' },
+  bar:     { staffId: 'role-bar-001',     employeeId: 'BAR',     name: 'Bar' },
+  waiter:  { staffId: 'role-waiter-001',  employeeId: 'WAITER',  name: 'Waiter' },
+}
+
 export async function GET(request: NextRequest) {
+  // 1. Try PIN-based staff session cookie
   const sessionToken = request.cookies.get('boma_staff_session')?.value
 
-  if (!sessionToken) {
-    return NextResponse.json({ authenticated: false })
+  if (sessionToken) {
+    const session = await validateSession(sessionToken)
+    if (session) {
+      return NextResponse.json({
+        authenticated: true,
+        staff: {
+          id: session.staffId,
+          name: session.name,
+          role: session.role,
+          employee_id: session.employeeId,
+        },
+        session: {
+          started_at: session.startedAt,
+          expires_at: session.expiresAt,
+        },
+      })
+    }
   }
 
-  const session = await validateSession(sessionToken)
-
-  if (!session) {
-    return NextResponse.json({ authenticated: false })
+  // 2. Try password-based role cookies (admin/kitchen/bar/waiter)
+  const roleSession = await getSession()
+  if (roleSession) {
+    const mapped = ROLE_SESSION_MAP[roleSession.role]
+    if (mapped) {
+      return NextResponse.json({
+        authenticated: true,
+        staff: {
+          id: mapped.staffId,
+          name: mapped.name,
+          role: roleSession.role,
+          employee_id: mapped.employeeId,
+        },
+      })
+    }
   }
 
-  return NextResponse.json({
-    authenticated: true,
-    staff: {
-      id: session.staffId,
-      name: session.name,
-      role: session.role,
-      employee_id: session.employeeId,
-    },
-    session: {
-      started_at: session.startedAt,
-      expires_at: session.expiresAt,
-    },
-  })
+  return NextResponse.json({ authenticated: false })
 }
 
 export async function POST(request: NextRequest) {

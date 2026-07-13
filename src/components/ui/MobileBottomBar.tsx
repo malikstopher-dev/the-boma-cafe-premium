@@ -2,10 +2,12 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { BUSINESS_INFO } from '@/lib/whatsappConfig';
 import styles from './MobileBottomBar.module.css';
 
 export default function MobileBottomBar() {
+  const pathname = usePathname();
   const [settings, setSettings] = useState<any>(null);
 
   useEffect(() => {
@@ -18,6 +20,9 @@ export default function MobileBottomBar() {
     };
     load();
   }, []);
+
+  // Hide on staff/admin/waiter pages (they have their own nav)
+  if (pathname.startsWith('/staff') || pathname.startsWith('/admin') || pathname.startsWith('/waiter')) return null;
 
   const contact = settings?.contact || {};
   const phone = contact.phone || BUSINESS_INFO.phone;

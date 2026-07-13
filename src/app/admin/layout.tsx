@@ -36,8 +36,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return <>{children}</>;
   }
 
-  // Loading state
-  if (isLoading) {
+  // Loading state (skip for full-width pages — they have their own auth UI)
+  if (isLoading && !FULL_WIDTH_PAGES.includes(pathname)) {
     return (
       <div style={{
         minHeight: '100vh',
@@ -65,7 +65,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   // Not authenticated → render null (redirect handled by useEffect)
-  if (!isAuthenticated) return null;
+  // Bar/Kitchen pages have their own StationDisplay password gate — allow through
+  if (!isAuthenticated && !FULL_WIDTH_PAGES.includes(pathname)) return null;
 
   // Full-width pages (Orders POS, Kitchen, Bar)
   if (FULL_WIDTH_PAGES.includes(pathname)) {
