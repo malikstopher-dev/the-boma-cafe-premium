@@ -55,6 +55,41 @@
 .sectionHeader p { color: var(--muted); font-size: 1.1rem; margin-top: 1.75rem; max-width: 620px; margin-left: auto; margin-right: auto; line-height: 1.7; }
 .sectionCta { text-align: center; margin-top: 3rem; }
 
+/* Glassmorphism card style for featured cards */
+.glassCard {
+  background: rgba(36, 24, 17, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(217, 162, 83, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(217, 162, 83, 0.05);
+}
+
+.glassCard:hover {
+  border-color: var(--gold);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px var(--gold-glow);
+}
+
+/* Gold glow border animation on hover */
+.glassCard::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, transparent 40%, var(--gold) 50%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  z-index: -1;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1px;
+}
+
+.glassCard:hover::before {
+  opacity: 1;
+}
+
 /* ===== PREMIUM SHOWCASE ===== */
 .premiumShowcase {
   padding: 7rem 5%;
@@ -477,8 +512,27 @@
 .reservationBg {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.03) 0%, transparent 60%);
+  background: radial-gradient(ellipse at 50% 0%, rgba(217,162,83,0.04) 0%, transparent 60%);
   pointer-events: none;
+}
+
+.reservationEmberAccent {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 40px;
+  background: linear-gradient(to top, transparent, var(--gold));
+  border-radius: 2px;
+  opacity: 0.3;
+  animation: emberPulse 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes emberPulse {
+  0%, 100% { opacity: 0.15; transform: translateX(-50%) scaleY(0.8); }
+  50% { opacity: 0.35; transform: translateX(-50%) scaleY(1.2); }
 }
 
 .reservationContent { position: relative; z-index: 1; max-width: 750px; margin: 0 auto; }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import OptimizedHero from '@/components/ui/OptimizedHero';
 import styles from './Hero.module.css';
@@ -34,6 +34,47 @@ const slides = [
   }
 ];
 
+function MagneticButton({ children, href, className }: { children: React.ReactNode; href: string; className?: string }) {
+  const ref = useRef<HTMLAnchorElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const isDesktop = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!isDesktop || reduced) return;
+
+    const handleMove = (e: PointerEvent) => {
+      const rect = el.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+      const dist = Math.sqrt(x * x + y * y);
+      const maxDist = Math.max(rect.width, rect.height);
+      const strength = Math.min(dist / maxDist, 1) * 12;
+      el.style.transform = `translate(${x * 0.15}px, ${y * 0.15}px)`;
+    };
+
+    const handleLeave = () => {
+      el.style.transform = 'translate(0, 0)';
+      el.style.transition = 'transform 0.4s cubic-bezier(0.22, 1, 0.36, 1)';
+      setTimeout(() => { el.style.transition = ''; }, 400);
+    };
+
+    el.addEventListener('pointermove', handleMove);
+    el.addEventListener('pointerleave', handleLeave);
+    return () => {
+      el.removeEventListener('pointermove', handleMove);
+      el.removeEventListener('pointerleave', handleLeave);
+    };
+  }, []);
+
+  return (
+    <a ref={ref} href={href} className={className} style={{ willChange: 'transform' }}>
+      {children}
+    </a>
+  );
+}
+
 export default function Hero({ title, subtitle }: HeroProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -62,20 +103,20 @@ export default function Hero({ title, subtitle }: HeroProps) {
       <p className={styles.subtitle}>{slide.subtitle}</p>
 
       {title ? (
-        <h1 className={styles.title}>{title}</h1>
+        <h1 className={`${styles.title} ${styles.goldSheenTitle}`}>{title}</h1>
       ) : (
-        <h1 className={styles.title}>{slide.title}</h1>
+        <h1 className={`${styles.title} ${styles.goldSheenTitle}`}>{slide.title}</h1>
       )}
 
       <p className={styles.tagline}>{slide.tagline}</p>
 
       <div className={styles.cta}>
-        <Link href={slide.ctaLink} className="btn btn-primary">
+        <MagneticButton href={slide.ctaLink} className="btn btn-primary">
           {slide.cta}
-        </Link>
-        <Link href="/menu" className="btn btn-ghost">
+        </MagneticButton>
+        <MagneticButton href="/menu" className="btn btn-ghost">
           View Menu
-        </Link>
+        </MagneticButton>
       </div>
     </div>
   );

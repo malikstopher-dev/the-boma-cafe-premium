@@ -9,11 +9,13 @@ import Hero from '@/components/home/Hero';
 import AnnouncementBar from '@/components/ui/AnnouncementBar';
 import WeekendBuffetPopup from '@/components/ui/WeekendBuffetPopup';
 import FadeInSection from '@/components/ui/FadeInSection';
+import TiltCard from '@/components/ui/TiltCard';
 import UpcomingEventsSection from '@/components/sections/UpcomingEventsSection';
 import AboutSection from '@/components/sections/AboutSection';
 import { getReservationLink, getEventEnquiryLink } from '@/data/businessInfo';
 import { useBookingModal } from '@/lib/booking';
 import WhatsAppIcon from '@/components/icons/WhatsAppIcon';
+import TestimonialsCarousel from '@/components/ui/TestimonialsCarousel';
 import styles from './page.module.css';
 
 // eventSlideshowImages moved to UpcomingEventsSection component
@@ -138,27 +140,28 @@ export default function Home() {
 
         {/* Quick Info Strip */}
         <section style={{
-          background: 'linear-gradient(135deg, var(--dark) 0%, #3D2317 100%)',
-          padding: '1rem 5%',
+          background: 'linear-gradient(135deg, var(--bg) 0%, var(--bg-alt) 100%)',
+          padding: '0.85rem 5%',
           display: 'flex',
           justifyContent: 'center',
           gap: '2.5rem',
           flexWrap: 'wrap',
           alignItems: 'center',
-          color: 'var(--text-on-dark)',
+          color: 'var(--body)',
           fontSize: '0.85rem',
+          borderBottom: '1px solid rgba(217, 162, 83, 0.06)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span>📍</span>
+            <span style={{ color: 'var(--gold)', fontSize: '0.75rem' }}>✦</span>
             <span>127B Wroxham Rd, Paulshof, Sandton</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span>🕐</span>
+            <span style={{ color: 'var(--gold)', fontSize: '0.75rem' }}>✦</span>
             <span>Open Daily: 08:00 &ndash; Late</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span>📞</span>
-            <a href="tel:0715921190" style={{ color: 'var(--warm)', textDecoration: 'none' }}>071 592 1190</a>
+            <span style={{ color: 'var(--gold)', fontSize: '0.75rem' }}>✦</span>
+            <a href="tel:0715921190" style={{ color: 'var(--text)', textDecoration: 'none' }}>071 592 1190</a>
           </div>
           <a
             href="https://wa.me/27715921190?text=Hi%20The%20Boma%20Caf%C3%A9%2C%20I%20would%20like%20to%20book%20a%20table.%0AName%3A%0ADate%3A%0ATime%3A%0ANumber%20of%20guests%3A%0ASpecial%20request%3A"
@@ -170,14 +173,15 @@ export default function Home() {
               gap: '0.4rem',
               background: '#25D366',
               color: '#fff',
-              padding: '0.5rem 1.25rem',
+              padding: '0.45rem 1.1rem',
               borderRadius: 'var(--radius-full)',
               fontWeight: 600,
-              fontSize: '0.85rem',
+              fontSize: '0.8rem',
               textDecoration: 'none',
+              transition: 'all 0.25s ease',
             }}
           >
-            <WhatsAppIcon size={16} ariaLabel="" />
+            <WhatsAppIcon size={14} ariaLabel="" />
             Book via WhatsApp
           </a>
         </section>
@@ -202,22 +206,24 @@ export default function Home() {
             <div className={styles.showcaseGrid}>
               {showcaseCategories.map((category, idx) => (
                 <FadeInSection key={idx} delay={idx * 100} className={styles.showcaseCardWrapper}>
-                  <Link href={category.link} className={styles.showcaseCard}>
-                    <div className={styles.showcaseCardImage}>
-                      <img src={category.image} alt={category.title} width={600} height={450} loading="lazy" decoding="async" />
-                      <div className={styles.showcaseCardOverlay} />
-                      {category.badge && (
-                        <span className={`${styles.showcaseBadge} ${category.badge === 'Chef Pick' ? styles.chefPick : ''}`}>
-                          {category.badge}
-                        </span>
-                      )}
-                    </div>
-                    <div className={styles.showcaseCardContent}>
-                      <h3>{category.title}</h3>
-                      <p>{category.desc}</p>
-                      <span className={styles.showcaseCta}>Explore <span>→</span></span>
-                    </div>
-                  </Link>
+                  <TiltCard maxTilt={6} scale={1.01}>
+                    <Link href={category.link} className={styles.showcaseCard}>
+                      <div className={styles.showcaseCardImage}>
+                        <img src={category.image} alt={category.title} width={600} height={450} loading="lazy" decoding="async" />
+                        <div className={styles.showcaseCardOverlay} />
+                        {category.badge && (
+                          <span className={`${styles.showcaseBadge} ${category.badge === 'Chef Pick' ? styles.chefPick : ''}`}>
+                            {category.badge}
+                          </span>
+                        )}
+                      </div>
+                      <div className={styles.showcaseCardContent}>
+                        <h3>{category.title}</h3>
+                        <p>{category.desc}</p>
+                        <span className={styles.showcaseCta}>Explore <span>→</span></span>
+                      </div>
+                    </Link>
+                  </TiltCard>
                 </FadeInSection>
               ))}
             </div>
@@ -245,20 +251,22 @@ export default function Home() {
                 { name: 'Flame-Grilled Ribs', desc: 'Succulent ribs with our signature BBQ basting', price: 250, image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600&h=400&fit=crop', category: 'Flame-Grilled' }
               ].map((item: any, idx: number) => (
                 <FadeInSection key={idx} delay={idx * 100} className={styles.signatureCardWrapper}>
-                  <Link href="/menu" className={styles.signatureCard}>
-                    <div className={styles.signatureCardImage}>
-                      <img src={item.image} alt={item.name} width={600} height={400} loading="lazy" decoding="async" />
-                      <span className={styles.signatureBadge}>★ Featured</span>
-                    </div>
-                    <div className={styles.signatureCardContent}>
-                      <h4>{item.name}</h4>
-                      <p>{item.desc}</p>
-                      <div className={styles.signatureCardFooter}>
-                        <span className={styles.signaturePrice}>R{item.price}</span>
-                        <span className={styles.signatureLink}>View Menu →</span>
+                  <TiltCard maxTilt={6} scale={1.01}>
+                    <Link href="/menu" className={`${styles.signatureCard} ${styles.glassCard}`}>
+                      <div className={styles.signatureCardImage}>
+                        <img src={item.image} alt={item.name} width={600} height={400} loading="lazy" decoding="async" />
+                        <span className={styles.signatureBadge}>★ Featured</span>
                       </div>
-                    </div>
-                  </Link>
+                      <div className={styles.signatureCardContent}>
+                        <h4>{item.name}</h4>
+                        <p>{item.desc}</p>
+                        <div className={styles.signatureCardFooter}>
+                          <span className={styles.signaturePrice}>R{item.price}</span>
+                          <span className={styles.signatureLink}>View Menu →</span>
+                        </div>
+                      </div>
+                    </Link>
+                  </TiltCard>
                 </FadeInSection>
               ))}
             </div>
@@ -281,17 +289,19 @@ export default function Home() {
             <div className={styles.cocktailsGrid}>
               {signatureCocktails.map((cocktail, idx) => (
                 <FadeInSection key={idx} delay={idx * 100} className={styles.cocktailCardWrapper}>
-                  <div className={styles.cocktailCard}>
-                    <div className={styles.cocktailImageWrapper}>
-                      <img src={cocktail.image} alt={cocktail.name} width={400} height={500} className={styles.cocktailImage} loading="lazy" decoding="async" />
-                      <div className={styles.cocktailOverlay} />
+                  <TiltCard maxTilt={7} scale={1.02}>
+                    <div className={`${styles.cocktailCard} ${styles.glassCard}`}>
+                      <div className={styles.cocktailImageWrapper}>
+                        <img src={cocktail.image} alt={cocktail.name} width={400} height={500} className={styles.cocktailImage} loading="lazy" decoding="async" />
+                        <div className={styles.cocktailOverlay} />
+                      </div>
+                      <div className={styles.cocktailContent}>
+                        <h4>{cocktail.name}</h4>
+                        <p>{cocktail.desc}</p>
+                        <span className={styles.cocktailPrice}>R{cocktail.price}</span>
+                      </div>
                     </div>
-                    <div className={styles.cocktailContent}>
-                      <h4>{cocktail.name}</h4>
-                      <p>{cocktail.desc}</p>
-                      <span className={styles.cocktailPrice}>R{cocktail.price}</span>
-                    </div>
-                  </div>
+                  </TiltCard>
                 </FadeInSection>
               ))}
             </div>
@@ -380,40 +390,23 @@ export default function Home() {
         <section className={styles.testimonialsSection}>
           <div className="container">
             <FadeInSection className={styles.sectionHeader}>
-              <span className="section-badge gold">Guest Reviews</span>
+              <span className="section-badge">Guest Reviews</span>
               <h2>What Our Guests Say</h2>
               <p>Stories from our cherished patrons</p>
             </FadeInSection>
-            
-            <div className={styles.testimonialsGrid}>
-              {testimonials.map((testimonial: any, idx: number) => (
-                <FadeInSection key={idx} delay={idx * 100} className={styles.testimonialCardWrapper}>
-                  <div className={styles.testimonialCard}>
-                    <div className={styles.testimonialQuote}>"</div>
-                    <StarRating rating={testimonial.rating} />
-                    <p className={styles.testimonialText}>{testimonial.text}</p>
-                    <div className={styles.testimonialAuthor}>
-                      <div className={styles.testimonialAvatar}>{testimonial.author.charAt(0)}</div>
-                      <div>
-                        <strong>{testimonial.author}</strong>
-                        <span>{testimonial.location}</span>
-                      </div>
-                    </div>
-                  </div>
-                </FadeInSection>
-              ))}
-            </div>
+            <TestimonialsCarousel testimonials={testimonials} />
           </div>
         </section>
 
         {/* Premium Reservation CTA Section */}
         <section className={styles.reservationSection}>
           <div className={styles.reservationBg} />
+          <div className={styles.reservationEmberAccent} aria-hidden="true" />
           <div className="container">
             <FadeInSection className={styles.reservationContent}>
-              <span className="section-badge gold">Reservations</span>
+              <span className="section-badge">Reservations</span>
               <h2>Reserve Your Table</h2>
-              <p>Plan your perfect Boma experience. Whether it's a romantic dinner, family gathering, or celebration with friends, we're ready to welcome you.</p>
+              <p>Plan your perfect Boma experience. Whether it&apos;s a romantic dinner, family gathering, or celebration with friends, we&apos;re ready to welcome you.</p>
               <div className={styles.reservationButtons}>
                 <a
                   href="https://wa.me/27715921190?text=Hi%20The%20Boma%20Caf%C3%A9%2C%20I%20would%20like%20to%20book%20a%20table.%0AName%3A%0ADate%3A%0ATime%3A%0ANumber%20of%20guests%3A%0ASpecial%20request%3A"
@@ -450,112 +443,108 @@ export default function Home() {
           </div>
         </section>
 
-        {/* About the Founder - Premium Compact Section */}
+        {/* About the Founder */}
         <section style={{
-          background: 'linear-gradient(180deg, var(--cream) 0%, var(--beige) 100%)',
+          background: 'linear-gradient(180deg, var(--bg-alt) 0%, var(--bg) 100%)',
           padding: 'var(--space-3xl) 5%',
-          position: 'relative'
+          position: 'relative',
+          overflow: 'hidden',
         }}>
           <div style={{ maxWidth: '900px', margin: '0 auto' }}>
             <div className="founder-card" style={{
-              background: 'var(--white)',
-              borderRadius: '20px',
+              background: 'var(--bg-card)',
+              borderRadius: 'var(--radius-xl)',
               padding: '2.5rem',
-              boxShadow: '0 4px 20px rgba(26, 15, 10, 0.08)',
+              boxShadow: 'var(--shadow-lg), 0 0 40px var(--gold-glow)',
+              border: '1px solid rgba(217, 162, 83, 0.08)',
               display: 'grid',
               gridTemplateColumns: 'auto 1fr',
               gap: '2rem',
-              alignItems: 'center'
+              alignItems: 'center',
             }}>
-              {/* Founder Image */}
-              <div className="founder-image" style={{
+              <div style={{
                 width: '140px',
                 height: '140px',
                 borderRadius: '50%',
                 overflow: 'hidden',
-                border: '4px solid var(--primary)',
-                boxShadow: '0 4px 16px rgba(194, 106, 45, 0.25)',
-                flexShrink: 0
+                border: '3px solid var(--gold)',
+                boxShadow: '0 0 20px var(--gold-glow)',
+                flexShrink: 0,
+                position: 'relative',
               }}>
                 <Image
                   src="/gallery/people/mahendra.jpg"
                   alt="Mahendra Singh, Founder of The Boma Café Sandton"
                   width={140}
                   height={140}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover'
-                  }}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               </div>
-              
-              {/* Founder Content */}
               <div>
                 <div style={{
                   display: 'inline-block',
-                  background: 'var(--primary)',
-                  color: 'var(--white)',
+                  background: 'linear-gradient(135deg, var(--gold), var(--gold-dark))',
+                  color: 'var(--bg)',
                   padding: '0.3rem 0.85rem',
                   borderRadius: 'var(--radius-full)',
                   fontSize: '0.7rem',
-                  fontWeight: 600,
+                  fontWeight: 700,
                   marginBottom: '1rem',
-                  letterSpacing: '0.5px',
-                  textTransform: 'uppercase'
+                  letterSpacing: '1px',
+                  textTransform: 'uppercase',
                 }}>
                   About the Founder
                 </div>
                 <h3 style={{
                   fontSize: 'clamp(1.5rem, 2.5vw, 1.75rem)',
-                  color: 'var(--dark-brown)',
+                  color: 'var(--heading)',
                   marginBottom: '0.75rem',
                   fontFamily: 'var(--font-display)',
-                  fontWeight: 600
+                  fontWeight: 600,
                 }}>
                   Mahendra Singh
                 </h3>
                 <p style={{
-                  color: 'var(--text)',
+                  color: 'var(--body)',
                   fontSize: '0.95rem',
                   lineHeight: 1.7,
-                  marginBottom: '1rem'
+                  marginBottom: '1rem',
                 }}>
                   Mahendra Singh is the visionary behind The Boma Café Sandton, bringing a refined approach to hospitality shaped by years of experience in retail and restaurant operations. Having built his foundation with Pick n Pay and later creating ventures such as 101 on Fraser, he combines business insight with a passion for exceptional guest experiences.
                 </p>
                 <p style={{
-                  color: 'var(--text)',
-                  fontSize: '0.95rem',
+                  color: 'var(--gold)',
+                  fontSize: '1rem',
                   lineHeight: 1.7,
                   marginBottom: '1rem',
-                  fontStyle: 'italic'
+                  fontStyle: 'italic',
+                  fontFamily: 'var(--font-display)',
                 }}>
-                  "A place where food, atmosphere, and people come together."
+                  &ldquo;A place where food, atmosphere, and people come together.&rdquo;
                 </p>
-                
-                {/* Credibility Badges */}
                 <div style={{
                   display: 'flex',
                   gap: '0.75rem',
-                  flexWrap: 'wrap'
+                  flexWrap: 'wrap',
                 }}>
                   {[
-                    { icon: '🏪', label: 'Pick n Pay Experience' },
-                    { icon: '✨', label: 'Creator of 101 on Fraser' },
-                    { icon: '👔', label: 'Hospitality Leadership' }
+                    { label: 'Pick n Pay Experience' },
+                    { label: 'Creator of 101 on Fraser' },
+                    { label: 'Hospitality Leadership' },
                   ].map((badge, i) => (
                     <div key={i} style={{
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.35rem',
-                      background: 'var(--cream)',
-                      padding: '0.35rem 0.75rem',
+                      background: 'var(--bg-surface)',
+                      padding: '0.35rem 0.85rem',
                       borderRadius: 'var(--radius-full)',
                       fontSize: '0.75rem',
-                      color: 'var(--text)',
-                      fontWeight: 500
+                      color: 'var(--muted)',
+                      fontWeight: 500,
+                      border: '1px solid rgba(255,255,255,0.05)',
                     }}>
-                      <span>{badge.icon}</span>
+                      <span style={{ color: 'var(--gold)', fontSize: '0.65rem' }}>✦</span>
                       <span>{badge.label}</span>
                     </div>
                   ))}

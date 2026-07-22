@@ -1,7 +1,7 @@
 import "./globals.css";
 import "@/components/pos/pos-tokens.css";
 import { cache } from "react";
-import { Playfair_Display, Poppins } from "next/font/google";
+import { Fraunces, Inter } from "next/font/google";
 import { AuthProvider } from "@/lib/auth-context";
 import { CartProvider } from "@/lib/cart";
 import { BookingProvider } from "@/lib/booking";
@@ -13,15 +13,15 @@ import ScrollArrows from "@/components/ui/ScrollArrows";
 import FontAwesomeLoader from "@/components/ui/FontAwesomeLoader";
 import { getAllSettings } from "@/lib/cms-supabase";
 
-const playfair = Playfair_Display({
+const fraunces = Fraunces({
   subsets: ["latin"],
-  weight: ["400", "600", "700"],
+  weight: ["300", "400", "600", "700"],
   variable: "--font-display",
 });
 
-const poppins = Poppins({
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["300", "400", "500", "600"],
   variable: "--font-body",
 });
 
@@ -180,7 +180,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           }}
         />
       </head>
-      <body className={`min-h-screen ${playfair.variable} ${poppins.variable}`}>
+      <body className={`min-h-screen ${fraunces.variable} ${inter.variable}`}>
         <FontAwesomeLoader />
         <AuthProvider>
           <CartProvider>

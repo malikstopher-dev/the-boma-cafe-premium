@@ -7,58 +7,64 @@ html {
 }
 
 :root {
-  /* Backgrounds — dark theme */
-  --bg: #0A0A0A;
-  --bg-alt: #0D0D0D;
-  --bg-card: #111111;
-  --bg-surface: #161616;
+  /* Backgrounds — deepened espresso base */
+  --bg: #150E0A;
+  --bg-alt: #1A120E;
+  --bg-card: #241811;
+  --bg-surface: #2C1E1A;
   
   /* Text */
-  --text: #F0EDE8;
-  --heading: #F0EDE8;
-  --body: #B0B0B0;
-  --muted: #777777;
+  --text: #F3E9DD;
+  --heading: #F3E9DD;
+  --body: #C9B8A3;
+  --muted: #8A7A6A;
   
-  /* Accent — gold/amber */
-  --gold: #D4AF37;
-  --gold-light: #E8C84A;
-  --gold-dark: #B8962E;
+  /* Accent — ember gold */
+  --gold: #D9A253;
+  --gold-light: #E8B86D;
+  --gold-dark: #B9762E;
+  --gold-glow: rgba(217, 162, 83, 0.15);
+  --gold-glow-strong: rgba(217, 162, 83, 0.3);
   --red: #C0392B;
+  
+  /* Greenery — secondary accent, used sparingly */
+  --green: #5C7A46;
+  --green-light: #7A9E5E;
   
   /* Keep existing legacy vars so components don't break */
   --primary: #C26A2D;
   --primary-hover: #D48B45;
   --primary-soft: #D9A066;
-  --dark: #0A0A0A;
+  --dark: #150E0A;
   --dark-brown: #2C1810;
-  --text-dark: #F5EDE3;
-  --text-muted: #888888;
-  --text-on-dark: #F5EDE3;
-  --text-gold: #D4AF37;
+  --text-dark: #F3E9DD;
+  --text-muted: #8A7A6A;
+  --text-on-dark: #F3E9DD;
+  --text-gold: #D9A253;
   --overlay-dark: rgba(0, 0, 0, 0.65);
-  --overlay-soft: rgba(0, 0, 0, 0.4);
-  --overlay-gradient: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.6) 100%);
+  --overlay-soft: rgba(0, 0, 0, 0.45);
+  --overlay-gradient: linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.7) 100%);
   
-  --white: #FFFFFF;
-  --light: #0D0D0D;
-  --cream: #111111;
-  --cream-dark: #1A1A1A;
-  --text-light: #999999;
+  --white: #F3E9DD;
+  --light: #1A120E;
+  --cream: #241811;
+  --cream-dark: #2C1E1A;
+  --text-light: #8A7A6A;
   --gold-light-2: #E5D4A1;
   --fire-orange: #E8553D;
-  --warm: #D4AF37;
-  --warm-light: #E8C84A;
+  --warm: #D9A253;
+  --warm-light: #E8B86D;
   --accent: #C26A2D;
   --secondary: #A0522D;
   --primary-dark: #A65A1F;
   --dark-brown-light: #3D2317;
-  --brown-primary: #F5EDE3;
-  --brown-secondary: #999999;
-  --brown-heading: #F5EDE3;
-  --beige: #0D0D0D;
-  --beige-light: #111111;
-  --beige-dark: #1A1A1A;
-  --footer-beige: #111111;
+  --brown-primary: #F3E9DD;
+  --brown-secondary: #8A7A6A;
+  --brown-heading: #F3E9DD;
+  --beige: #1A120E;
+  --beige-light: #241811;
+  --beige-dark: #2C1E1A;
+  --footer-beige: #1A120E;
   
   /* Spacing */
   --space-xs: 0.25rem;
@@ -71,12 +77,12 @@ html {
   --space-4xl: 6rem;
   
   /* Shadows */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
-  --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.5);
-  --shadow-gold-sm: 0 2px 8px rgba(212, 175, 55, 0.1);
-  --shadow-gold-md: 0 8px 30px rgba(212, 175, 55, 0.15);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.6);
+  --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.6);
+  --shadow-gold-sm: 0 2px 8px rgba(217, 162, 83, 0.12);
+  --shadow-gold-md: 0 8px 30px rgba(217, 162, 83, 0.18);
   --shadow-red-sm: 0 2px 8px rgba(192, 57, 43, 0.15);
   --shadow-red-md: 0 8px 30px rgba(192, 57, 43, 0.2);
   
@@ -92,9 +98,9 @@ html {
   --radius-xl: 24px;
   --radius-full: 9999px;
   
-  /* Fonts */
-  --font-display: 'Playfair Display', Georgia, serif;
-  --font-body: 'Poppins', -apple-system, sans-serif;
+  /* Fonts — Fraunces for headings, Inter for body */
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'Inter', -apple-system, sans-serif;
 }
 
 * {
@@ -338,17 +344,98 @@ input, textarea, select { font-family: var(--font-body); font-size: 1rem; }
 @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 
+/* New redesign animations */
+@keyframes goldSheen {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes emberDrift {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-120px) scale(0); opacity: 0; }
+}
+
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 8px var(--gold-glow); }
+  50% { box-shadow: 0 0 20px var(--gold-glow-strong); }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes scaleFadeIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
 .animate-fadeIn { animation: fadeIn 0.6s ease forwards; }
 .animate-fadeInUp { animation: fadeInUp 0.6s ease forwards; }
 .animate-slideInLeft { animation: slideInLeft 0.6s ease forwards; }
 .animate-slideInRight { animation: slideInRight 0.6s ease forwards; }
 .animate-scaleIn { animation: scaleIn 0.6s ease forwards; }
+.animate-goldSheen { animation: goldSheen 3s ease-in-out infinite; }
+.animate-glowPulse { animation: glowPulse 2s ease-in-out infinite; }
 
 .delay-100 { animation-delay: 0.1s; }
 .delay-200 { animation-delay: 0.2s; }
 .delay-300 { animation-delay: 0.3s; }
 .delay-400 { animation-delay: 0.4s; }
 .delay-500 { animation-delay: 0.5s; }
+
+/* Section badge (used in section headers) */
+.section-badge {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 0.75rem;
+  position: relative;
+}
+
+.section-badge::before,
+.section-badge::after {
+  content: '';
+  display: inline-block;
+  width: 24px;
+  height: 1px;
+  background: var(--gold);
+  opacity: 0.4;
+  vertical-align: middle;
+  margin: 0 10px;
+}
+
+/* Glassmorphism utility */
+.glass {
+  background: rgba(21, 14, 10, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(217, 162, 83, 0.08);
+}
+
+.glass-strong {
+  background: rgba(21, 14, 10, 0.8);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(217, 162, 83, 0.12);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-goldSheen { animation: none; }
+  .animate-glowPulse { animation: none; }
+}
+
+/* Hover-based effects — desktop only */
+@media (hover: hover) and (pointer: fine) {
+  .tilt-hover {
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
 
 /* Inputs */
 .input-field {
