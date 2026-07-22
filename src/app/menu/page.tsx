@@ -217,11 +217,12 @@ export default function MenuPage() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>(STATIC_FOOD_CATEGORIES as any);
   const [categoryIsBar, setCategoryIsBar] = useState<Record<string, boolean>>({});
   const [categoryNameIsBar, setCategoryNameIsBar] = useState<Record<string, boolean>>({});
-  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [menuItems, setMenuItems] = useState<any[]>(getStaticFoodMenuItems() as any);
   const [cmsLoaded, setCmsLoaded] = useState(false);
+  const [cmsLoading, setCmsLoading] = useState(true);
   const [showUpsellModal, setShowUpsellModal] = useState(false);
   const [lastAddedItem, setLastAddedItem] = useState<MenuItem | null>(null);
   const [visibleCount, setVisibleCount] = useState(INITIAL_COUNT);
@@ -248,9 +249,13 @@ export default function MenuPage() {
   }, []);
 
   useEffect(() => {
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), 8000);
+
     const loadFromCms = async () => {
       try {
-        const res = await fetch(`/api/menu/public?t=${Date.now()}`, { cache: 'no-cache' });
+        const res = await fetch(`/api/menu/public?t=${Date.now()}`, { cache: 'no-cache', signal: abortController.signal });
+        clearTimeout(timeoutId);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (!data.categories || !data.menuItems) throw new Error('Invalid response');
@@ -279,18 +284,21 @@ export default function MenuPage() {
           setCategoryIsBar(categoryIsBar);
           setCategoryNameIsBar(categoryNameIsBar);
           setMenuItems(mappedItems);
-          setCmsLoaded(true);
-        } else {
-          throw new Error('Empty response from CMS');
         }
       } catch (error) {
-        console.error('Failed to load menu from CMS, using static data:', error);
-        setCategories(STATIC_FOOD_CATEGORIES as any);
-        setMenuItems(getStaticFoodMenuItems() as any);
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          console.warn('Menu API timed out — using static data');
+        } else {
+          console.error('Failed to load menu from CMS, using static data:', error);
+        }
+      } finally {
         setCmsLoaded(true);
+        setCmsLoading(false);
       }
     };
+
     loadFromCms();
+    return () => { clearTimeout(timeoutId); abortController.abort(); };
   }, []);
 
   const { sections } = useMemo(() => {
@@ -499,6 +507,7 @@ export default function MenuPage() {
               </div>
             )}
           </div>
+          {cmsLoading && <div className={styles.loadingBar} />}
         </section>
 
         <nav className={styles.categoryTabs}>

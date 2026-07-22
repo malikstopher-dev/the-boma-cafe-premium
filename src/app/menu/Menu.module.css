@@ -52,13 +52,13 @@
 
 /* Search */
 .searchSection {
-  position: relative;
+  position: sticky;
   z-index: 10;
   background: rgba(13, 13, 13, 0.95);
   padding: 0.75rem 5%;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  position: sticky;
   top: 80px;
+  overflow: hidden;
 }
 
 @media (max-width: 768px) {
@@ -539,6 +539,23 @@
 
 .modalAddButton:hover { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); }
 .modalAddButton:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Loading bar — subtle gold pulse while CMS refreshes */
+.loadingBar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  background-size: 200% 100%;
+  animation: loadingSweep 1.5s ease-in-out infinite;
+}
+
+@keyframes loadingSweep {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
 
 /* Load More Button */
 .loadMoreButton {
