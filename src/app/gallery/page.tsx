@@ -7,6 +7,7 @@ import Footer from '@/components/layout/Footer';
 import GalleryBoards from '@/components/gallery/GalleryBoards';
 import OptimizedHero from '@/components/ui/OptimizedHero';
 import { getReservationLink } from '@/data/businessInfo';
+import { AnimatePresence, motion } from 'framer-motion';
 import styles from './Gallery.module.css';
 
 const categories = ['All', 'Events', 'Food', 'Venue', 'People', 'Promotions'];
@@ -154,7 +155,7 @@ export default function GalleryPage() {
 
         {isMobile && (
           <div style={{
-            background: '#1a0f0a',
+            background: 'var(--bg-alt)',
             padding: '2rem 5% 3rem',
             textAlign: 'center',
           }}>
@@ -197,133 +198,49 @@ export default function GalleryPage() {
         )}
 
         {/* Featured Moments Carousel */}
-        <section style={{ background: 'var(--white)', padding: 'var(--space-2xl) 5%' }}>
-          <div style={{
-            maxWidth: '1100px',
-            height: '500px',
-            margin: '0 auto',
-            borderRadius: '24px',
-            overflow: 'hidden',
-            position: 'relative',
-            boxShadow: '0 20px 60px rgba(26, 15, 10, 0.15)'
-          }} onClick={() => featuredImages.length > 0 && openLightbox(featuredImages.map((i: any) => i.url), featuredIndex)}>
+        <section className={styles.carouselSection}>
+          <div className={styles.carouselContainer} onClick={() => featuredImages.length > 0 && openLightbox(featuredImages.map((i: any) => i.url), featuredIndex)}>
             {featuredImages.length > 0 ? (
-            <div 
-              style={{
-                width: '100%',
-                height: '100%',
-                backgroundImage: `url(${featuredImages[featuredIndex]?.url || ''})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                transition: 'opacity 0.6s ease'
-              }}
-            />
+              <AnimatePresence mode="sync">
+                <motion.div
+                  key={featuredIndex}
+                  className={styles.carouselSlide}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.6 }}
+                  style={{ backgroundImage: `url(${featuredImages[featuredIndex]?.url || ''})` }}
+                />
+              </AnimatePresence>
             ) : (
               <div style={{ width: '100%', height: '100%', background: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <span style={{ fontSize: '3rem' }}>📷</span>
               </div>
             )}
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'linear-gradient(to top, rgba(26,15,10,0.75) 0%, transparent 60%)',
-              display: 'flex',
-              alignItems: 'flex-end',
-              padding: '2.5rem'
-            }}>
+            <div className={styles.carouselOverlay}>
               <div>
-                <span style={{
-                  display: 'inline-block',
-                  background: 'var(--primary)',
-                  color: 'var(--white)',
-                  padding: '0.4rem 1rem',
-                  borderRadius: 'var(--radius-full)',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  marginBottom: '0.75rem',
-                  letterSpacing: '0.5px',
-                  textTransform: 'uppercase'
-                }}>
-                  Featured
-                </span>
-                <h2 style={{ color: 'var(--white)', fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: 600 }}>
-                  Welcome to The Boma Cafe
-                </h2>
-                <p style={{ color: 'rgba(255,255,255,0.8)', marginTop: '0.5rem', fontSize: '1rem' }}>
-                  Experience the rustic charm and warm hospitality
-                </p>
+                <span className={styles.carouselBadge}>Featured</span>
+                <h2 className={styles.carouselTitle}>Welcome to The Boma Cafe</h2>
+                <p className={styles.carouselDesc}>Experience the rustic charm and warm hospitality</p>
               </div>
             </div>
             <button 
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: '1rem',
-                transform: 'translateY(-50%)',
-                background: 'rgba(0, 0, 0, 0.4)',
-                color: 'white',
-                border: 'none',
-                width: '48px',
-                height: '48px',
-                borderRadius: '50%',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.5rem',
-                transition: 'all 0.3s ease',
-                zIndex: 2
-              }} 
+              className={`${styles.carouselNav} ${styles.carouselNavPrev}`}
               onClick={(e) => { e.stopPropagation(); setFeaturedIndex(prev => prev > 0 ? prev - 1 : featuredImages.length - 1); }}
             >
               ‹
             </button>
             <button 
-              style={{
-                position: 'absolute',
-                top: '50%',
-                right: '1rem',
-                transform: 'translateY(-50%)',
-                background: 'rgba(0, 0, 0, 0.4)',
-                color: 'white',
-                border: 'none',
-                width: '48px',
-                height: '48px',
-                borderRadius: '50%',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.5rem',
-                transition: 'all 0.3s ease',
-                zIndex: 2
-              }}
+              className={`${styles.carouselNav} ${styles.carouselNavNext}`}
               onClick={(e) => { e.stopPropagation(); setFeaturedIndex(prev => (prev + 1) % featuredImages.length); }}
             >
               ›
             </button>
-            <div style={{
-              position: 'absolute',
-              bottom: '1.25rem',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              display: 'flex',
-              gap: '10px',
-              zIndex: 2
-            }}>
+            <div className={styles.carouselDots}>
               {featuredImages.map((_, idx) => (
                 <button
                   key={idx}
-                  style={{
-                    width: idx === featuredIndex ? '28px' : '10px',
-                    height: '10px',
-                    borderRadius: idx === featuredIndex ? '6px' : '50%',
-                    background: idx === featuredIndex ? 'var(--warm)' : 'rgba(255, 255, 255, 0.5)',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: 0,
-                    transition: 'all 0.3s ease'
-                  }}
+                  className={`${styles.carouselDot} ${idx === featuredIndex ? styles.carouselDotActive : styles.carouselDotInactive}`}
                   onClick={(e) => { e.stopPropagation(); setFeaturedIndex(idx); }}
                 />
               ))}
@@ -335,28 +252,18 @@ export default function GalleryPage() {
         <GalleryBoards onImageClick={openLightbox} onCategoryClick={handleCategoryClick} galleryItems={gallery} />
 
         {/* Filtered Gallery Grid */}
-        <section id="gallery-grid" style={{ background: 'var(--white)', padding: 'var(--space-3xl) 5%' }}>
+        <section id="gallery-grid" style={{ background: 'var(--bg)', padding: 'var(--space-3xl) 5%' }}>
           <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 'var(--space-xl)' }}>
-              <h2 style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', color: 'var(--dark-brown)', marginBottom: '1rem' }}>
+              <h2 style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', color: 'var(--text)', marginBottom: '1rem' }}>
                 {activeCategory === 'All' ? 'All Photos' : `${activeCategory} Photos`}
               </h2>
               <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                 {categories.map(cat => (
                   <button
                     key={cat}
-                    onClick={() => setActiveCategory(cat)}
-                    style={{
-                      padding: '0.6rem 1.25rem',
-                      borderRadius: '25px',
-                      border: 'none',
-                      background: activeCategory === cat ? 'var(--primary)' : 'var(--cream)',
-                      color: activeCategory === cat ? 'var(--white)' : 'var(--dark-brown)',
-                      fontWeight: 600,
-                      fontSize: '0.85rem',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease'
-                    }}
+                    onClick={() => handleCategoryClick(cat)}
+                    className={`${styles.categoryBtn} ${activeCategory === cat ? styles.active : ''}`}
                   >
                     {cat}
                   </button>
@@ -365,47 +272,28 @@ export default function GalleryPage() {
             </div>
             
             {filteredGallery.length > 0 ? (
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(4, 1fr)', 
-                gap: '1rem' 
-              }}>
+              <div className={styles.galleryGrid}>
                 {filteredGallery.map((item: any, idx: number) => (
                   <div 
                     key={idx}
-                    style={{
-                      aspectRatio: '1',
-                      borderRadius: '12px',
-                      overflow: 'hidden',
-                      cursor: 'pointer',
-                      position: 'relative'
-                    }}
+                    className={styles.galleryItem}
                     onClick={() => openLightbox(filteredGallery.map((i: any) => i.imageUrl || i.url), idx)}
                   >
                     <img 
                       src={item.imageUrl || item.url} 
                       alt={item.alt || `Gallery ${idx + 1}`}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }}
-                      onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-                      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                      className={styles.galleryImage}
                     />
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={{ 
-                textAlign: 'center', 
-                padding: '4rem 2rem', 
-                background: 'var(--cream)', 
-                borderRadius: '24px',
-                maxWidth: '600px',
-                margin: '0 auto'
-              }}>
+              <div className={styles.emptyStateCard}>
                 <div style={{ fontSize: '4rem', marginBottom: '1.5rem', opacity: 0.6 }}>📸</div>
-                <h3 style={{ color: 'var(--dark-brown)', marginBottom: '0.75rem', fontFamily: 'var(--font-display)', fontSize: '1.5rem' }}>
+                <h3 className={styles.emptyStateTitle}>
                   {activeCategory === 'All' ? 'Gallery Coming Soon' : `${activeCategory} Photos Coming Soon`}
                 </h3>
-                <p style={{ color: 'var(--text-light)', fontSize: '1rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+                <p className={styles.emptyStateDesc}>
                   Our gallery is being updated. Visit us on Instagram or WhatsApp us to see the latest atmosphere, food, and event photos.
                 </p>
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -413,33 +301,19 @@ export default function GalleryPage() {
                     href="https://www.instagram.com/the_boma_cafe" 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    style={{
-                      padding: '0.75rem 1.5rem',
-                      background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
-                      color: '#fff',
-                      borderRadius: '50px',
-                      textDecoration: 'none',
-                      fontWeight: 600,
-                      fontSize: '0.9rem'
-                    }}
+                    className={styles.socialLinkIg}
                   >
-                    Instagram
+                    <span>📷</span>
+                    <span>Instagram</span>
                   </a>
                   <a 
                     href="https://wa.me/27715921190"
                     target="_blank" 
                     rel="noopener noreferrer"
-                    style={{
-                      padding: '0.75rem 1.5rem',
-                      background: '#25D366',
-                      color: '#fff',
-                      borderRadius: '50px',
-                      textDecoration: 'none',
-                      fontWeight: 600,
-                      fontSize: '0.9rem'
-                    }}
+                    className={styles.socialLinkWa}
                   >
-                    WhatsApp Us
+                    <span>💬</span>
+                    <span>WhatsApp Us</span>
                   </a>
                 </div>
               </div>
@@ -448,7 +322,7 @@ export default function GalleryPage() {
         </section>
 
         {/* Atmosphere CTA */}
-        <section style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)', padding: 'var(--space-3xl) 5%', textAlign: 'center' }}>
+        <section className={styles.atmosphereCta}>
           <div style={{ maxWidth: '700px', margin: '0 auto' }}>
             <h2 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', color: 'var(--white)', marginBottom: '1rem' }}>
               Step Inside The Boma Atmosphere
@@ -457,29 +331,14 @@ export default function GalleryPage() {
               Explore our open-air setting, firepit evenings, food moments and celebrations.
             </p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-              <Link href="/experience" style={{
-                padding: '1rem 2rem',
-                background: 'var(--white)',
-                color: 'var(--primary)',
-                borderRadius: 'var(--radius-md)',
-                fontWeight: 600,
-                textDecoration: 'none'
-              }}>
+              <Link href="/experience" className={styles.ctaPrimaryBtn}>
                 View Experience
               </Link>
               <a 
                 href="https://wa.me/27715921190?text=Hi%20The%20Boma%20Caf%C3%A9%2C%20I%20would%20like%20to%20book%20a%20table.%0AName%3A%0ADate%3A%0ATime%3A%0ANumber%20of%20guests%3A%0ASpecial%20request%3A"
                 target="_blank" 
                 rel="noopener noreferrer"
-                style={{
-                  padding: '1rem 2rem',
-                  background: 'transparent',
-                  color: 'var(--white)',
-                  border: '2px solid var(--white)',
-                  borderRadius: 'var(--radius-md)',
-                  fontWeight: 600,
-                  textDecoration: 'none'
-                }}
+                className={styles.ctaOutlineBtn}
               >
                 Book via WhatsApp
               </a>
@@ -488,29 +347,17 @@ export default function GalleryPage() {
         </section>
 
         {/* Social CTA */}
-        <section style={{ background: 'var(--cream)', padding: 'var(--space-3xl) 5%', textAlign: 'center' }}>
+        <section className={styles.socialCta}>
           <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-            <h2 style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', color: 'var(--dark-brown)', marginBottom: '1.5rem' }}>
+            <h2 className={styles.socialCtaTitle}>
               Follow the atmosphere
             </h2>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <div className={styles.socialButtonRow}>
               <a 
                 href="https://www.instagram.com/the_boma_cafe" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  padding: '0.875rem 1.5rem',
-                  borderRadius: '50px',
-                  textDecoration: 'none',
-                  fontWeight: 600,
-                  fontSize: '0.9rem',
-                  background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
-                  color: '#fff',
-                  boxShadow: '0 4px 15px rgba(225, 48, 108, 0.3)'
-                }}
+                className={styles.socialBtnInstagram}
               >
                 <span>📷</span>
                 <span>Instagram</span>
@@ -519,19 +366,7 @@ export default function GalleryPage() {
                 href="https://www.tiktok.com/@thebomacafe" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  padding: '0.875rem 1.5rem',
-                  borderRadius: '50px',
-                  textDecoration: 'none',
-                  fontWeight: 600,
-                  fontSize: '0.9rem',
-                  background: '#000',
-                  color: '#fff',
-                  boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3)'
-                }}
+                className={styles.socialBtnTiktok}
               >
                 <span>🎵</span>
                 <span>TikTok</span>
@@ -540,19 +375,7 @@ export default function GalleryPage() {
                 href="https://www.facebook.com/profile.php?id=61552775920918" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  padding: '0.875rem 1.5rem',
-                  borderRadius: '50px',
-                  textDecoration: 'none',
-                  fontWeight: 600,
-                  fontSize: '0.9rem',
-                  background: '#1877f2',
-                  color: '#fff',
-                  boxShadow: '0 4px 15px rgba(24, 119, 242, 0.3)'
-                }}
+                className={styles.socialBtnFacebook}
               >
                 <span>👍</span>
                 <span>Facebook</span>
@@ -564,12 +387,13 @@ export default function GalleryPage() {
         {/* Lightbox */}
         {lightboxImage && (
           <div className={styles.lightbox} onClick={closeLightbox}>
-            <img 
-              src={lightboxImage} 
-              alt="Gallery" 
-              className={styles.lightboxImage}
-              onClick={(e) => e.stopPropagation()}
-            />
+            <div className={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
+              <img 
+                src={lightboxImage} 
+                alt="Gallery" 
+                className={styles.lightboxImage}
+              />
+            </div>
             <button 
               className={styles.lightboxClose}
               onClick={closeLightbox}
