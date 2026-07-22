@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback, useEffect, memo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { motion, AnimatePresence } from 'framer-motion';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useCart } from '@/lib/cart';
@@ -90,6 +91,10 @@ interface OptionModalProps {
 }
 
 function OptionModal({ item, isOpen, onClose, onAddToCart }: OptionModalProps) {
+  const CMS_IMAGE_NAMES = ['Full Chicken, Chips & 4 Rotis', '200g Ribs & Steak', '1/4 Chicken, Pap & Gravy'];
+  const modalImage = (CMS_IMAGE_NAMES.includes(item.name) && item.image)
+    ? item.image
+    : getMenuItemImage(item.name);
   const defaultSize = item.variants?.[0]?.name || '';
   const [selectedSize, setSelectedSize] = useState<string>(defaultSize);
   const [selectedAddOns, setSelectedAddOns] = useState<string[]>([]);
@@ -126,90 +131,120 @@ function OptionModal({ item, isOpen, onClose, onAddToCart }: OptionModalProps) {
   };
 
   return (
-    <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <h2 className={styles.modalTitle}>{item.name}</h2>
-          <button className={styles.modalClose} onClick={onClose} aria-label="Close item details">×</button>
-        </div>
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          className={styles.modalOverlay}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          onClick={onClose}
+        >
+          <motion.div
+            className={styles.modalContent}
+            initial={{ opacity: 0, scale: 0.92, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.92, y: 20 }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>{item.name}</h2>
+              <button className={styles.modalClose} onClick={onClose} aria-label="Close item details">×</button>
+            </div>
 
-        <div className={styles.modalBody}>
-          {item.description && (
-            <p className={styles.modalDescription}>{item.description}</p>
-          )}
+            {modalImage && (
+              <div className={styles.modalImageWrapper}>
+                <Image
+                  src={modalImage}
+                  alt={item.name}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 500px"
+                  className={styles.modalImage}
+                />
+              </div>
+            )}
 
-          {itemHasSizes && (
-            <div className={styles.optionGroup}>
-              <h3 className={styles.optionGroupTitle}>
-                Size <span className={styles.optionGroupRequired}>*</span>
-              </h3>
-              <div className={styles.optionGroupOptions}>
-                {item.variants!.map((variant) => (
-                  <button
-                    key={variant.name}
-                    className={`${styles.optionSelect} ${selectedSize === variant.name ? styles.selected : ''}`}
-                    onClick={() => setSelectedSize(variant.name)}
-                  >
-                    <div className={styles.optionSelectInfo}>
-                      <div className={styles.optionSelectRadio}>
-                        <div className={styles.optionSelectRadioInner} />
-                      </div>
-                      <span className={styles.optionSelectName}>{variant.name}</span>
-                    </div>
-                    <span className={styles.optionSelectPrice}>R{variant.price}</span>
-                  </button>
-                ))}
+            <div className={styles.modalBody}>
+              {item.description && (
+                <p className={styles.modalDescription}>{item.description}</p>
+              )}
+
+              {itemHasSizes && (
+                <div className={styles.optionGroup}>
+                  <h3 className={styles.optionGroupTitle}>
+                    Size <span className={styles.optionGroupRequired}>*</span>
+                  </h3>
+                  <div className={styles.optionGroupOptions}>
+                    {item.variants!.map((variant) => (
+                      <button
+                        key={variant.name}
+                        className={`${styles.optionSelect} ${selectedSize === variant.name ? styles.selected : ''}`}
+                        onClick={() => setSelectedSize(variant.name)}
+                      >
+                        <div className={styles.optionSelectInfo}>
+                          <div className={styles.optionSelectRadio}>
+                            <div className={styles.optionSelectRadioInner} />
+                          </div>
+                          <span className={styles.optionSelectName}>{variant.name}</span>
+                        </div>
+                        <span className={styles.optionSelectPrice}>R{variant.price}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {itemHasAddOns && (
+                <div className={styles.optionGroup}>
+                  <h3 className={styles.optionGroupTitle}>Extras</h3>
+                  <div className={styles.optionGroupOptions}>
+                    {item.addOns!.map((addOn) => (
+                      <button
+                        key={addOn.name}
+                        className={`${styles.checkboxOption} ${selectedAddOns.includes(addOn.name) ? styles.selected : ''}`}
+                        onClick={() => handleToggleAddOn(addOn.name)}
+                      >
+                        <div className={styles.checkboxOptionLeft}>
+                          <div className={styles.checkboxBox}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          </div>
+                          <span className={styles.checkboxLabel}>{addOn.name}</span>
+                        </div>
+                        <span className={styles.checkboxPrice}>+R{addOn.price}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className={styles.optionGroup}>
+                <h3 className={styles.optionGroupTitle}>Special Instructions</h3>
+                <textarea
+                  className={styles.notesTextarea}
+                  placeholder={getSpecialInstructionsPlaceholder(item.category)}
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
+                />
               </div>
             </div>
-          )}
 
-          {itemHasAddOns && (
-            <div className={styles.optionGroup}>
-              <h3 className={styles.optionGroupTitle}>Extras</h3>
-              <div className={styles.optionGroupOptions}>
-                {item.addOns!.map((addOn) => (
-                  <button
-                    key={addOn.name}
-                    className={`${styles.checkboxOption} ${selectedAddOns.includes(addOn.name) ? styles.selected : ''}`}
-                    onClick={() => handleToggleAddOn(addOn.name)}
-                  >
-                    <div className={styles.checkboxOptionLeft}>
-                      <div className={styles.checkboxBox}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      </div>
-                      <span className={styles.checkboxLabel}>{addOn.name}</span>
-                    </div>
-                    <span className={styles.checkboxPrice}>+R{addOn.price}</span>
-                  </button>
-                ))}
+            <div className={styles.modalFooter}>
+              <div className={styles.modalTotal}>
+                <div className={styles.modalTotalLabel}>Total</div>
+                <div className={styles.modalTotalPrice}>{formatTotalPrice(totalPrice)}</div>
               </div>
+              <button className={styles.modalAddButton} onClick={handleAdd}>
+                Add to Order
+              </button>
             </div>
-          )}
-
-          <div className={styles.optionGroup}>
-            <h3 className={styles.optionGroupTitle}>Special Instructions</h3>
-            <textarea
-              className={styles.notesTextarea}
-              placeholder={getSpecialInstructionsPlaceholder(item.category)}
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className={styles.modalFooter}>
-          <div className={styles.modalTotal}>
-            <div className={styles.modalTotalLabel}>Total</div>
-            <div className={styles.modalTotalPrice}>{formatTotalPrice(totalPrice)}</div>
-          </div>
-          <button className={styles.modalAddButton} onClick={handleAdd}>
-            Add to Order
-          </button>
-        </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 

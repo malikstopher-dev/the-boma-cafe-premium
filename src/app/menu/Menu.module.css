@@ -405,10 +405,7 @@
   justify-content: center;
   z-index: 1000;
   padding: var(--space-md);
-  animation: fadeIn 0.2s ease-out;
 }
-
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .modalContent {
   background: var(--bg-card);
@@ -418,10 +415,7 @@
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
-  animation: slideUp 0.3s ease-out;
 }
-
-@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
 .modalHeader { display: flex; justify-content: space-between; align-items: center; padding: var(--space-lg) var(--space-xl); border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
 .modalTitle { font-size: 1.5rem; font-weight: 700; color: var(--text); }
@@ -435,6 +429,18 @@
 }
 
 .modalClose:hover { background: rgba(255, 255, 255, 0.1); color: var(--white); }
+
+.modalImageWrapper {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--bg-surface), var(--bg-card));
+}
+
+.modalImage {
+  object-fit: cover;
+}
 
 .modalBody { padding: var(--space-xl); }
 .modalDescription { color: var(--muted); font-size: 0.95rem; margin-bottom: var(--space-xl); line-height: 1.5; }
@@ -674,6 +680,7 @@
   .modalContent { max-width: 100%; margin: 0; border-radius: var(--radius-lg) var(--radius-lg) 0 0; max-height: calc(100vh - 68px - env(safe-area-inset-bottom, 0px)); flex-direction: column; overflow: hidden; }
   .modalHeader { padding: var(--space-md) var(--space-lg); flex-shrink: 0; }
   .modalTitle { font-size: 1.15rem; }
+  .modalImageWrapper { height: 180px; }
   .modalBody { padding: var(--space-lg); flex: 1; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
   .optionSelect { padding: var(--space-md); min-height: 48px; }
   .checkboxOption { padding: var(--space-md); min-height: 48px; }
