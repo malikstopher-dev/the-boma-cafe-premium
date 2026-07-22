@@ -126,7 +126,7 @@ const defaultAllSettings: AllSiteSettings = {
   branding: {
     siteName: 'The Boma Cafe',
     siteTagline: 'Where the Rustic Meets the Soulful',
-    logo: '/logo.png',
+    logo: '/logo-boma.png',
     favicon: '/favicon.ico',
     footerText: '© {year} The Boma Cafe. All rights reserved.',
     facebook: 'https://www.facebook.com/people/The-Boma-Cafe/61552775920918/',

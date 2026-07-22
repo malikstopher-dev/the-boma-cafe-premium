@@ -205,7 +205,7 @@ function initializeDefaults(database: Database.Database) {
     const defaults = {
       siteName: 'The Boma Cafe',
       siteTagline: 'Where the Rustic Meets the Soulful',
-      logo: '/logo.png',
+      logo: '/logo-boma.png',
       favicon: '/favicon.ico',
       footerText: '© {year} The Boma Cafe. All rights reserved.',
       phone: '071 592 1190',

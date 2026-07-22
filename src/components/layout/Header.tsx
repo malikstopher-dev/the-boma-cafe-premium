@@ -79,7 +79,7 @@ export default function Header() {
 
           <Link href="/" className={styles.logo}>
             <img 
-              src="/logo.png" 
+              src="/logo-boma.png" 
               alt="The Boma Cafe" 
               width={354}
               height={254}

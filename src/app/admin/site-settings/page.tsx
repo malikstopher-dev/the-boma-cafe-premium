@@ -143,7 +143,7 @@ export default function AdminSiteSettings() {
   const [branding, setBranding] = useState({
     siteName: 'The Boma Cafe',
     siteTagline: 'Where the Rustic Meets the Soulful',
-    logo: '/logo.png',
+    logo: '/logo-boma.png',
     favicon: '/favicon.ico',
     footerText: '© {year} The Boma Cafe. All rights reserved.',
     facebook: 'https://facebook.com/thebomacafe',
