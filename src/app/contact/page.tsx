@@ -209,7 +209,7 @@ export default function ContactPage() {
               gap: '1rem' 
             }}>
               <motion.a 
-                href={getReservationLink(contactPhoneRaw)}
+                href="https://wa.me/27715921190?text=Hi%20The%20Boma%20Caf%C3%A9%2C%20I%20would%20like%20to%20book%20a%20table.%0AName%3A%0ADate%3A%0ATime%3A%0ANumber%20of%20guests%3A%0ASpecial%20request%3A"
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ y: -4, boxShadow: '0 8px 25px rgba(139, 69, 19, 0.35)' }}
@@ -233,7 +233,7 @@ export default function ContactPage() {
               </motion.a>
               
               <motion.a 
-                href={getEventEnquiryLink(contactPhoneRaw)}
+                href="https://wa.me/27715921190?text=Hi%20The%20Boma%20Caf%C3%A9%2C%20I%20would%20like%20to%20enquire%20about%20venue%20hire%2Fprivate%20event%20booking.%0AEvent%20type%3A%0ADate%3A%0ANumber%20of%20guests%3A%0AContact%20name%3A"
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ y: -4, boxShadow: '0 8px 25px rgba(26, 15, 10, 0.15)' }}
@@ -258,7 +258,7 @@ export default function ContactPage() {
               </motion.a>
               
               <motion.a 
-                href={contact?.whatsapp || `https://wa.me/${businessInfo.phoneRaw}?text=${encodeURIComponent('Hello! I would like to order from The Boma Café')}`}
+                href="https://wa.me/27715921190?text=Hi%20The%20Boma%20Caf%C3%A9%2C%20I%20would%20like%20to%20place%20an%20order."
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ y: -4, boxShadow: '0 8px 25px rgba(37, 211, 102, 0.35)' }}
@@ -439,7 +439,7 @@ export default function ContactPage() {
 
                 {/* WhatsApp CTA */}
                 <a 
-                  href={contact?.whatsapp || `https://wa.me/${businessInfo.phoneRaw}?text=${encodeURIComponent('Hello! I would like to inquire about The Boma Café')}`}
+                  href="https://wa.me/27715921190?text=Hi%20The%20Boma%20Caf%C3%A9%2C%20I%20would%20like%20to%20book%20a%20table.%0AName%3A%0ADate%3A%0ATime%3A%0ANumber%20of%20guests%3A%0ASpecial%20request%3A"
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
@@ -458,7 +458,7 @@ export default function ContactPage() {
                     boxShadow: '0 4px 12px rgba(37, 211, 102, 0.3)',
                   }}
                 >
-                  <i className="fab fa-whatsapp" /> Chat on WhatsApp
+                  <i className="fab fa-whatsapp" /> Book via WhatsApp
                 </a>
               </div>
 
@@ -489,9 +489,11 @@ export default function ContactPage() {
                   <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <div className="contact-form-inputs" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                       <div>
+                        <label htmlFor="contact-name" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--dark-brown)', marginBottom: '0.4rem' }}>Your Name *</label>
                         <input 
+                          id="contact-name"
                           type="text" 
-                          placeholder="Your Name *" 
+                          placeholder="John Doe"
                           value={formData.name}
                           onChange={(e) => handleChange('name', e.target.value)}
                           style={{ width: '100%', boxSizing: 'border-box', padding: '1rem 1.25rem', borderRadius: '14px', border: `2px solid ${validationErrors.name ? '#ef4444' : 'transparent'}`, background: 'var(--white)', fontSize: '1rem', transition: 'border-color 0.2s ease' }}
@@ -499,9 +501,11 @@ export default function ContactPage() {
                         {validationErrors.name && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{validationErrors.name}</span>}
                       </div>
                       <div>
+                        <label htmlFor="contact-email" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--dark-brown)', marginBottom: '0.4rem' }}>Your Email *</label>
                         <input 
+                          id="contact-email"
                           type="email" 
-                          placeholder="Your Email *" 
+                          placeholder="john@example.com"
                           value={formData.email}
                           onChange={(e) => handleChange('email', e.target.value)}
                           style={{ width: '100%', boxSizing: 'border-box', padding: '1rem 1.25rem', borderRadius: '14px', border: `2px solid ${validationErrors.email ? '#ef4444' : 'transparent'}`, background: 'var(--white)', fontSize: '1rem', transition: 'border-color 0.2s ease' }}
@@ -510,28 +514,38 @@ export default function ContactPage() {
                       </div>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                      <input 
-                        type="tel" 
-                        placeholder="Phone Number"
-                        value={formData.phone}
-                        onChange={(e) => handleChange('phone', e.target.value)}
-                        style={{ width: '100%', boxSizing: 'border-box', padding: '1rem 1.25rem', borderRadius: '14px', border: '2px solid transparent', background: 'var(--white)', fontSize: '1rem', transition: 'border-color 0.2s ease' }}
-                      />
-                      <select 
-                        value={formData.subject}
-                        onChange={(e) => handleChange('subject', e.target.value)}
-                        style={{ width: '100%', boxSizing: 'border-box', padding: '1rem 1.25rem', borderRadius: '14px', border: '2px solid transparent', background: 'var(--white)', fontSize: '1rem', transition: 'border-color 0.2s ease' }}
-                      >
-                        <option value="">Select Subject</option>
-                        <option value="reservation">Table Reservation</option>
-                        <option value="event">Event Inquiry</option>
-                        <option value="feedback">Feedback</option>
-                        <option value="general">General Inquiry</option>
-                      </select>
+                      <div>
+                        <label htmlFor="contact-phone" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--dark-brown)', marginBottom: '0.4rem' }}>Phone Number</label>
+                        <input 
+                          id="contact-phone"
+                          type="tel" 
+                          placeholder="+27 71 592 1190"
+                          value={formData.phone}
+                          onChange={(e) => handleChange('phone', e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box', padding: '1rem 1.25rem', borderRadius: '14px', border: '2px solid transparent', background: 'var(--white)', fontSize: '1rem', transition: 'border-color 0.2s ease' }}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="contact-subject" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--dark-brown)', marginBottom: '0.4rem' }}>Subject</label>
+                        <select 
+                          id="contact-subject"
+                          value={formData.subject}
+                          onChange={(e) => handleChange('subject', e.target.value)}
+                          style={{ width: '100%', boxSizing: 'border-box', padding: '1rem 1.25rem', borderRadius: '14px', border: '2px solid transparent', background: 'var(--white)', fontSize: '1rem', transition: 'border-color 0.2s ease' }}
+                        >
+                          <option value="">Select Subject</option>
+                          <option value="reservation">Table Reservation</option>
+                          <option value="event">Event Inquiry</option>
+                          <option value="feedback">Feedback</option>
+                          <option value="general">General Inquiry</option>
+                        </select>
+                      </div>
                     </div>
                     <div>
+                      <label htmlFor="contact-message" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--dark-brown)', marginBottom: '0.4rem' }}>Your Message *</label>
                       <textarea 
-                        placeholder="Your Message *" 
+                        id="contact-message"
+                        placeholder="Tell us about your reservation or enquiry..."
                         rows={5}
                         value={formData.message}
                         onChange={(e) => handleChange('message', e.target.value)}

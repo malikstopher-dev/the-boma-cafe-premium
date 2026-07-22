@@ -13,6 +13,7 @@ import UpcomingEventsSection from '@/components/sections/UpcomingEventsSection';
 import AboutSection from '@/components/sections/AboutSection';
 import { getReservationLink, getEventEnquiryLink } from '@/data/businessInfo';
 import { useBookingModal } from '@/lib/booking';
+import WhatsAppIcon from '@/components/icons/WhatsAppIcon';
 import styles from './page.module.css';
 
 // eventSlideshowImages moved to UpcomingEventsSection component
@@ -134,6 +135,52 @@ export default function Home() {
       
       <main>
         <Hero />
+
+        {/* Quick Info Strip */}
+        <section style={{
+          background: 'linear-gradient(135deg, var(--dark) 0%, #3D2317 100%)',
+          padding: '1rem 5%',
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '2.5rem',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          color: 'var(--text-on-dark)',
+          fontSize: '0.85rem',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span>📍</span>
+            <span>127B Wroxham Rd, Paulshof, Sandton</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span>🕐</span>
+            <span>Open Daily: 08:00 &ndash; Late</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span>📞</span>
+            <a href="tel:0715921190" style={{ color: 'var(--warm)', textDecoration: 'none' }}>071 592 1190</a>
+          </div>
+          <a
+            href="https://wa.me/27715921190?text=Hi%20The%20Boma%20Caf%C3%A9%2C%20I%20would%20like%20to%20book%20a%20table.%0AName%3A%0ADate%3A%0ATime%3A%0ANumber%20of%20guests%3A%0ASpecial%20request%3A"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              background: '#25D366',
+              color: '#fff',
+              padding: '0.5rem 1.25rem',
+              borderRadius: 'var(--radius-full)',
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              textDecoration: 'none',
+            }}
+          >
+            <WhatsAppIcon size={16} ariaLabel="" />
+            Book via WhatsApp
+          </a>
+        </section>
 
         {/* About Section - Premium Design - Moved after Hero */}
         <AboutSection 
@@ -368,25 +415,35 @@ export default function Home() {
               <h2>Reserve Your Table</h2>
               <p>Plan your perfect Boma experience. Whether it's a romantic dinner, family gathering, or celebration with friends, we're ready to welcome you.</p>
               <div className={styles.reservationButtons}>
-                <a href={getReservationLink(contactPhoneRaw)} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-lg">Book a Table</a>
-                <a href={getEventEnquiryLink(contactPhoneRaw)} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-lg">Plan an Event</a>
+                <a
+                  href="https://wa.me/27715921190?text=Hi%20The%20Boma%20Caf%C3%A9%2C%20I%20would%20like%20to%20book%20a%20table.%0AName%3A%0ADate%3A%0ATime%3A%0ANumber%20of%20guests%3A%0ASpecial%20request%3A"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-primary btn-lg"
+                >Book a Table</a>
+                <a
+                  href="https://wa.me/27715921190?text=Hi%20The%20Boma%20Caf%C3%A9%2C%20I%20would%20like%20to%20enquire%20about%20venue%20hire%2Fprivate%20event%20booking.%0AEvent%20type%3A%0ADate%3A%0ANumber%20of%20guests%3A%0AContact%20name%3A"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-secondary btn-lg"
+                >Plan an Event</a>
               </div>
               
               <div className={styles.reservationInfo}>
                 <div className={styles.reservationInfoItem}>
-                  <span className={styles.reservationInfoIcon}>📞</span>
+                  <span className={styles.reservationInfoIcon} aria-hidden="true">📞</span>
                   <strong>Call Us</strong>
                   <a href="tel:0715921190">071 592 1190</a>
                 </div>
                 <div className={styles.reservationInfoItem}>
-                  <span className={styles.reservationInfoIcon}>✉️</span>
+                  <span className={styles.reservationInfoIcon} aria-hidden="true">✉️</span>
                   <strong>Email</strong>
                   <a href="mailto:info@thebomacafe.co.za">info@thebomacafe.co.za</a>
                 </div>
                 <div className={styles.reservationInfoItem}>
-                  <span className={styles.reservationInfoIcon}>📍</span>
+                  <span className={styles.reservationInfoIcon} aria-hidden="true">📍</span>
                   <strong>Location</strong>
-                  <span>Sandton, Johannesburg</span>
+                  <span>127B Wroxham Road, Paulshof, Sandton</span>
                 </div>
               </div>
             </FadeInSection>

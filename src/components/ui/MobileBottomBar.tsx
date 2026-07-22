@@ -27,6 +27,7 @@ export default function MobileBottomBar() {
   const contact = settings?.contact || {};
   const phone = contact.phone || BUSINESS_INFO.phone;
   const phoneRaw = contact.phone?.replace(/\s/g, '') || BUSINESS_INFO.phoneRaw;
+  const address = contact.address || BUSINESS_INFO.address.full;
 
   return (
     <div className={styles.bottomBar}>
@@ -35,7 +36,7 @@ export default function MobileBottomBar() {
         <span>Call</span>
       </a>
       <a 
-        href={`https://wa.me/${phoneRaw}`} 
+        href={`https://wa.me/${phoneRaw}?text=${encodeURIComponent('Hi The Boma Café, I would like to book a table.')}`}
         target="_blank" 
         rel="noopener noreferrer"
         className={styles.action}
@@ -47,6 +48,15 @@ export default function MobileBottomBar() {
         <i className="fas fa-utensils" />
         <span>Menu</span>
       </Link>
+      <a 
+        href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={styles.action}
+      >
+        <i className="fas fa-location-arrow" />
+        <span>Directions</span>
+      </a>
     </div>
   );
 }

@@ -36,6 +36,11 @@ export default function Header() {
     load();
   }, []);
 
+  const isActive = (href: string) => {
+    if (href === '/') return pathname === '/';
+    return pathname.startsWith(href);
+  };
+
   const navLinks = [
     { href: '/', label: 'Home' },
     { href: '/about', label: 'About' },
@@ -54,13 +59,19 @@ export default function Header() {
   const email = contact.email || 'info@thebomacafe.co.za';
   const mapUrl = contact.mapEmbedUrl ? `https://www.google.com/maps/embed?pb=${contact.mapEmbedUrl}` : 'https://maps.app.goo.gl/Xca93TRsznn9GN8K7';
 
+  const waLink = `https://wa.me/${phoneRaw}?text=${encodeURIComponent('Hi The Boma Café, I would like to book a table.\nName:\nDate:\nTime:\nNumber of guests:\nSpecial request:')}`;
+
   return (
     <>
       <header className={`${styles.header} ${isScrolled ? styles.scrolled : ''}`}>
         <div className={styles.container}>
           <nav className={styles.navLeft}>
             {leftLinks.map((link) => (
-              <Link key={link.href} href={link.href} className={styles.navLink}>
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`${styles.navLink} ${isActive(link.href) ? styles.navLinkActive : ''}`}
+              >
                 {link.label}
               </Link>
             ))}
@@ -81,18 +92,31 @@ export default function Header() {
 
           <div className={styles.navRight}>
             {rightLinks.map((link) => (
-              <Link key={link.href} href={link.href} className={styles.navLink}>
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`${styles.navLink} ${isActive(link.href) ? styles.navLinkActive : ''}`}
+              >
                 {link.label}
               </Link>
             ))}
+            <a
+              href={waLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.waDesktopBtn}
+            >
+              <WhatsAppIcon size={16} ariaLabel="" />
+              <span>Book Now</span>
+            </a>
             <div className={styles.icons}>
-              <a href={`tel:${phoneRaw}`} className={styles.icon} title="Call Us">
+              <a href={`tel:${phoneRaw}`} className={styles.icon} aria-label="Call us">
                 <i className="fas fa-phone" style={{ fontSize: '0.8rem' }} />
               </a>
-              <a href={`mailto:${email}`} className={styles.icon} title="Email Us">
+              <a href={`mailto:${email}`} className={styles.icon} aria-label="Email us">
                 <i className="fas fa-envelope" style={{ fontSize: '0.8rem' }} />
               </a>
-              <a href={mapUrl} target="_blank" rel="noopener noreferrer" className={styles.icon} title="Find Us">
+              <a href={mapUrl} target="_blank" rel="noopener noreferrer" className={styles.icon} aria-label="Find us on map">
                 <i className="fas fa-map-marker-alt" style={{ fontSize: '0.8rem' }} />
               </a>
             </div>
@@ -103,7 +127,8 @@ export default function Header() {
       <button 
         className={styles.mobileToggle}
         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        aria-label="Toggle menu"
+        aria-expanded={mobileMenuOpen}
+        aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
       >
         <i className={`fas ${mobileMenuOpen ? 'fa-times' : 'fa-bars'} ${styles.toggleIcon}`} />
       </button>
@@ -116,7 +141,7 @@ export default function Header() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={styles.mobileNavLink}
+                  className={`${styles.mobileNavLink} ${isActive(link.href) ? styles.mobileNavLinkActive : ''}`}
                 >
                   {link.label}
                 </Link>
@@ -127,16 +152,16 @@ export default function Header() {
                 <i className="fas fa-phone" />
                 <span>Call</span>
               </a>
-              <a href={`https://wa.me/${phoneRaw}`} target="_blank" rel="noopener noreferrer" className={styles.mobileCtaBtn}>
+              <a href={waLink} target="_blank" rel="noopener noreferrer" className={styles.mobileCtaBtn}>
                 <WhatsAppIcon size={20} ariaLabel="Chat on WhatsApp" />
-                <span>WhatsApp</span>
+                <span>Book Now</span>
               </a>
             </div>
             <div className={styles.mobileIcons}>
-              <a href={`mailto:${email}`} className={styles.mobileIcon} title="Email">
+              <a href={`mailto:${email}`} className={styles.mobileIcon} aria-label="Email us">
                 <i className="fas fa-envelope" />
               </a>
-              <a href={mapUrl} target="_blank" rel="noopener noreferrer" className={styles.mobileIcon} title="Map">
+              <a href={mapUrl} target="_blank" rel="noopener noreferrer" className={styles.mobileIcon} aria-label="Find us on map">
                 <i className="fas fa-map-marker-alt" />
               </a>
             </div>

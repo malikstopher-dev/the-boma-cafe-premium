@@ -79,6 +79,7 @@ function PriceTag({ label, value }: { label: string; value: number }) {
   return (
     <span className={styles.priceTag}>
       <span className={styles.priceLabel}>{label}</span>
+      <span className={styles.priceSep}>&mdash;</span>
       <span className={styles.priceValue}>R{value}</span>
     </span>
   );
@@ -143,7 +144,7 @@ function CategorySection({ category, onSelectItem }: { category: BarCategory; on
       <div className={styles.categoryHeader}>
         <h2 className={styles.categoryTitle}>
           {category.name}
-          <span className={styles.categoryCount}>{category.items.length}</span>
+          <span className={styles.categoryCount}>{category.items.length} item{category.items.length !== 1 ? 's' : ''}</span>
         </h2>
         <span className={styles.categoryLine} aria-hidden="true" />
       </div>
@@ -620,6 +621,64 @@ export default function BarMenuClient() {
           />
         )}
       </AnimatePresence>
+
+      {/* WhatsApp Booking CTA */}
+      <section style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)', padding: 'var(--space-2xl) 5%', textAlign: 'center' }}>
+        <div className="container" style={{ maxWidth: '600px', margin: '0 auto' }}>
+          <h2 style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', color: 'var(--white)', marginBottom: '0.75rem', fontFamily: 'var(--font-display)' }}>
+            Ready to Visit?
+          </h2>
+          <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '1rem', marginBottom: '1.5rem' }}>
+            Book a table and enjoy the best drinks in Sandton
+          </p>
+          <a
+            href="https://wa.me/27715921190?text=Hi%20The%20Boma%20Caf%C3%A9%2C%20I%20would%20like%20to%20book%20a%20table.%0AName%3A%0ADate%3A%0ATime%3A%0ANumber%20of%20guests%3A%0ASpecial%20request%3A"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-block',
+              padding: '1rem 2rem',
+              background: 'var(--white)',
+              color: 'var(--primary)',
+              borderRadius: 'var(--radius-md)',
+              fontWeight: 600,
+              fontSize: '1rem',
+              textDecoration: 'none',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            Book via WhatsApp
+          </a>
+        </div>
+      </section>
+
+      {/* Back to Top */}
+      <button
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        style={{
+          position: 'fixed',
+          bottom: '80px',
+          right: '20px',
+          zIndex: 999,
+          width: '44px',
+          height: '44px',
+          borderRadius: '50%',
+          border: 'none',
+          background: 'var(--primary)',
+          color: 'var(--white)',
+          fontSize: '1.2rem',
+          cursor: 'pointer',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: 0.9,
+          transition: 'opacity 0.2s',
+        }}
+        aria-label="Back to top"
+      >
+        ↑
+      </button>
 
       <Footer />
     </>

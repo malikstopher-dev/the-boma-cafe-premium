@@ -19,8 +19,10 @@ import {
 } from '@/lib/menuPricing';
 import UpsellModal from '@/components/ui/UpsellModal';
 import OptimizedHero from '@/components/ui/OptimizedHero';
+import WhatsAppIcon from '@/components/icons/WhatsAppIcon';
 
 import { getMenuItemImage } from '@/lib/menuImage';
+import { STATIC_FOOD_MENU, STATIC_FOOD_CATEGORIES, getStaticFoodMenuItems } from '@/data/foodMenuData';
 import styles from './Menu.module.css';
 
 const INITIAL_COUNT = 24;
@@ -272,13 +274,20 @@ export default function MenuPage() {
             addOns: item.addOns || undefined,
           };
         });
-        setCategories(mappedCategories);
-        setCategoryIsBar(categoryIsBar);
-        setCategoryNameIsBar(categoryNameIsBar);
-        setMenuItems(mappedItems);
-        setCmsLoaded(true);
+        if (mappedCategories.length > 0 && mappedItems.length > 0) {
+          setCategories(mappedCategories);
+          setCategoryIsBar(categoryIsBar);
+          setCategoryNameIsBar(categoryNameIsBar);
+          setMenuItems(mappedItems);
+          setCmsLoaded(true);
+        } else {
+          throw new Error('Empty response from CMS');
+        }
       } catch (error) {
-        console.error('Failed to load menu from CMS:', error);
+        console.error('Failed to load menu from CMS, using static data:', error);
+        setCategories(STATIC_FOOD_CATEGORIES as any);
+        setMenuItems(getStaticFoodMenuItems() as any);
+        setCmsLoaded(true);
       }
     };
     loadFromCms();
@@ -593,9 +602,19 @@ export default function MenuPage() {
         </div>
 
         <section className={styles.ctaSection}>
-          <h2>Have a Question?</h2>
-          <p>Contact us for dietary requirements or special requests</p>
-          <a href="/contact" className="btn btn-primary">Contact Us</a>
+          <h2>Book Your Table</h2>
+          <p>Reserve your spot or enquire about dietary requirements</p>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <a
+              href="https://wa.me/27715921190?text=Hi%20The%20Boma%20Caf%C3%A9%2C%20I%20would%20like%20to%20book%20a%20table.%0AName%3A%0ADate%3A%0ATime%3A%0ANumber%20of%20guests%3A%0ASpecial%20request%3A"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-primary"
+            >
+              Book via WhatsApp
+            </a>
+            <a href="/contact" className="btn btn-secondary">Contact Us</a>
+          </div>
         </section>
       </main>
       <Footer settings={null} />

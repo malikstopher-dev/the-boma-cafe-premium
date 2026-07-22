@@ -397,11 +397,51 @@ export default function GalleryPage() {
                 textAlign: 'center', 
                 padding: '4rem 2rem', 
                 background: 'var(--cream)', 
-                borderRadius: '16px' 
+                borderRadius: '24px',
+                maxWidth: '600px',
+                margin: '0 auto'
               }}>
-                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📷</div>
-                <h3 style={{ color: 'var(--dark-brown)', marginBottom: '0.5rem' }}>No photos in this category</h3>
-                <p style={{ color: 'var(--text-light)' }}>Check back soon for new moments from The Boma Café.</p>
+                <div style={{ fontSize: '4rem', marginBottom: '1.5rem', opacity: 0.6 }}>📸</div>
+                <h3 style={{ color: 'var(--dark-brown)', marginBottom: '0.75rem', fontFamily: 'var(--font-display)', fontSize: '1.5rem' }}>
+                  {activeCategory === 'All' ? 'Gallery Coming Soon' : `${activeCategory} Photos Coming Soon`}
+                </h3>
+                <p style={{ color: 'var(--text-light)', fontSize: '1rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+                  Our gallery is being updated. Visit us on Instagram or WhatsApp us to see the latest atmosphere, food, and event photos.
+                </p>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  <a 
+                    href="https://www.instagram.com/the_boma_cafe" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
+                      color: '#fff',
+                      borderRadius: '50px',
+                      textDecoration: 'none',
+                      fontWeight: 600,
+                      fontSize: '0.9rem'
+                    }}
+                  >
+                    Instagram
+                  </a>
+                  <a 
+                    href="https://wa.me/27715921190"
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      background: '#25D366',
+                      color: '#fff',
+                      borderRadius: '50px',
+                      textDecoration: 'none',
+                      fontWeight: 600,
+                      fontSize: '0.9rem'
+                    }}
+                  >
+                    WhatsApp Us
+                  </a>
+                </div>
               </div>
             )}
           </div>
@@ -427,15 +467,20 @@ export default function GalleryPage() {
               }}>
                 View Experience
               </Link>
-              <a href={reservationLink} target="_blank" rel="noopener noreferrer" style={{
-                padding: '1rem 2rem',
-                background: 'transparent',
-                color: 'var(--white)',
-                border: '2px solid var(--white)',
-                borderRadius: 'var(--radius-md)',
-                fontWeight: 600,
-                textDecoration: 'none'
-              }}>
+              <a 
+                href="https://wa.me/27715921190?text=Hi%20The%20Boma%20Caf%C3%A9%2C%20I%20would%20like%20to%20book%20a%20table.%0AName%3A%0ADate%3A%0ATime%3A%0ANumber%20of%20guests%3A%0ASpecial%20request%3A"
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{
+                  padding: '1rem 2rem',
+                  background: 'transparent',
+                  color: 'var(--white)',
+                  border: '2px solid var(--white)',
+                  borderRadius: 'var(--radius-md)',
+                  fontWeight: 600,
+                  textDecoration: 'none'
+                }}
+              >
                 Book via WhatsApp
               </a>
             </div>

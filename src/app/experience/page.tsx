@@ -340,7 +340,7 @@ export default function ExperiencePage() {
               Fresh pastries, hot breakfast items, fruit spreads, juices, and more
             </p>
             <a 
-              href={reservationLink}
+              href="https://wa.me/27715921190?text=Hi%20The%20Boma%20Caf%C3%A9%2C%20I%20would%20like%20to%20book%20the%20weekend%20buffet."
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -606,7 +606,7 @@ export default function ExperiencePage() {
                 Book Table
               </Link>
               <a 
-                href={reservationLink}
+                href="https://wa.me/27715921190?text=Hi%20The%20Boma%20Caf%C3%A9%2C%20I%20would%20like%20to%20book%20a%20table.%0AName%3A%0ADate%3A%0ATime%3A%0ANumber%20of%20guests%3A%0ASpecial%20request%3A"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-ghost"

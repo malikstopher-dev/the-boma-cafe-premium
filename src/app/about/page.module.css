@@ -6,6 +6,7 @@
 .section {
   padding: 80px 5%;
   position: relative;
+  background: var(--bg);
 }
 
 .sectionHeader {
@@ -16,7 +17,7 @@
 .label {
   display: inline-block;
   background: linear-gradient(135deg, #C56A2D, #D4AF37);
-  color: #FFF9F0;
+  color: var(--white);
   padding: 0.35rem 1rem;
   border-radius: 50px;
   font-size: 0.7rem;
@@ -29,13 +30,13 @@
 .heading {
   font-family: var(--font-display);
   font-size: clamp(1.75rem, 3.5vw, 2.5rem);
-  color: #2C1E1A;
+  color: var(--text);
   margin-bottom: 0.75rem;
   line-height: 1.2;
 }
 
 .subtitle {
-  color: #5A4A42;
+  color: var(--muted);
   font-size: 1rem;
   max-width: 600px;
   margin: 0 auto;
@@ -43,7 +44,7 @@
 }
 
 .bodyText {
-  color: #3A1F16;
+  color: var(--text);
   font-size: 0.95rem;
   line-height: 1.7;
   max-width: 600px;
@@ -51,82 +52,261 @@
 }
 
 /* ========== SECTION 1: WELCOME ========== */
+.welcomeSection {
+  position: relative;
+  overflow: hidden;
+}
+
+.welcomeSection::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 15% 50%, rgba(212, 175, 55, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 50%, rgba(194, 106, 45, 0.03) 0%, transparent 50%);
+  pointer-events: none;
+}
+
 .welcomeGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 60px;
+  gap: 80px;
   align-items: center;
   max-width: 1200px;
   margin: 0 auto;
+  position: relative;
 }
 
-.textContent {
-  padding: 0.5rem 0;
-}
-
-.featureCards {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
-}
-
-.featureCard {
+.welcomeLabel {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  background: #F8F5F0;
-  padding: 0.75rem 1rem;
-  border-radius: 12px;
-  border: 1px solid rgba(212, 175, 55, 0.2);
+  gap: 12px;
+  margin-bottom: 1.25rem;
 }
 
-.featureIcon {
-  font-size: 1.25rem;
-  flex-shrink: 0;
+.welcomeLabelLine {
+  width: 32px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--gold), transparent);
 }
 
-.featureCard strong {
-  display: block;
-  font-size: 0.9rem;
-  color: #2C1E1A;
+.welcomeLabelText {
+  font-size: 0.7rem;
   font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--gold);
 }
 
-.featureCard span {
-  font-size: 0.8rem;
-  color: #5A4A42;
+.welcomeHeading {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  color: var(--text);
+  margin-bottom: 0.5rem;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.welcomeHeadingAccent {
+  display: block;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--gold);
+  font-size: clamp(1.1rem, 2vw, 1.35rem);
+  margin-top: 0.25rem;
+  letter-spacing: 0;
+}
+
+.welcomeDivider {
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--gold), rgba(212, 175, 55, 0.2));
+  margin: 1.5rem 0;
+}
+
+.welcomeText {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 1rem;
+  line-height: 1.85;
+  margin-bottom: 1.25rem;
+  max-width: 540px;
+}
+
+.welcomeTextLead {
+  color: var(--text);
+  font-size: 1.1rem;
+  line-height: 1.8;
+  margin-bottom: 1.25rem;
+  max-width: 540px;
+  font-weight: 400;
+}
+
+.welcomeFeatureCards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 2rem;
+}
+
+.welcomeFeatureCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 1rem 1.25rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: default;
+}
+
+.welcomeFeatureCard:hover {
+  border-color: rgba(212, 175, 55, 0.3);
+  background: rgba(212, 175, 55, 0.04);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+}
+
+.welcomeFeatureIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.12), rgba(212, 175, 55, 0.05));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  border: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+.welcomeFeatureContent strong {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.welcomeFeatureContent span {
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+.welcomeCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--gold);
+  text-decoration: none;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+  padding-bottom: 4px;
+}
+
+.welcomeCta:hover {
+  color: #e8c84a;
+  border-color: var(--gold);
+  gap: 14px;
+}
+
+.welcomeCtaArrow {
+  font-size: 1.1rem;
+  transition: transform 0.3s ease;
+}
+
+.welcomeCta:hover .welcomeCtaArrow {
+  transform: translateX(4px);
 }
 
 .imageWrapper {
   display: flex;
   align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.imageWrapper::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 1px solid rgba(212, 175, 55, 0.15);
+  border-radius: 28px;
+  top: 16px;
+  left: 16px;
+  z-index: 0;
+  pointer-events: none;
 }
 
 .imageCard {
   border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(44, 30, 26, 0.15), 0 0 0 1px rgba(212, 175, 55, 0.3);
-  background: #FFF9F0;
-  padding: 10px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+  background: var(--bg-card);
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+.imageCard::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  pointer-events: none;
 }
 
 .imageCard img {
   width: 100%;
-  height: 480px;
+  height: 520px;
   object-fit: cover;
-  border-radius: 16px;
   display: block;
-  transition: transform 0.6s ease;
+  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .imageCard:hover img {
-  transform: scale(1.02);
+  transform: scale(1.03);
+}
+
+.imageCardBadge {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 2;
+  background: rgba(10, 10, 10, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  text-align: center;
+}
+
+.imageCardBadge strong {
+  display: block;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--gold);
+  font-family: var(--font-display);
+}
+
+.imageCardBadge span {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 /* ========== SECTION 2: FOUNDER ========== */
 .founderSection {
-  background: #F8F5F0;
+  background: rgba(13, 13, 13, 0.5);
   padding: 80px 5%;
 }
 
@@ -147,9 +327,10 @@
 .founderImageCard {
   border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(44, 30, 26, 0.12), 0 0 0 1px rgba(212, 175, 55, 0.25);
-  background: #FFF9F0;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(212, 175, 55, 0.3);
+  background: var(--bg-card);
   padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .founderImageCard img {
@@ -167,7 +348,7 @@
 .founderRole {
   display: inline-block;
   background: #C56A2D;
-  color: #FFF9F0;
+  color: var(--white);
   padding: 0.3rem 0.8rem;
   border-radius: 50px;
   font-size: 0.7rem;
@@ -180,7 +361,7 @@
 .founderName {
   font-family: var(--font-display);
   font-size: clamp(1.5rem, 3vw, 2rem);
-  color: #2C1E1A;
+  color: var(--text);
   margin-bottom: 0.25rem;
 }
 
@@ -189,18 +370,18 @@
 }
 
 .quoteCard {
-  background: linear-gradient(135deg, #FFF9F0 0%, #F8F5F0 100%);
-  border-left: 4px solid #D4AF37;
+  background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-card) 100%);
+  border-left: 4px solid var(--gold);
   border-radius: 0 16px 16px 0;
   padding: 1.25rem 1.5rem;
   margin: 1.5rem 0;
-  box-shadow: 0 4px 16px rgba(44, 30, 26, 0.06);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .quoteCard p {
   font-family: var(--font-display);
   font-size: 1.05rem;
-  color: #2C1E1A;
+  color: var(--text);
   line-height: 1.6;
   font-style: italic;
   margin: 0;
@@ -217,7 +398,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: #FFF9F0;
+  background: var(--bg-surface);
   padding: 0.75rem 1rem;
   border-radius: 12px;
   border: 1px solid rgba(197, 106, 45, 0.15);
@@ -231,18 +412,18 @@
 .highlightCard strong {
   display: block;
   font-size: 0.9rem;
-  color: #2C1E1A;
+  color: var(--text);
   font-weight: 600;
 }
 
 .highlightCard span {
   font-size: 0.8rem;
-  color: #5A4A42;
+  color: var(--muted);
 }
 
 /* ========== SECTION 3: VALUES ========== */
 .valuesSection {
-  background: #FFF9F0;
+  background: var(--bg);
   padding: 80px 5%;
 }
 
@@ -255,18 +436,19 @@
 }
 
 .valueCard {
-  background: #F8F5F0;
+  background: var(--bg-card);
   border-radius: 16px;
   padding: 1.5rem 1.25rem;
   text-align: center;
-  box-shadow: 0 4px 16px rgba(44, 30, 26, 0.06);
-  border: 1px solid rgba(212, 175, 55, 0.15);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .valueCard:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(44, 30, 26, 0.1);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(212, 175, 55, 0.03);
+  border-color: var(--gold);
 }
 
 .valueIcon {
@@ -283,21 +465,21 @@
 
 .valueCard h4 {
   font-size: 1rem;
-  color: #2C1E1A;
+  color: var(--text);
   margin-bottom: 0.4rem;
   font-weight: 600;
 }
 
 .valueCard p {
   font-size: 0.825rem;
-  color: #5A4A42;
+  color: var(--muted);
   line-height: 1.5;
   margin: 0;
 }
 
 /* ========== SECTION 4: CTA ========== */
 .ctaSection {
-  background: #F8F5F0;
+  background: rgba(13, 13, 13, 0.5);
   padding: 80px 5%;
 }
 
@@ -305,11 +487,11 @@
   text-align: center;
   max-width: 720px;
   margin: 0 auto;
-  background: #FFF9F0;
+  background: var(--bg-card);
   border-radius: 24px;
   padding: 3rem 2.5rem;
-  box-shadow: 0 8px 24px rgba(44, 30, 26, 0.08);
-  border: 1px solid rgba(212, 175, 55, 0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .ctaContent .label {
@@ -317,12 +499,12 @@
 }
 
 .ctaContent .heading {
-  color: #2C1E1A;
+  color: var(--text);
   margin-bottom: 1rem;
 }
 
 .ctaContent p {
-  color: #3A1F16;
+  color: var(--muted);
   font-size: 1rem;
   line-height: 1.6;
   margin-bottom: 2rem;
@@ -330,8 +512,8 @@
 
 .ctaButton {
   display: inline-block;
-  background: #C56A2D;
-  color: #FFF9F0;
+  background: linear-gradient(135deg, var(--primary), var(--primary-soft));
+  color: var(--white);
   padding: 0.85rem 2.5rem;
   border-radius: 50px;
   font-size: 0.95rem;
@@ -343,7 +525,7 @@
 }
 
 .ctaButton:hover {
-  background: #A85524;
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary));
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(197, 106, 45, 0.3);
 }
@@ -353,6 +535,14 @@
   .welcomeGrid {
     grid-template-columns: 1fr;
     gap: 2.5rem;
+  }
+
+  .imageWrapper::before {
+    display: none;
+  }
+
+  .welcomeFeatureCards {
+    grid-template-columns: 1fr 1fr;
   }
 
   .founderGrid {
@@ -373,25 +563,99 @@
 
 @media (max-width: 768px) {
   .section {
-    padding: 3.5rem 5%;
+    padding: 3rem 5%;
   }
 
   .founderSection,
   .valuesSection {
-    padding: 3.5rem 5%;
+    padding: 3rem 5%;
   }
 
   .ctaSection {
-    padding: 3.5rem 5%;
+    padding: 3rem 5%;
   }
 
   .welcomeGrid,
   .founderGrid {
-    gap: 2rem;
+    gap: 1.5rem;
+  }
+
+  .welcomeLabelText {
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+  }
+
+  .welcomeHeading {
+    font-size: clamp(1.5rem, 5.5vw, 1.8rem);
+  }
+
+  .welcomeHeadingAccent {
+    font-size: clamp(0.95rem, 3vw, 1.1rem);
+  }
+
+  .welcomeDivider {
+    margin: 1rem 0;
+  }
+
+  .welcomeTextLead {
+    font-size: 0.95rem;
+    line-height: 1.7;
+  }
+
+  .welcomeText {
+    font-size: 0.88rem;
+    line-height: 1.7;
+  }
+
+  .welcomeFeatureCards {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 1.25rem;
+  }
+
+  .welcomeFeatureCard {
+    padding: 0.75rem 0.85rem;
+    gap: 10px;
+    border-radius: 12px;
+  }
+
+  .welcomeFeatureIcon {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+    border-radius: 10px;
+  }
+
+  .welcomeFeatureContent strong {
+    font-size: 0.78rem;
+  }
+
+  .welcomeFeatureContent span {
+    font-size: 0.65rem;
+  }
+
+  .welcomeCta {
+    margin-top: 1.25rem;
+    font-size: 0.8rem;
   }
 
   .imageCard img {
     height: 280px;
+  }
+
+  .imageCardBadge {
+    bottom: 12px;
+    right: 12px;
+    padding: 0.5rem 0.75rem;
+    border-radius: 10px;
+  }
+
+  .imageCardBadge strong {
+    font-size: 0.9rem;
+  }
+
+  .imageCardBadge span {
+    font-size: 0.55rem;
   }
 
   .founderImageCard img {
@@ -400,17 +664,18 @@
 
   .valuesGrid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    gap: 10px;
   }
 
   .valueCard {
-    padding: 1.25rem 1rem;
+    padding: 1.25rem 0.75rem;
   }
 
   .valueIcon {
-    width: 48px;
-    height: 48px;
-    font-size: 1.25rem;
+    width: 44px;
+    height: 44px;
+    font-size: 1.1rem;
+    border-radius: 12px;
   }
 
   .valueCard h4 {
@@ -420,26 +685,6 @@
   .valueCard p {
     font-size: clamp(0.72rem, 2.6vw, 0.82rem);
     line-height: 1.45;
-  }
-
-  .featureCards,
-  .highlightCards {
-    gap: 8px;
-  }
-
-  .featureCard,
-  .highlightCard {
-    padding: 0.75rem 0.9rem;
-  }
-
-  .featureCard strong,
-  .highlightCard strong {
-    font-size: clamp(0.82rem, 3vw, 0.9rem);
-  }
-
-  .featureCard span,
-  .highlightCard span {
-    font-size: clamp(0.72rem, 2.6vw, 0.8rem);
   }
 
   .quoteCard {
@@ -466,5 +711,55 @@
   .bodyText {
     font-size: clamp(0.88rem, 3.2vw, 0.95rem);
     line-height: 1.6;
+  }
+}
+
+@media (max-width: 480px) {
+  .welcomeGrid {
+    gap: 1.25rem;
+  }
+
+  .welcomeFeatureCards {
+    gap: 6px;
+  }
+
+  .welcomeFeatureCard {
+    padding: 0.625rem 0.75rem;
+    gap: 8px;
+    border-radius: 10px;
+  }
+
+  .welcomeFeatureIcon {
+    width: 32px;
+    height: 32px;
+    font-size: 0.85rem;
+    border-radius: 8px;
+  }
+
+  .welcomeFeatureContent strong {
+    font-size: 0.72rem;
+  }
+
+  .welcomeFeatureContent span {
+    font-size: 0.6rem;
+  }
+
+  .imageCard img {
+    height: 220px;
+  }
+
+  .imageCardBadge {
+    bottom: 10px;
+    right: 10px;
+    padding: 0.4rem 0.6rem;
+  }
+
+  .imageCardBadge strong {
+    font-size: 0.8rem;
+  }
+
+  .imageCardBadge span {
+    font-size: 0.5rem;
+    letter-spacing: 0.5px;
   }
 }

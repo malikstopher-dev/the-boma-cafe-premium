@@ -1,9 +1,10 @@
 .footer {
-  background: linear-gradient(180deg, var(--beige-dark) 0%, #D9C4A9 100%);
+  background: linear-gradient(180deg, #111 0%, #0A0A0A 100%);
   padding: 2rem 5% 1rem;
-  color: var(--brown-secondary);
+  color: var(--muted);
   position: relative;
   overflow: hidden;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .footer::before {
@@ -14,7 +15,7 @@
   transform: translateX(-50%);
   width: 100%;
   height: 80%;
-  background: radial-gradient(ellipse at center top, rgba(201,169,98,0.15) 0%, transparent 60%);
+  background: radial-gradient(ellipse at center top, rgba(212,175,55,0.05) 0%, transparent 60%);
   pointer-events: none;
 }
 
@@ -30,7 +31,7 @@
   grid-template-columns: 1.4fr 1fr 1.4fr;
   gap: 2rem;
   padding-bottom: 1.25rem;
-  border-bottom: 1px solid rgba(107,94,74,0.2);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 
 /* Brand Column */
@@ -43,20 +44,20 @@
   height: auto;
   margin-bottom: 10px;
   object-fit: contain;
-  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.08));
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
 }
 
 .logoText {
   font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--brown-heading);
+  color: var(--text);
   letter-spacing: 1px;
   margin-bottom: 0.75rem;
 }
 
 .tagline {
-  color: var(--brown-secondary);
+  color: var(--muted);
   font-size: 0.85rem;
   line-height: 1.5;
   margin-bottom: 1rem;
@@ -73,14 +74,14 @@
   justify-content: center;
   width: 44px;
   height: 44px;
-  background: rgba(107,94,74,0.08);
+  background: rgba(255,255,255,0.05);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   border-radius: 12px;
-  color: var(--brown-heading);
+  color: var(--muted);
   transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   text-decoration: none;
-  border: 1px solid rgba(107,94,74,0.12);
+  border: 1px solid rgba(255,255,255,0.08);
 }
 
 .socialLink:hover {
@@ -96,7 +97,7 @@
 .contact h4 {
   font-family: var(--font-display);
   font-size: 0.95rem;
-  color: var(--brown-heading);
+  color: var(--text);
   margin-bottom: 1rem;
   font-weight: 600;
   letter-spacing: 1.5px;
@@ -110,7 +111,7 @@
 }
 
 .navLink {
-  color: var(--brown-secondary);
+  color: var(--muted);
   text-decoration: none;
   font-size: 0.9rem;
   transition: all 0.3s ease;
@@ -118,7 +119,7 @@
 }
 
 .navLink:hover {
-  color: var(--primary);
+  color: var(--gold);
   transform: translateX(4px);
 }
 
@@ -133,7 +134,7 @@
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
-  color: var(--brown-secondary);
+  color: var(--muted);
   text-decoration: none;
   font-size: 0.9rem;
   transition: color 0.3s ease;
@@ -141,20 +142,21 @@
 }
 
 .contactItem:hover {
-  color: var(--primary);
+  color: var(--gold);
 }
 
 .icon {
   width: 32px;
   height: 32px;
-  background: rgba(107,94,74,0.1);
+  background: rgba(255,255,255,0.05);
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.85rem;
   flex-shrink: 0;
-  border: 1px solid rgba(107,94,74,0.15);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--gold);
 }
 
 .addressDetail {
@@ -180,12 +182,12 @@
 .divider {
   width: 60px;
   height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(107,94,74,0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(212,175,55,0.3), transparent);
   margin: 0 auto 0.75rem;
 }
 
 .copyright {
-  color: var(--brown-secondary);
+  color: var(--muted);
   font-size: 0.7rem;
   line-height: 1.4;
   opacity: 0.75;
@@ -196,11 +198,11 @@
   margin-top: 0.25rem;
   font-size: 0.65rem !important;
   opacity: 0.75;
-  color: var(--brown-secondary);
+  color: var(--muted);
 }
 
 .poweredLink {
-  color: var(--primary);
+  color: var(--gold);
   text-decoration: none;
   font-weight: 500;
   transition: opacity 0.3s ease;
@@ -280,7 +282,7 @@
     font-family: var(--font-display);
     font-size: clamp(1rem, 3.8vw, 1.15rem);
     line-height: 1.2;
-    color: var(--brown-heading);
+    color: var(--text);
     margin: 0;
     border: none !important;
     outline: none !important;
@@ -314,7 +316,7 @@
   .mobileTagline {
     font-size: clamp(0.75rem, 2.8vw, 0.85rem);
     line-height: 1.4;
-    color: var(--brown-secondary);
+    color: var(--muted);
     max-width: 280px;
     margin: 0;
   }
@@ -331,7 +333,7 @@
   .mobileFooterLink {
     font-size: clamp(0.8rem, 3vw, 0.9rem);
     line-height: 1.3;
-    color: var(--brown-secondary);
+    color: var(--muted);
     text-decoration: none;
     white-space: nowrap;
     min-height: 36px;
@@ -340,7 +342,7 @@
   }
 
   .mobileFooterLink:hover {
-    color: var(--primary);
+    color: var(--gold);
   }
 
   .mobileSocialRow {
@@ -357,18 +359,18 @@
     justify-content: center;
     width: 40px;
     height: 40px;
-    background: rgba(107,94,74,0.08);
+    background: rgba(255,255,255,0.05);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     border-radius: 10px;
-    color: var(--brown-heading);
+    color: var(--muted);
     transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     text-decoration: none;
-    border: 1px solid rgba(107,94,74,0.12);
+    border: 1px solid rgba(255,255,255,0.08);
   }
 
   .mobileSocialLink:hover {
-    background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+    background: linear-gradient(135deg, var(--primary), var(--primary-soft));
     border-color: var(--primary);
     color: #fff;
     transform: translateY(-2px);
@@ -378,14 +380,14 @@
   .mobileDivider {
     width: 100%;
     height: 1px;
-    background: rgba(107, 94, 74, 0.18);
+    background: rgba(255,255,255,0.06);
     margin: 4px 0;
   }
 
   .mobileCopyright {
     font-size: clamp(0.68rem, 2.4vw, 0.75rem);
     line-height: 1.4;
-    color: var(--brown-secondary);
+    color: var(--muted);
     opacity: 0.75;
     margin: 0;
   }
@@ -393,7 +395,7 @@
   .mobileCredit {
     font-size: clamp(0.68rem, 2.4vw, 0.75rem);
     line-height: 1.4;
-    color: var(--brown-secondary);
+    color: var(--muted);
     opacity: 0.75;
     margin: 0;
   }

@@ -99,56 +99,79 @@ export default function AboutPage() {
         )}
 
         {/* Section 1: Welcome / Our Story */}
-        <section className={styles.section}>
+        <section className={`${styles.section} ${styles.welcomeSection}`}>
           <div className="container">
             <FadeInSection className={styles.welcomeGrid}>
-              <div className={styles.textContent}>
-                <span className={styles.label}>Welcome to The Boma Café</span>
-                <h2 className={styles.heading}>{aboutSettings?.introTitle || 'Rustic Elegance in the Heart of Sandton'}</h2>
-                <p className={styles.bodyText}>
-                  {aboutSettings?.introDescription || 'Welcome to The Boma Café, where dining is designed to be more than a meal - it is an experience.'}
-                </p>
-                <p className={styles.bodyText}>
-                  {aboutSettings?.fullDescription || 'Set in the vibrant heart of Sandton, our open-air restaurant offers a warm escape from the pace of the city. Signature thatched architecture, glowing firepit corners, natural textures, and lush greenery come together to create a setting that feels grounded, soulful, and refined.'}
-                </p>
-                <p className={styles.bodyText}>
-                  It is a space where rustic charm meets modern sophistication, where conversations linger, and where every visit becomes something memorable.
-                </p>
-
-                <div className={styles.featureCards}>
-                  <div className={styles.featureCard}>
-                    <span className={styles.featureIcon}>🔥</span>
-                    <div>
-                      <strong>Cozy Firepits</strong>
-                      <span>Warm glow for relaxed evenings</span>
-                    </div>
-                  </div>
-                  <div className={styles.featureCard}>
-                    <span className={styles.featureIcon}>🌿</span>
-                    <div>
-                      <strong>Lush Greenery</strong>
-                      <span>A natural open-air escape</span>
-                    </div>
-                  </div>
-                  <div className={styles.featureCard}>
-                    <span className={styles.featureIcon}>🏠</span>
-                    <div>
-                      <strong>Thatched Roof</strong>
-                      <span>Rustic African-inspired character</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <FadeInSection delay={200} className={styles.imageWrapper}>
+              <FadeInSection delay={100} className={styles.imageWrapper} animationType="left">
                 <div className={styles.imageCard}>
                   <img 
                     src={aboutSettings?.additionalImage1 || "/gallery/venue/slide1-1980x1080.jpeg"} 
                     alt="The Boma Café Interior"
                     loading="lazy"
                   />
+                  <div className={styles.imageCardBadge}>
+                    <strong>Est. 2024</strong>
+                    <span>Sandton's Finest Escape</span>
+                  </div>
                 </div>
               </FadeInSection>
+
+              <div>
+                <div className={styles.welcomeLabel}>
+                  <span className={styles.welcomeLabelLine}></span>
+                  <span className={styles.welcomeLabelText}>Welcome to The Boma Café</span>
+                </div>
+                <h2 className={styles.welcomeHeading}>
+                  {aboutSettings?.introTitle || 'Rustic Elegance in the Heart of Sandton'}
+                  <span className={styles.welcomeHeadingAccent}>— where every meal tells a story</span>
+                </h2>
+                <div className={styles.welcomeDivider}></div>
+                <p className={styles.welcomeTextLead}>
+                  {aboutSettings?.introDescription || 'Welcome to The Boma Café, where dining is designed to be more than a meal — it is an experience.'}
+                </p>
+                <p className={styles.welcomeText}>
+                  {aboutSettings?.fullDescription || 'Set in the vibrant heart of Sandton, our open-air restaurant offers a warm escape from the pace of the city. Signature thatched architecture, glowing firepit corners, natural textures, and lush greenery come together to create a setting that feels grounded, soulful, and refined.'}
+                </p>
+                <p className={styles.welcomeText}>
+                  It is a space where rustic charm meets modern sophistication, where conversations linger, and where every visit becomes something memorable.
+                </p>
+
+                <div className={styles.welcomeFeatureCards}>
+                  <div className={styles.welcomeFeatureCard}>
+                    <div className={styles.welcomeFeatureIcon}>🔥</div>
+                    <div className={styles.welcomeFeatureContent}>
+                      <strong>Cozy Firepits</strong>
+                      <span>Warm glow for relaxed evenings</span>
+                    </div>
+                  </div>
+                  <div className={styles.welcomeFeatureCard}>
+                    <div className={styles.welcomeFeatureIcon}>🌿</div>
+                    <div className={styles.welcomeFeatureContent}>
+                      <strong>Lush Greenery</strong>
+                      <span>A natural open-air escape</span>
+                    </div>
+                  </div>
+                  <div className={styles.welcomeFeatureCard}>
+                    <div className={styles.welcomeFeatureIcon}>🏠</div>
+                    <div className={styles.welcomeFeatureContent}>
+                      <strong>Thatched Roof</strong>
+                      <span>Rustic African-inspired character</span>
+                    </div>
+                  </div>
+                  <div className={styles.welcomeFeatureCard}>
+                    <div className={styles.welcomeFeatureIcon}>✨</div>
+                    <div className={styles.welcomeFeatureContent}>
+                      <strong>Intimate Ambience</strong>
+                      <span>Soft lighting, soulful atmosphere</span>
+                    </div>
+                  </div>
+                </div>
+
+                <a href="/about" className={styles.welcomeCta}>
+                  Learn more about us
+                  <span className={styles.welcomeCtaArrow}>→</span>
+                </a>
+              </div>
             </FadeInSection>
           </div>
         </section>
